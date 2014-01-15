@@ -1,0 +1,50 @@
+#! /usr/bin/env python
+
+
+import os
+import subprocess
+from  rebus.reagent import REagent, REdescriptor
+
+
+def guess_selector(fname):
+    guess = subprocess.check_output(["file", fname])
+    if "ELF" in guess:
+        return "/binary/elf"
+    if "PE" in guess:
+        return "/binary/pe"
+    if "Mach-O" in guess:
+        return "/binary/macho"
+    return "/unknown"
+
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file", "-f", 
+                        help="Inject FILE into the bus")
+    parser.add_argument("--selector", "-s", 
+                        help="Use SELECTOR")
+    parser.add_argument("--domain", "-d", default="default",
+                        help="Work in DOMAIN")
+
+    options = parser.parse_args()
+
+    if options.selector is None:
+        options.selector = guess_selector(options.file)
+
+
+    print "Injecting [%s] as %s" % (options.file, options.selector)
+
+
+    data = open(options.file).read()
+    desc = REdescriptor(options.selector, data, options.domain)
+
+    agent = REagent("inject", domain=options.domain)
+    agent.push(desc)
+
+    
+
+
+if __name__ == "__main__":
+    main()
