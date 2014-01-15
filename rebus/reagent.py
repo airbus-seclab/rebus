@@ -9,21 +9,36 @@ import gobject
 
 
 class REdescriptor(object):
-    def __init__(self, selector, value, domain = "default", ):
-        self.agents = []
-        self.precursors = []
-        self.hash = hashlib.sha256(value).hexdigest()
-        self.selector = os.path.join(selector, self.hash)
+    def __init__(self, selector, value, domain = "default", 
+                 agents=None, precursors=None):
+        self.agents = agents if agents else []
+        self.precursors = precursors if precursors else []
+        p = selector.rfind("%")
+        if p >= 0:
+            self.hash = selector[p+1:]
+        else:
+            self.hash = hashlib.sha256(value).hexdigest()
+            selector = os.path.join(selector, "%"+self.hash)
+        self.selector = selector
         self.value = value
         self.domain = domain
 
-    def new_descriptor(self, selector, value, agent):
+    def spawn_descriptor(self, selector, value, agent):
         desc = self.__class__(selector, value, self.domain)
         desc.agents += self.agents
         desc.agents.append(agent)
         desc.precursors += self.precursors
         desc.precursors.append(self.selector)
         return desc
+
+    def serialize(self):
+        return cPickle.dumps(
+            { k:v for k,v in self.__dict__.iteritems()
+              if k in ["selector", "value", "domain", 
+                       "agents", "precursors"] } )
+    @classmethod
+    def unserialize(cls, s):
+        return cls(**cPickle.loads(s))
 
     def __repr__(self):
         return "%s:%s=[len=%i]%r" % (self.domain, self.selector,
@@ -56,9 +71,9 @@ class REagent(dbus.service.Object):
         return self.iface.get_past_descriptors(selector)
         
     def push(self, descriptor):
-        self.iface.push(descriptor.selector, cPickle.dumps(descriptor))
+        self.iface.push(descriptor.selector, descriptor.serialize())
     def get(self, selector):
-        return cPickle.loads(str(self.iface.get(selector)))
+        return REdescriptor.unserialize(str(self.iface.get(selector)))
     def lock(self, selector):
         return self.iface.lock(selector)
         
