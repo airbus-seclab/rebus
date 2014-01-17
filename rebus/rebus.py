@@ -46,6 +46,8 @@ class REbus(dbus.service.Object):
             log.info("PUSH: %s => %s:%s" % (sender, domain, selector))
             self.descriptors[domain][selector] = descriptor
             self.new_descriptor(sender, domain, selector)
+        else:
+            log.info("PUSH: %s already seen => %s:%s" % (sender, domain, selector))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='s',
