@@ -7,6 +7,9 @@ from dbus.mainloop.glib import DBusGMainLoop
 import dbus.service
 import gobject
 
+import logging
+log = logging.getLogger("rebus.reagent")
+
 
 class REdescriptor(object):
     def __init__(self, label, selector, value, domain = "default", 
@@ -70,12 +73,15 @@ class REagent(dbus.service.Object):
                                      signal_name="new_descriptor")
         
         self.iface.register(domain, self.objpath)
+        log.info("Agent %s registered with id %s on domain %s" 
+                 % (name, self.agent_id, domain))
         
     def get_past_descriptors(self, selector="/"):
         return self.iface.get_past_descriptors(selector)
         
     def push(self, descriptor):
         self.iface.push(descriptor.selector, descriptor.serialize())
+        log.info("Pushed %r" % descriptor)
     def get(self, selector):
         return REdescriptor.unserialize(str(self.iface.get(selector)))
     def lock(self, selector):
@@ -89,6 +95,7 @@ class REagent(dbus.service.Object):
     def new_descriptor(self, sender, domain, selector):
         if sender == self.agent_id: # Pushed by this agent
             return 
+        log.debug("Received %s:%s" % (domain,selector))
         if domain != self.domain:
             return
         if self.selector_filter(selector):
@@ -97,7 +104,9 @@ class REagent(dbus.service.Object):
                 if self.name in desc.agents:
                     return # already processed
                 if self.descriptor_filter(desc):
+                    log.info("START Processing %r" % desc)
                     self.process(desc)
+                    log.info("END   processing %r" % desc)
 
     def process(self, descriptor):
         raise NotImplemented("REagent.process()")
