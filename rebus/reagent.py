@@ -17,7 +17,8 @@ class REdescriptor(object):
         if p >= 0:
             self.hash = selector[p+1:]
         else:
-            self.hash = hashlib.sha256(value).hexdigest()
+            v = value if type(value) is str else cPickle.dumps(value)
+            self.hash = hashlib.sha256(v).hexdigest()
             selector = os.path.join(selector, "%"+self.hash)
         self.selector = selector
         self.value = value
