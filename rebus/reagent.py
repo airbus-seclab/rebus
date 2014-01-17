@@ -43,8 +43,10 @@ class REdescriptor(object):
         return cls(**cPickle.loads(s))
 
     def __repr__(self):
-        return "%s:%s=[len=%i]%r" % (self.domain, self.selector,
-                                     len(self.value), self.value[:20])
+        v = repr(self.value)
+        if len(v) > 30:
+            v = "[%i][%s...]" % (len(v), v[:22])
+        return "%s:%s(%s)=%s" % (self.domain, self.selector, self.label, v)
 
 
 
