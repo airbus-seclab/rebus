@@ -38,7 +38,8 @@ def main():
 
 
     data = open(options.file).read()
-    desc = REdescriptor(options.selector, data, options.domain)
+    label = os.path.basename(options.file)
+    desc = REdescriptor(label, options.selector, data, options.domain)
 
     agent = REagent("inject", domain=options.domain)
     agent.push(desc)

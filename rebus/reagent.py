@@ -9,8 +9,9 @@ import gobject
 
 
 class REdescriptor(object):
-    def __init__(self, selector, value, domain = "default", 
+    def __init__(self, label, selector, value, domain = "default", 
                  agents=None, precursors=None):
+        self.label = label
         self.agents = agents if agents else []
         self.precursors = precursors if precursors else []
         p = selector.rfind("%")
@@ -25,7 +26,7 @@ class REdescriptor(object):
         self.domain = domain
 
     def spawn_descriptor(self, selector, value, agent):
-        desc = self.__class__(selector, value, self.domain)
+        desc = self.__class__(self.label, selector, value, self.domain)
         desc.agents += self.agents
         desc.agents.append(agent)
         desc.precursors += self.precursors
@@ -35,8 +36,8 @@ class REdescriptor(object):
     def serialize(self):
         return cPickle.dumps(
             { k:v for k,v in self.__dict__.iteritems()
-              if k in ["selector", "value", "domain", 
-                       "agents", "precursors"] } )
+              if k in ["label", "selector", "value",
+                       "domain", "agents", "precursors"] } )
     @classmethod
     def unserialize(cls, s):
         return cls(**cPickle.loads(s))
