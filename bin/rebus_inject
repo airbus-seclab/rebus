@@ -4,6 +4,7 @@
 import os
 import subprocess
 from  rebus.reagent import REagent, REdescriptor
+import logging
 
 
 def guess_selector(fname):
@@ -34,8 +35,7 @@ def main():
         options.selector = guess_selector(options.file)
 
 
-    print "Injecting [%s] as %s" % (options.file, options.selector)
-
+    logging.basicConfig(level=logging.INFO)
 
     data = open(options.file).read()
     label = os.path.basename(options.file)
