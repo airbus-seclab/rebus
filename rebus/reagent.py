@@ -87,11 +87,6 @@ class REagent(dbus.service.Object):
         return REdescriptor.unserialize(str(self.iface.get(selector)))
     def lock(self, selector):
         return self.iface.lock(selector)
-        
-    def selector_filter(self, selector):
-        return True
-    def descriptor_filter(self, descriptor):
-        return True
 
     def new_descriptor(self, sender, domain, selector):
         if sender == self.agent_id: # Pushed by this agent
@@ -109,15 +104,20 @@ class REagent(dbus.service.Object):
                     self.process(desc)
                     log.info("END   processing %r" % desc)
 
-    def init_agent(self):
-        pass
-        
-    def process(self, descriptor):
-        raise NotImplemented("REagent.process()")
-    
     def mainloop(self):
         mainloop = gobject.MainLoop()
         mainloop.run()
+
+    # These are the main methods that any agent would want
+    # to overload
+    def init_agent(self):
+        pass
+    def selector_filter(self, selector):
+        return True
+    def descriptor_filter(self, descriptor):
+        return True
+    def process(self, descriptor):
+        raise NotImplemented("REagent.process()")
 
 
 gobject.threads_init()
