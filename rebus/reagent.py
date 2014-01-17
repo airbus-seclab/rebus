@@ -75,6 +75,7 @@ class REagent(dbus.service.Object):
         self.iface.register(domain, self.objpath)
         log.info("Agent %s registered with id %s on domain %s" 
                  % (name, self.agent_id, domain))
+        self.init_agent()
         
     def get_past_descriptors(self, selector="/"):
         return self.iface.get_past_descriptors(selector)
@@ -108,6 +109,9 @@ class REagent(dbus.service.Object):
                     self.process(desc)
                     log.info("END   processing %r" % desc)
 
+    def init_agent(self):
+        pass
+        
     def process(self, descriptor):
         raise NotImplemented("REagent.process()")
     
