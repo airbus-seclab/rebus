@@ -22,27 +22,27 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file", "-f", 
-                        help="Inject FILE into the bus")
+    parser.add_argument("files", nargs="+",
+                        help="inject FILES into the bus")
     parser.add_argument("--selector", "-s", 
                         help="Use SELECTOR")
     parser.add_argument("--domain", "-d", default="default",
                         help="Work in DOMAIN")
+    parser.add_argument("--label", "-l", 
+                        help="Use LABEL instead of file name")
 
     options = parser.parse_args()
 
-    if options.selector is None:
-        options.selector = guess_selector(options.file)
-
-
     logging.basicConfig(level=logging.INFO)
 
-    data = open(options.file).read()
-    label = os.path.basename(options.file)
-    desc = REdescriptor(label, options.selector, data, options.domain)
-
     agent = REagent("inject", domain=options.domain)
-    agent.push(desc)
+
+    for f in options.files:
+        label = options.label if options.label else os.path.basename(f)
+        data = open(f).read()
+        selector =  options.selector if options.selector else  guess_selector(f)
+        desc = REdescriptor(label, selector, data, options.domain)
+        agent.push(desc)
 
     
 
