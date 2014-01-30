@@ -8,11 +8,13 @@ import logging
 
 
 def guess_selector(fname):
-    guess = subprocess.check_output(["file", fname])
+    guess = subprocess.check_output(["file", "-L", fname])
     if "ELF" in guess:
         return "/binary/elf"
     if "PE" in guess:
         return "/binary/pe"
+    if "DOS" in guess:
+        return "/binary/dos"
     if "Mach-O" in guess:
         return "/binary/macho"
     return "/unknown"
