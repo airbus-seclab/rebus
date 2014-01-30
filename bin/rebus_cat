@@ -1,0 +1,23 @@
+import sys
+from rebus.reagent import REagent, REdescriptor
+import logging
+
+
+
+def main():
+    import argparse
+
+    logging.basicConfig(level=logging.INFO)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("selector", help="Output SELECTOR on stdin")
+
+    options = parser.parse_args()
+
+    agent = REagent("cat")
+    desc = agent.get(options.selector)
+    sys.stdout.write(desc.value)
+
+
+if __name__ == "__main__":
+    main()
