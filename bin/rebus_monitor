@@ -1,0 +1,26 @@
+from rebus.reagent import REagent, REdescriptor
+import logging
+
+
+class REmonitor(REagent):
+    def process(self, desc):
+        print "="*60
+        print "Domain=%s" % desc.domain
+    	print "Label=%s" % desc.label
+        print "Selector=%s" % desc.selector
+        v = repr(desc.value)
+        print "Len=%i" % len(v)
+        print "-"*60
+        print v[:1500]
+        print "="*60
+        
+        
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+    agent = REmonitor("monitor")
+    agent.mainloop()
+
+
+if __name__ == "__main__":
+    main()

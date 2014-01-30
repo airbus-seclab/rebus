@@ -6,7 +6,7 @@ setup(
     name = 'rebus',
     version = '0.1',
     packages=[ 'rebus' ],
-    scripts = [ 'bin/rebus_inject', 'bin/rebus' ],
+    scripts = [ 'bin/rebus_inject', 'bin/rebus', 'bin/rebus_monitor' ],
 
     # Metadata
     author = 'Philippe Biondi',
