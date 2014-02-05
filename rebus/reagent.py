@@ -124,3 +124,19 @@ gobject.threads_init()
 dbus.glib.init_threads()
 DBusGMainLoop(set_as_default=True)
 
+
+def run_filter_agent(agent_name, selector_filter, filter_func, new_selector):
+    import logging
+    class REfilteragent(REagent):
+        def filter_selector(self, selector):
+            return selector_filter(selector)
+        def process(self, desc):
+            v = filter_func(desc)
+            d2 = desc.spawn_descriptor(new_selector, v, self.name)
+            self.push(d2)
+
+    logging.basicConfig(level=logging.INFO)
+    agent = REfilteragent(agent_name)
+    agent.mainloop()
+
+
