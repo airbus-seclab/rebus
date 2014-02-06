@@ -16,12 +16,15 @@ class REdescriptor(object):
                  agents=None, precursors=None):
         self.label = label
         self.agents = agents if agents else []
-        self.precursors = precursors if precursors else []
+        self.precursors = precursors if precursors is not None else []
         p = selector.rfind("%")
         if p >= 0:
             self.hash = selector[p+1:]
         else:
-            v = value if type(value) is str else cPickle.dumps(value)
+            if self.agents and self.precursors:
+                v = self.agents[0]+self.precursors[0]
+            else:
+                v = value if type(value) is str else cPickle.dumps(value)
             self.hash = hashlib.sha256(v).hexdigest()
             selector = os.path.join(selector, "%"+self.hash)
         self.selector = selector
@@ -29,11 +32,9 @@ class REdescriptor(object):
         self.domain = domain
 
     def spawn_descriptor(self, selector, value, agent):
-        desc = self.__class__(self.label, selector, value, self.domain)
-        desc.agents += self.agents
-        desc.agents.append(agent)
-        desc.precursors += self.precursors
-        desc.precursors.append(self.selector)
+        desc = self.__class__(self.label, selector, value, self.domain, 
+                              agents = [agent]+self.agents,
+                              precursors = [self.selector]+self.precursors)
         return desc
 
     def serialize(self):
