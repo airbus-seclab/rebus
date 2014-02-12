@@ -1,0 +1,7 @@
+#! /usr/bin/python
+
+from rebus.transports.dbus_m import main
+
+if __name__ == "__main__":
+    main()
+

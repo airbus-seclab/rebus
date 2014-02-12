@@ -1,7 +1,0 @@
-#! /usr/bin/python
-
-import rebus.rebus
-
-if __name__ == "__main__":
-    rebus.rebus.main()
-

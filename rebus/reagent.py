@@ -1,13 +1,8 @@
 import os
 import hashlib
 import cPickle
-import dbus
-import dbus.glib
-from dbus.mainloop.glib import DBusGMainLoop
-import dbus.service
-import gobject
-
 import logging
+
 log = logging.getLogger("rebus.reagent")
 
 
@@ -54,40 +49,32 @@ class REdescriptor(object):
 
 
 
-class REagent(dbus.service.Object):
-    def __init__(self, name, domain="default", bus=None):
-        bus = bus if bus is not None else dbus.SessionBus()
-        self.objpath = os.path.join("/agent", name)
+class REagent(object):
+    def __init__(self, name, domain="default", transport=None):
 
         self.name = name
-        self.well_known_name = dbus.service.BusName("com.airbus.rebus.agent.%s" % name, bus)
-        dbus.service.Object.__init__(self, bus, self.objpath)
-        self.bus = bus
-        
-        self.agent_id = self.bus.get_unique_name()
         self.domain = domain
+        if transport is None:
+            from rebus.transports.dbus_t import DBus
+            transport = DBus()
 
-        self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
-        self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
-        self.bus.add_signal_receiver(self.new_descriptor,
-                                     dbus_interface="com.airbus.rebus.bus",
-                                     signal_name="new_descriptor")
-        
-        self.iface.register(domain, self.objpath)
-        log.info("Agent %s registered with id %s on domain %s" 
-                 % (name, self.agent_id, domain))
+        self.transport = transport
+        self.transport.join(name, domain, callback=self.new_descriptor)
+        self.agent_id = "%s-%s" % (name,self.transport.agent_id)
+        self.transport.register_callback()
+
         self.init_agent()
         
     def get_past_descriptors(self, selector="/"):
-        return self.iface.get_past_descriptors(selector)
+        return self.transport.get_past_descriptors(selector)
         
     def push(self, descriptor):
-        self.iface.push(descriptor.selector, descriptor.serialize())
+        self.transport.push(descriptor.selector, descriptor.serialize())
         log.info("Pushed %r" % descriptor)
     def get(self, selector):
-        return REdescriptor.unserialize(str(self.iface.get(selector)))
+        return REdescriptor.unserialize(str(self.transport.get(selector)))
     def lock(self, selector):
-        return self.iface.lock(selector)
+        return self.transport.lock(selector)
 
     def new_descriptor(self, sender, domain, selector):
         if sender == self.agent_id: # Pushed by this agent
@@ -106,8 +93,7 @@ class REagent(dbus.service.Object):
                     log.info("END   processing %r" % desc)
 
     def mainloop(self):
-        mainloop = gobject.MainLoop()
-        mainloop.run()
+        self.transport.mainloop()
 
     # These are the main methods that any agent would want
     # to overload
@@ -121,9 +107,6 @@ class REagent(dbus.service.Object):
         raise NotImplemented("REagent.process()")
 
 
-gobject.threads_init()
-dbus.glib.init_threads()
-DBusGMainLoop(set_as_default=True)
 
 
 def run_filter_agent(agent_name, selector_filter, filter_func, new_selector):
