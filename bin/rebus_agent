@@ -7,6 +7,7 @@ from rebus.bus import BusRegistry,DEFAULT_DOMAIN
 import logging
 
 def main():
+    import sys
     import argparse
 
     rebus.agents.import_all()
@@ -31,7 +32,17 @@ def main():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
         agent.add_arguments(p)
 
-    options = parser.parse_args()
+    remain = sys.argv[1:]
+    remain.append("--")
+    options = argparse.Namespace(agents=[])
+    while remain:
+        i = remain.index("--")
+        remain,r2 = remain[:i],remain[i:]
+        options,remain = parser.parse_known_args(remain, namespace=options)
+        remain = remain+r2 if remain else r2[1:]
+        if options.agent_name:
+            options.agents.append(options.agent_name)
+            options.agent_name = None
 
     logging.basicConfig(level=max(1,30-10*options.verbose))
 
@@ -41,9 +52,10 @@ def main():
     else:
         bus_class = BusRegistry.get(options.bus)
         bus = bus_class(busaddr=options.busaddr)
-        agent_class = AgentRegistry.get(options.agent_name)
-        agent = agent_class(bus=bus, domain=options.domain)
-        agent.run(options)
+        for agent_name in options.agents:
+            agent_class = AgentRegistry.get(agent_name)
+            agent = agent_class(bus=bus, domain=options.domain)
+            agent.run(options)
     
 if __name__ == "__main__":
     main()
