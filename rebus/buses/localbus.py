@@ -1,6 +1,9 @@
 
 from collections import defaultdict,namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
+import logging
+
+log = logging.getLogger("rebus.localbus")
 
 
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain", "callback"))
@@ -38,7 +41,10 @@ class LocalBus(Bus):
             self.selectors[domain][selector] = descriptor
             for agid,cb in self.callbacks[domain]:
                 if agid != agent_id:
-                    cb(agent_id, domain, selector)
+                    try:
+                        cb(agent_id, domain, selector)
+                    except Exception,e:
+                        log.error("ERROR agent [%s]: %s" % (agid, e))
     def get(self, agent_id, selector):
         domain = self.agents[agent_id].domain
         return self.selectors[domain].get(selector)
