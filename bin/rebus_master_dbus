@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
-from rebus.transports.dbus_m import main
+from rebus.buses.dbusbus.master import DBusMaster
 
 if __name__ == "__main__":
-    main()
+    DBusMaster.run()
 

@@ -13,7 +13,7 @@ log=logging.getLogger("rebus.bus")
 logging.basicConfig(level=1)
 
 
-class REbus(dbus.service.Object):
+class DBusMaster(dbus.service.Object):
     def __init__(self, bus, objpath):
         dbus.service.Object.__init__(self, bus, objpath)
         self.clients = {}
@@ -23,7 +23,7 @@ class REbus(dbus.service.Object):
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='so', out_signature='',
-                         sender_keyword='sender')                         
+                         sender_keyword='sender')
     def register(self, domain, pth, sender=None):
         self.domains[sender] = domain
         self.clients[sender] = pth
@@ -33,19 +33,20 @@ class REbus(dbus.service.Object):
                          in_signature='s', out_signature='as',
                          sender_keyword='sender')
     def get_past_descriptors(self, selector, sender=None):
+        domain = self.domains[sender]
         return [ s
-                 for s in self.selectors[sender].itervalues() 
+                 for s in self.descriptors[domain].itervalues() 
                  if s.selector.startswith(selector) ]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ss', out_signature='',
+                         in_signature='sss', out_signature='',
                          sender_keyword='sender')
-    def push(self, selector, descriptor, sender=None):
+    def push(self, agent_id, selector, descriptor, sender=None):
         domain = self.domains[sender]
         if selector not in self.descriptors[domain]:
             log.info("PUSH: %s => %s:%s" % (sender, domain, selector))
             self.descriptors[domain][selector] = descriptor
-            self.new_descriptor(sender, domain, selector)
+            self.new_descriptor(agent_id, domain, selector)
         else:
             log.info("PUSH: %s already seen => %s:%s" % (sender, domain, selector))
 
@@ -58,15 +59,15 @@ class REbus(dbus.service.Object):
         return self.descriptors[domain][selector]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='s', out_signature='b',
+                         in_signature='ss', out_signature='b',
                          sender_keyword='sender')
-    def lock(self, selector, sender=None):
+    def lock(self, selector, lockid, sender=None):
         domain = self.domains[sender]
         objpath = self.clients[sender]
         processed  = self.processed[domain]
-        key = (objpath,selector)
+        key = (lockid,selector)
 
-        log.info("LOCK: %s(%s) => %r %s:%s "%(objpath, sender, key in processed, domain, selector))
+        log.info("LOCK:%s %s(%s) => %r %s:%s "%(lockid, objpath, sender, key in processed, domain, selector))
         if key in processed:
             return False
         processed.add(key)
@@ -75,24 +76,21 @@ class REbus(dbus.service.Object):
         
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
-    def new_descriptor(self, sender, domain, selector):
+    def new_descriptor(self, sender_id, domain, selector):
         pass
 
-
-def main():
-    gobject.threads_init()
-    dbus.glib.init_threads()
-    DBusGMainLoop(set_as_default=True)
-
-    bus = dbus.SessionBus()    
-    name = dbus.service.BusName("com.airbus.rebus.bus", bus)
-    svc = REbus(bus, "/bus")
+    @classmethod
+    def run(cls):
+        gobject.threads_init()
+        dbus.glib.init_threads()
+        DBusGMainLoop(set_as_default=True)
     
+        bus = dbus.SessionBus()    
+        name = dbus.service.BusName("com.airbus.rebus.bus", bus)
+        svc = cls(bus, "/bus")
+        
+    
+        mainloop = gobject.MainLoop()
+        log.info("Entering main loop.")
+        mainloop.run()
 
-    mainloop = gobject.MainLoop()
-    log.info("Entering main loop.")
-    mainloop.run()
-
-
-if __name__ == "__main__":
-    main()
