@@ -26,34 +26,34 @@ class LocalBus(Bus):
         self.agents[agid] = agent_desc(agid, domain, callback)
         return agid
 
-    def lock(self, agent_id, lockid, selector):
-        domain = self.agents[agent_id].domain
+    def lock(self, agent, lockid, selector):
+        domain = self.agents[agent.id].domain
         key = (lockid,selector)
         if key in self.locks[domain]:
             return False
         self.locks[domain].add(key)
         return True
-    def push(self, agent_id, selector, descriptor):
-        domain = self.agents[agent_id].domain
+    def push(self, agent, selector, descriptor):
+        domain = self.agents[agent.id].domain
         if selector in self.selectors[domain]:
             pass
         else:
             self.selectors[domain][selector] = descriptor
             for agid,cb in self.callbacks[domain]:
-                if agid != agent_id:
+                if agid != agent.id:
                     try:
-                        cb(agent_id, domain, selector)
+                        cb(agent.id, domain, selector)
                     except Exception,e:
                         log.error("ERROR agent [%s]: %s" % (agid, e))
-    def get(self, agent_id, selector):
-        domain = self.agents[agent_id].domain
+    def get(self, agent, selector):
+        domain = self.agents[agent.id].domain
         return self.selectors[domain].get(selector)
-    def get_selectors(self, agent_id, selector_filter="/"):
-        domain = self.agents[agent_id].domain
+    def get_selectors(self, agent, selector_filter="/"):
+        domain = self.agents[agent.id].domain
         return [ s
                  for s in self.selectors[domain].itervalues() 
                  if s.selector.startswith(selector) ]
-    def mainloop(self, agent_id):
+    def mainloop(self, agent):
         pass
     def busloop(self):
         pass

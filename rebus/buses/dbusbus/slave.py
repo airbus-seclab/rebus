@@ -26,6 +26,7 @@ class DBus(Bus):
         self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
 
     def join(self, name, domain="default", callback=None):
+        self.callback = callback
         self.objpath = os.path.join("/agent", name)
         self.obj = dbus.service.Object(self.bus, self.objpath)
         self.well_known_name = dbus.service.BusName("com.airbus.rebus.agent.%s" % name, self.bus)
@@ -37,8 +38,7 @@ class DBus(Bus):
         log.info("Agent %s registered with id %s on domain %s" 
                  % (name, self.agent_id, domain))
         
-        if callback:
-            self.callback = callback
+        if self.callback:
             self.bus.add_signal_receiver(self.callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")
@@ -46,14 +46,14 @@ class DBus(Bus):
     def mainloop(self):
         gobject.MainLoop().run()
 
-    def lock(self, agent_id, lockid, selector):
-        return self.iface.lock(lockid, selector)
-    def get(self, agent_id, selector):
-        return Descriptor.unserialize(str(self.iface.get(selector)))
-    def push(self, agent_id, selector, descriptor):
-        return self.iface.push(agent_id, selector, descriptor.serialize())
-    def get_selectors(self, agent_id, selector_filter):
-        return self.iface.get_selectors(selector)
+    def lock(self, agent, lockid, selector):
+        return self.iface.lock(agent.id, lockid, selector)
+    def get(self, agent, selector):
+        return Descriptor.unserialize(str(self.iface.get(agent.id, selector)))
+    def push(self, agent, selector, descriptor):
+        return self.iface.push(agent.id, selector, descriptor.serialize())
+    def get_selectors(self, agent, selector_filter):
+        return self.iface.get_selectors(agent.id, selector)
 
     def callback_wrapper(self, sender_id, domain, selector):
         if sender_id != self.agent_id:

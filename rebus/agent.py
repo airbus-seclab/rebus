@@ -31,15 +31,15 @@ class Agent(object):
         self.init_agent()
         
     def get_selectors(self, selector_filter="/"):
-        return self.bus.get_selectors(self.id, selector_filter)
+        return self.bus.get_selectors(self, selector_filter)
         
     def push(self, descriptor):
-        self.bus.push(self.id, descriptor.selector, descriptor)
+        self.bus.push(self, descriptor.selector, descriptor)
         self.log.info("pushed {0}".format(descriptor))
     def get(self, selector):
-        return self.bus.get(self.id, selector)
+        return self.bus.get(self, selector)
     def lock(self, lockid, selector):
-        return self.bus.lock(self.id, lockid, selector)
+        return self.bus.lock(self, lockid, selector)
 
     def on_new_descriptor(self, sender_id, domain, selector):
         self.log.debug("Received from %s descriptor [%s:%s]" % (sender_id, domain,selector))
@@ -56,7 +56,7 @@ class Agent(object):
                     self.log.info("END   processing %r" % desc)
 
     def mainloop(self):
-        self.bus.mainloop(self.id)
+        self.bus.mainloop(self)
 
     # These are the main methods that any agent would want
     # to overload

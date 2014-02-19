@@ -22,52 +22,46 @@ class DBusMaster(dbus.service.Object):
         self.descriptors = defaultdict(dict)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='so', out_signature='',
-                         sender_keyword='sender')
-    def register(self, domain, pth, sender=None):
-        self.domains[sender] = domain
-        self.clients[sender] = pth
-        log.info("New client %s (%s) in domain %s" % (pth, sender, domain))
+                         in_signature='sso', out_signature='')
+    def register(self, agent_id, domain, pth):
+        self.domains[agent_id] = domain
+        self.clients[agent_id] = pth
+        log.info("New client %s (%s) in domain %s" % (pth, agent_id, domain))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='s', out_signature='as',
-                         sender_keyword='sender')
-    def get_past_descriptors(self, selector, sender=None):
-        domain = self.domains[sender]
-        return [ s
-                 for s in self.descriptors[domain].itervalues() 
+                         in_signature='ss', out_signature='as')
+    def get_past_descriptors(self, agent_id, selector):
+        domain = self.domains[agent_id]
+        return [ s for s in self.descriptors[domain].itervalues() 
                  if s.selector.startswith(selector) ]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sss', out_signature='',
-                         sender_keyword='sender')
-    def push(self, agent_id, selector, descriptor, sender=None):
-        domain = self.domains[sender]
+                         in_signature='sss', out_signature='')
+    def push(self, agent_id, selector, descriptor):
+        domain = self.domains[agent_id]
         if selector not in self.descriptors[domain]:
-            log.info("PUSH: %s => %s:%s" % (sender, domain, selector))
+            log.info("PUSH: %s => %s:%s" % (agent_id, domain, selector))
             self.descriptors[domain][selector] = descriptor
             self.new_descriptor(agent_id, domain, selector)
         else:
-            log.info("PUSH: %s already seen => %s:%s" % (sender, domain, selector))
+            log.info("PUSH: %s already seen => %s:%s" % (agent_id, domain, selector))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='s', out_signature='s',
-                         sender_keyword='sender')
-    def get(self, selector, sender=None):
-        domain = self.domains[sender]
-        log.info("GET: %s %s:%s" % (sender, domain, selector))
+                         in_signature='s', out_signature='s')
+    def get(self, agent_id, selector):
+        domain = self.domains[agent_id]
+        log.info("GET: %s %s:%s" % (agent_id, domain, selector))
         return self.descriptors[domain][selector]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ss', out_signature='b',
-                         sender_keyword='sender')
-    def lock(self, selector, lockid, sender=None):
-        domain = self.domains[sender]
-        objpath = self.clients[sender]
+                         in_signature='ss', out_signature='b')
+    def lock(self, agent_id, selector, lockid):
+        domain = self.domains[agent_id]
+        objpath = self.clients[agent_id]
         processed  = self.processed[domain]
         key = (lockid,selector)
 
-        log.info("LOCK:%s %s(%s) => %r %s:%s "%(lockid, objpath, sender, key in processed, domain, selector))
+        log.info("LOCK:%s %s(%s) => %r %s:%s "%(lockid, objpath, agent_id, key in processed, domain, selector))
         if key in processed:
             return False
         processed.add(key)
