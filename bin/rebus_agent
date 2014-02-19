@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import pkgutil
 import rebus.agents
 import rebus.buses
 from rebus.agent import AgentRegistry
@@ -14,6 +15,18 @@ def main():
     rebus.buses.import_all()    
     buslist = BusRegistry.get_all()
 
+    # pre-parser to preload modules before real argument parser
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--module", "-m", action="append", default=[])
+    modoptions, other = parser.parse_known_args()
+    for m in modoptions.module:
+        imp = pkgutil.get_loader(m)
+        if not imp:
+            parser.error("Could not find module [%s]" % m)
+        mod = imp.load_module(m)
+        if hasattr(mod, "import_all"):
+            mod.import_all()
+
     # main options
     parser = argparse.ArgumentParser()
     parser.add_argument("--bus", choices=buslist.keys(), default="localbus",
@@ -25,6 +38,7 @@ def main():
                         help="Work in DOMAIN")
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Increase verbosity")
+    parser.add_argument("--module", "-m", action="append", default=[])
     
     # subparser options
     agent_parser = parser.add_subparsers(dest="agent_name", help="Agents")
