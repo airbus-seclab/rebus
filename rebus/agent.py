@@ -55,8 +55,11 @@ class Agent(object):
                     self.process(desc, sender_id)
                     self.log.info("END   processing %r" % desc)
 
-    def mainloop(self):
-        self.bus.mainloop(self)
+
+    def run_in_bus(self, args):
+        self.bus.run_agent(self, args)
+    def agentloop(self):
+        self.bus.agentloop(self)
 
     # These are the main methods that any agent would want
     # to overload
@@ -69,24 +72,7 @@ class Agent(object):
     def process(self, descriptor, sender_id):
         pass
     def run(self, options):
-        pass
+        self.bus.agentloop(self)
     @classmethod
     def add_arguments(cls, subparser):
         pass
-
-
-def run_filter_agent(agent_name, selector_filter, filter_func, new_selector):
-    import logging
-    class REfilteragent(REagent):
-        def filter_selector(self, selector):
-            return selector_filter(selector)
-        def process(self, desc):
-            v = filter_func(desc)
-            d2 = desc.spawn_descriptor(new_selector, v, self.name)
-            self.push(d2)
-
-    logging.basicConfig(level=logging.INFO)
-    agent = REfilteragent(agent_name)
-    agent.mainloop()
-
-

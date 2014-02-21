@@ -11,9 +11,6 @@ import logging
 log = logging.getLogger("rebus.bus.dbus")
 
 
-gobject.threads_init()
-dbus.glib.init_threads()
-DBusGMainLoop(set_as_default=True)
 
 
 @Bus.register
@@ -33,7 +30,7 @@ class DBus(Bus):
         self.agent_id = "%s-%s" % (name, self.bus.get_unique_name())
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
-        self.iface.register(domain, self.objpath)
+        self.iface.register(self.agent_id, domain, self.objpath)
 
         log.info("Agent %s registered with id %s on domain %s" 
                  % (name, self.agent_id, domain))
@@ -43,8 +40,6 @@ class DBus(Bus):
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")
         return self.agent_id
-    def mainloop(self):
-        gobject.MainLoop().run()
 
     def lock(self, agent, lockid, selector):
         return self.iface.lock(agent.id, lockid, selector)
@@ -58,3 +53,15 @@ class DBus(Bus):
     def callback_wrapper(self, sender_id, domain, selector):
         if sender_id != self.agent_id:
             self.callback(sender_id, domain, selector)
+
+    def run_agent(self, agent, args):
+        agent.run(*args)
+    def agentloop(self, agent):
+        gobject.threads_init()
+        dbus.glib.init_threads()
+        DBusGMainLoop(set_as_default=True)
+        log.info("Entering agent loop")
+        gobject.MainLoop().run()
+    def busloop(self):
+        pass
+        

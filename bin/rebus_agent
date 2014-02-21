@@ -69,7 +69,8 @@ def main():
         for agent_name in options.agents:
             agent_class = AgentRegistry.get(agent_name)
             agent = agent_class(bus=bus, domain=options.domain)
-            agent.run(options)
+            agent.run_in_bus((options,))
+        bus.busloop()
     
 if __name__ == "__main__":
     main()

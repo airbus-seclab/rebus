@@ -47,15 +47,15 @@ class DBusMaster(dbus.service.Object):
             log.info("PUSH: %s already seen => %s:%s" % (agent_id, domain, selector))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='s', out_signature='s')
+                         in_signature='ss', out_signature='s')
     def get(self, agent_id, selector):
         domain = self.domains[agent_id]
         log.info("GET: %s %s:%s" % (agent_id, domain, selector))
         return self.descriptors[domain][selector]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ss', out_signature='b')
-    def lock(self, agent_id, selector, lockid):
+                         in_signature='sss', out_signature='b')
+    def lock(self, agent_id, lockid, selector):
         domain = self.domains[agent_id]
         objpath = self.clients[agent_id]
         processed  = self.processed[domain]

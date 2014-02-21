@@ -1,4 +1,5 @@
 
+import threading
 from collections import defaultdict,namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
 import logging
@@ -18,6 +19,7 @@ class LocalBus(Bus):
         self.selectors = defaultdict(dict)
         self.agent_count = 0
         self.agents = {}
+        self.threads = []
     def join(self, name, domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (name,self.agent_count)
         self.agent_count += 1
@@ -38,10 +40,12 @@ class LocalBus(Bus):
         if selector in self.selectors[domain]:
             pass
         else:
+            log.info("Adding for %s: %s:%s" % (agent.id, domain, selector))
             self.selectors[domain][selector] = descriptor
             for agid,cb in self.callbacks[domain]:
                 if agid != agent.id:
                     try:
+                        log.debug("Calling %s callback" % agid)
                         cb(agent.id, domain, selector)
                     except Exception,e:
                         log.error("ERROR agent [%s]: %s" % (agid, e))
@@ -53,9 +57,16 @@ class LocalBus(Bus):
         return [ s
                  for s in self.selectors[domain].itervalues() 
                  if s.selector.startswith(selector) ]
-    def mainloop(self, agent):
+
+    def run_agent(self, agent, args):
+        t = threading.Thread(target=agent.run, args=args)
+        t.daemon = True
+        t.start()
+        self.threads.append(t)
+    def agentloop(self, agent):
         pass
     def busloop(self):
-        pass
+        for t in self.threads:
+            t.join()
     
                  

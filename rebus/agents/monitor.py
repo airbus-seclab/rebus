@@ -18,6 +18,3 @@ class Monitor(Agent):
         print "-"*60
         print v[:1500]
         print "="*60
-
-    def run(self, options):
-        self.mainloop()
