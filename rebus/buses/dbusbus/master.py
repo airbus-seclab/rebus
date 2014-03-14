@@ -32,8 +32,8 @@ class DBusMaster(dbus.service.Object):
                          in_signature='ss', out_signature='as')
     def get_past_descriptors(self, agent_id, selector):
         domain = self.domains[agent_id]
-        return [ s for s in self.descriptors[domain].itervalues() 
-                 if s.selector.startswith(selector) ]
+        return [ d for s,d in self.descriptors[domain].iteritems()
+                 if s.startswith(selector) ]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')

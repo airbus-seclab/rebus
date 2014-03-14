@@ -49,6 +49,9 @@ class DBus(Bus):
         return self.iface.push(agent.id, selector, descriptor.serialize())
     def get_selectors(self, agent, selector_filter):
         return self.iface.get_selectors(agent.id, selector)
+    def get_past_descriptors(self, agent, selector_filter):
+        dlist = self.iface.get_past_descriptors(agent.id, selector_filter)
+        return [Descriptor.unserialize(str(d)) for d in dlist]
 
     def callback_wrapper(self, sender_id, domain, selector):
         if sender_id != self.agent_id:
