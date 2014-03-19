@@ -1,0 +1,7 @@
+syntax: glob
+*.pyc
+*.swp
+*.~
+build/
+rebus.egg-info/
+dist/
