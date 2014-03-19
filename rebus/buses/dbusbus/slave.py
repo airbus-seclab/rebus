@@ -64,7 +64,11 @@ class DBus(Bus):
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
         log.info("Entering agent loop")
-        gobject.MainLoop().run()
+        loop = gobject.MainLoop()
+        try:
+            loop.run()
+        except KeyboardInterrupt:
+            loop.quit()
     def busloop(self):
         pass
 
