@@ -32,9 +32,9 @@ class DBus(Bus):
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
         self.iface.register(self.agent_id, domain, self.objpath)
 
-        log.info("Agent %s registered with id %s on domain %s" 
+        log.info("Agent %s registered with id %s on domain %s"
                  % (name, self.agent_id, domain))
-        
+
         if self.callback:
             self.bus.add_signal_receiver(self.callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
@@ -67,4 +67,4 @@ class DBus(Bus):
         gobject.MainLoop().run()
     def busloop(self):
         pass
-        
+

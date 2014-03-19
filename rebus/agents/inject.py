@@ -29,9 +29,9 @@ class Inject(Agent):
     def add_arguments(cls, subparser):
         subparser.add_argument("files", nargs="+",
                                help="Inject FILES into the bus")
-        subparser.add_argument("--selector", "-s", 
+        subparser.add_argument("--selector", "-s",
                                help="Use SELECTOR")
-        subparser.add_argument("--label", "-l", 
+        subparser.add_argument("--label", "-l",
                                help="Use LABEL instead of file name")
     def run(self, options):
         for f in options.files:

@@ -6,7 +6,7 @@ import logging
 log = logging.getLogger("rebus.descriptor")
 
 class Descriptor(object):
-    def __init__(self, label, selector, value, domain = "default", 
+    def __init__(self, label, selector, value, domain = "default",
                  agents=None, precursors=None):
         self.label = label
         self.agents = agents if agents else []
@@ -26,7 +26,7 @@ class Descriptor(object):
         self.domain = domain
 
     def spawn_descriptor(self, selector, value, agent):
-        desc = self.__class__(self.label, selector, value, self.domain, 
+        desc = self.__class__(self.label, selector, value, self.domain,
                               agents = [agent]+self.agents,
                               precursors = [self.selector]+self.precursors)
         return desc

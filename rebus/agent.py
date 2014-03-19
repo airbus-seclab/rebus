@@ -29,10 +29,10 @@ class Agent(object):
         self.log.info("Agent {0.name} registered on bus {1._name_} with id {0.id}".format(self, self.bus))
 
         self.init_agent()
-        
+
     def get_selectors(self, selector_filter="/"):
         return self.bus.get_selectors(self, selector_filter)
-        
+
     def push(self, descriptor):
         self.bus.push(self, descriptor.selector, descriptor)
         self.log.info("pushed {0}".format(descriptor))

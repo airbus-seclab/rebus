@@ -55,7 +55,7 @@ class LocalBus(Bus):
     def get_selectors(self, agent, selector_filter="/"):
         domain = self.agents[agent.id].domain
         return [ s
-                 for s in self.selectors[domain].itervalues() 
+                 for s in self.selectors[domain].itervalues()
                  if s.selector.startswith(selector) ]
 
     def run_agent(self, agent, args):
@@ -68,5 +68,4 @@ class LocalBus(Bus):
     def busloop(self):
         for t in self.threads:
             t.join()
-    
-                 
+

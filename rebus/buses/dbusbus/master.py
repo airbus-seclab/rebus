@@ -67,7 +67,7 @@ class DBusMaster(dbus.service.Object):
         processed.add(key)
         return True
 
-        
+
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, domain, selector):
@@ -78,12 +78,12 @@ class DBusMaster(dbus.service.Object):
         gobject.threads_init()
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
-    
-        bus = dbus.SessionBus()    
+
+        bus = dbus.SessionBus()
         name = dbus.service.BusName("com.airbus.rebus.bus", bus)
         svc = cls(bus, "/bus")
-        
-    
+
+
         mainloop = gobject.MainLoop()
         log.info("Entering main loop.")
         mainloop.run()
