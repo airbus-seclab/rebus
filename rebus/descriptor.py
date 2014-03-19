@@ -16,7 +16,7 @@ class Descriptor(object):
             self.hash = selector[p+1:]
         else:
             if self.agents and self.precursors:
-                v = self.agents[0]+self.precursors[0]
+                v = self.agents[0]+self.precursors[0]+selector
             else:
                 v = value if type(value) is str else cPickle.dumps(value)
             self.hash = hashlib.sha256(v).hexdigest()
