@@ -6,10 +6,16 @@ from rebus.agent import Agent
 from rebus.descriptor import Descriptor
 import subprocess
 import logging
+import magic
 
 
-def guess_selector(fname):
-    guess = subprocess.check_output(["file", "-L", fname])
+def guess_selector(fname=None, buffer=None):
+    if fname is not None:
+        guess = magic.from_file(fname)
+    elif buffer is not None:
+        guess = magic.from_buffer(buffer)
+    else:
+        raise Exception("Either fname or buffer must be set when calling guess_selector.")
     if "ELF" in guess:
         return "/binary/elf"
     if "PE" in guess:
@@ -37,6 +43,6 @@ class Inject(Agent):
         for f in options.files:
             label = options.label if options.label else os.path.basename(f)
             data = open(f).read()
-            selector =  options.selector if options.selector else  guess_selector(f)
+            selector = options.selector if options.selector else guess_selector(fname=f)
             desc = Descriptor(label, selector, data, options.domain)
             self.push(desc)
