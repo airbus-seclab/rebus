@@ -1,0 +1,48 @@
+body {
+  background: white;
+  padding-top: 50px;
+  font-family: sans-serif;
+  font-size: 10pt;
+  color: black;
+}
+
+#inbox .descriptor {
+  padding-top: 0.25em;
+}
+
+.fileinput-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.fileinput-button input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  font-size: 200px;
+  direction: ltr;
+  cursor: pointer;
+}
+
+.progress-bar-container {
+  width: 60%;
+}
+
+.upload-status-panel {
+  display: none;
+}
+
+#template_container {
+  display: none;
+}
+
+.container-key {
+  width: 200px;
+}
+
+#inbox table {
+  margin-bottom: 0;
+}

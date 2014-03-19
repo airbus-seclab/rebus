@@ -1,0 +1,7 @@
+<tr class="descriptor" id="m{{ escape(descriptor['hash']) }}">
+  <td title="unique id {{escape(descriptor['uniqueid'])}}">{{ escape(descriptor['agent']) }}</td>
+  <td>{{ escape(descriptor['label']) }}</td>
+  <td>{{ escape(descriptor['domain']) }}</td>
+  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}">{{ descriptor['selector'] }}</a></td>
+  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?download=1"><span class="glyphicon glyphicon-download-alt"></span></a> {{ escape(descriptor['printablevalue']) }}</td>
+</tr>
