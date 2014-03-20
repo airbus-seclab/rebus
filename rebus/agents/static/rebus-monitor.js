@@ -50,7 +50,7 @@ var updater = {
     cursor: null,
 
     poll: function() {
-        var args = {"_xsrf": getCookie("_xsrf")};
+        var args = {"_xsrf": getCookie("_xsrf"), "page": "monitor"};
         if (updater.cursor) args.cursor = updater.cursor;
         $.ajax({url: "/poll_descriptors", type: "POST", dataType: "text",
             data: $.param(args), success: updater.onSuccess,
@@ -68,7 +68,7 @@ var updater = {
         window.setTimeout(updater.poll, 0);
     },
 
-    onError: function(response) {
+    onError: function(response, errorString, e) {
         updater.errorSleepTime *= 2;
         console.log("Poll error; sleeping for", updater.errorSleepTime, "ms");
         window.setTimeout(updater.poll, updater.errorSleepTime);
@@ -76,7 +76,6 @@ var updater = {
 
     newDescriptors: function(response) {
         if (!response.descrinfos) return;
-        updater.cursor = response.cursor;
         var descrinfos = response.descrinfos;
         updater.cursor = descrinfos[descrinfos.length - 1].hash;
         console.log(descrinfos.length, "new descriptors, cursor:", updater.cursor);
@@ -88,7 +87,7 @@ var updater = {
     showDescriptor: function(descriptor) {
         var existing = $("#m" + descriptor.hash);
         if (existing.length > 0) return;
-        var node = $(descriptor_monitor.html);
+        var node = $(descriptor.html);
         node.hide();
         $("#inbox").append(node);
         node.fadeIn();

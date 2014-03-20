@@ -48,6 +48,7 @@ var updater = {
     errorSleepTime: 500,
     cursor: null,
     currentAjaxQuery: null,
+    domain: null,
 
     stopPolling: function() {
         if (updater.currentAjaxQuery) {
@@ -56,7 +57,7 @@ var updater = {
     },
 
     poll: function() {
-        var args = {"_xsrf": getCookie("_xsrf")};
+        var args = {"_xsrf": getCookie("_xsrf"), "page": "analysis", "domain": updater.domain};
         if (updater.cursor) args.cursor = updater.cursor;
         updater.stopPolling();
         updater.currentAjaxQuery = $.ajax({url: "/poll_descriptors",
@@ -94,7 +95,6 @@ var updater = {
 
     newDescriptors: function(response) {
         if (!response.descrinfos) return;
-        updater.cursor = response.cursor;
         var descrinfos = response.descrinfos;
         updater.cursor = descrinfos[descrinfos.length - 1].hash;
         console.log(descrinfos.length, "new descriptors, cursor:", updater.cursor);
@@ -110,7 +110,7 @@ var updater = {
                 container.find('.panel-title').text(descriptor.agent)
                 $("#inbox").append(container)
         }
-        var node = $(descriptor.html_analysis);
+        var node = $(descriptor.html);
         node.hide();
         container.find('.container-inbox').append(node);
         node.fadeIn();
@@ -125,7 +125,8 @@ $(function () {
             $('#progress .progress-bar').css('width', '0%');
             $('.upload-status').text('Uploading file ' + data.files[0].name + '...');
             $('.upload-status-panel').show();
-            $('#inbox').html('')
+            $('#inbox').html('');
+            updater.domain = data.files[0].name;
         data.submit()
         },
         dataType: 'json',
