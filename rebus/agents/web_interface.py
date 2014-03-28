@@ -27,10 +27,8 @@ class WebInterface(Agent):
         self.ioloop.add_callback(self.dstore.new_descriptor, desc, sender_id)
 
     def get_descriptor_value(self, selector):
-        dlist = self.bus.get_past_descriptors(self, selector)
-        if len(dlist) > 1:
-            return "More than one descriptors match this selector"
-        return dlist[0]
+        desc = self.bus.get(self, selector)
+        return desc
 
     def inject(self, filename, buf):
         label = filename
@@ -38,7 +36,9 @@ class WebInterface(Agent):
         data = buf
         domain = label
         desc = Descriptor(label, selector, data, domain)
-        self.push(desc)
+        if not self.push(desc):
+            for desc in self.bus.get_children(self, domain, desc.selector):
+                self.ioloop.add_callback(self.dstore.new_descriptor, desc, "storage-0")
 
 
 class Application(tornado.web.Application):
@@ -114,6 +114,7 @@ class DescriptorStore(object):
                     del self.waiters[desc.domain]
                     del self.waiters['default']
                 except KeyError:
+                    # Happens when no waiters are registered for domains 'default' or desc.domain
                     pass
         with self.rlock:
             self.cache.append(descrinfo)

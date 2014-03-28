@@ -22,7 +22,7 @@ class DBus(Bus):
         self.bus = dbus.SessionBus() if busaddr is None else dbus.bus.BusConnection(busaddr)
         self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
 
-    def join(self, name, domain="default", callback=None):
+    def join(self, name, agent_domain='default', callback=None):
         self.callback = callback
         self.objpath = os.path.join("/agent", name)
         self.obj = dbus.service.Object(self.bus, self.objpath)
@@ -30,10 +30,10 @@ class DBus(Bus):
         self.agent_id = "%s-%s" % (name, self.bus.get_unique_name())
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
-        self.iface.register(self.agent_id, domain, self.objpath)
+        self.iface.register(self.agent_id, agent_domain, self.objpath)
 
         log.info("Agent %s registered with id %s on domain %s"
-                 % (name, self.agent_id, domain))
+                 % (name, self.agent_id, agent_domain))
 
         if self.callback:
             self.bus.add_signal_receiver(self.callback_wrapper,
@@ -41,21 +41,19 @@ class DBus(Bus):
                                          signal_name="new_descriptor")
         return self.agent_id
 
-    def lock(self, agent, lockid, selector):
-        return self.iface.lock(agent.id, lockid, selector)
-    def get(self, agent, selector):
-        return Descriptor.unserialize(str(self.iface.get(agent.id, selector)))
-    def push(self, agent, selector, descriptor):
-        return self.iface.push(agent.id, selector, descriptor.serialize())
+    def lock(self, agent, lockid, desc_domain, selector):
+        return self.iface.lock(agent.id, lockid, desc_domain, selector)
+    def get(self, agent, desc_domain, selector):
+        return Descriptor.unserialize(str(self.iface.get(agent.id, desc_domain, selector)))
+    def get_children(self, agent, desc_domain, selector):
+        return [Descriptor.unserialize(str(s)) for s in self.iface.get_children(agent.id, desc_domain, selector)]
+    def push(self, agent, descriptor):
+        return self.iface.push(agent.id, descriptor.serialize())
     def get_selectors(self, agent, selector_filter):
         return self.iface.get_selectors(agent.id, selector)
-    def get_past_descriptors(self, agent, selector_filter):
-        dlist = self.iface.get_past_descriptors(agent.id, selector_filter)
-        return [Descriptor.unserialize(str(d)) for d in dlist]
-
-    def callback_wrapper(self, sender_id, domain, selector):
+    def callback_wrapper(self, sender_id, desc_domain, selector):
         if sender_id != self.agent_id:
-            self.callback(sender_id, domain, selector)
+            self.callback(sender_id, desc_domain, selector)
 
     def run_agent(self, agent, args):
         agent.run(*args)

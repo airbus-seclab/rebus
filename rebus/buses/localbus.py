@@ -2,6 +2,8 @@
 import threading
 from collections import defaultdict,namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
+import rebus.storage
+from rebus.descriptor import Descriptor
 import logging
 
 log = logging.getLogger("rebus.localbus")
@@ -14,44 +16,47 @@ class LocalBus(Bus):
     _name_ = "localbus"
     def __init__(self, busaddr=None):
         Bus.__init__(self)
-        self.callbacks = defaultdict(list)
+        self.callbacks = []
         self.locks = defaultdict(set)
-        self.selectors = defaultdict(dict)
         self.agent_count = 0
+        self.store = rebus.storage.DescriptorStorage()
         self.agents = {}
         self.threads = []
     def join(self, name, domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (name,self.agent_count)
         self.agent_count += 1
         if callback:
-            self.callbacks[domain].append((agid,callback))
+            self.callbacks.append((agid,callback))
         self.agents[agid] = agent_desc(agid, domain, callback)
         return agid
-
-    def lock(self, agent, lockid, selector):
-        domain = self.agents[agent.id].domain
-        key = (lockid,selector)
-        if key in self.locks[domain]:
-            return False
-        self.locks[domain].add(key)
-        return True
-    def push(self, agent, selector, descriptor):
-        domain = self.agents[agent.id].domain
-        if selector in self.selectors[domain]:
-            pass
-        else:
-            log.info("Adding for %s: %s:%s" % (agent.id, domain, selector))
-            self.selectors[domain][selector] = descriptor
-            for agid,cb in self.callbacks[domain]:
-                if agid != agent.id:
+    def push(self, agent_id, descriptor):
+        desc_domain = descriptor.domain
+        selector = descriptor.selector
+        if self.store.add(descriptor):
+            log.info("PUSH: %s => %s:%s" % (agent_id, desc_domain, selector))
+            for agid, cb in self.callbacks:
+                if agid != agent_id.id:
                     try:
                         log.debug("Calling %s callback" % agid)
-                        cb(agent.id, domain, selector)
+                        cb(agent_id.id, desc_domain, selector)
                     except Exception,e:
                         log.error("ERROR agent [%s]: %s" % (agid, e))
-    def get(self, agent, selector):
-        domain = self.agents[agent.id].domain
-        return self.selectors[domain].get(selector)
+        else:
+            log.info("PUSH: %s already seen => %s:%s" % (agent_id, desc_domain, selector))
+    def get(self, agent_id, desc_domain, selector):
+        log.info("GET: %s %s:%s" % (agent_id, desc_domain, selector))
+        return self.store.get_descriptor(desc_domain, selector, serialized=False)
+    def lock(self, agent_id, lockid, desc_domain, selector):
+        key = (lockid, desc_domain, selector)
+        log.info("LOCK:%s %s => %r %s:%s "%(lockid, agent_id, key in self.locks[desc_domain], desc_domain, selector))
+        if key in self.locks[desc_domain]:
+            return False
+        self.locks[desc_domain].add(key)
+        return True
+    def get_children(self, agent_id, desc_domain, selector):
+        log.info("GET_CHILDREN: %s %s:%s" % (agent_id, desc_domain, selector))
+        return list(self.store.get_children(desc_domain, selector, recurse=True, serialized=False))
+
     def get_selectors(self, agent, selector_filter="/"):
         domain = self.agents[agent.id].domain
         return [ s

@@ -18,16 +18,17 @@ class Bus(object):
     def __init__(self, busaddr=None):
         pass
 
-    def join(self, name, domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
         raise NotImplemented
-
-    def lock(self, agent_id, lockid, selector):
-        pass
-    def get(self, agent_id, selector):
-        pass
-    def push(self, agent_id, selector, descriptor):
-        pass
-    def get_selectors(self, agent_id, selector):
-        pass
+    def lock(self, agent_id, lockid, desc_domain, selector):
+        raise NotImplemented
+    def get(self, agent_id, desc_domain, selector):
+        raise NotImplemented
+    def get_children(self, agent_id, desc_domain, selector):
+        raise NotImplemented
+    def push(self, agent_id, descriptor):
+        raise NotImplemented
+    def get_selectors(self, agent_id, selector_filter):
+        raise NotImplemented
     def mainloop(self, agent_id):
-        pass
+        raise NotImplemented
