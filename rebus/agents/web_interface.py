@@ -151,10 +151,10 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
             for d in descrinfos:
                 info = {}
                 infos.append(info)
-                for k in ('hash', 'selector', 'fullselector', 'printablevalue'):
+                for k in ('hash', 'selector', 'fullselector', 'printablevalue', 'agent'):
                     info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'domain', 'uniqueid', 'agent'):
+                    for k in ('label', 'domain', 'uniqueid'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     d['html_' + page] = self.render_string('descriptor_%s.html' % page, descriptor=d)
