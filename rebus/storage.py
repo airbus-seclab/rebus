@@ -13,12 +13,11 @@ class DescriptorStorage(object):
         self.dstore = defaultdict(dict)
         self.serialized_store = defaultdict(dict)
 
-        # self.edges['domain']['selectorA'] is a set of selectors of descriptors that were
-        # spawned from selectorA.
+        # self.edges['domain']['selectorA'] is a set of selectors of
+        # descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
-
-    def find(self, constraints={}, limit=1):
+    def find(self, constraints=None, limit=1):
         """
         Specify search constraints :
         * domain
@@ -27,7 +26,6 @@ class DescriptorStorage(object):
         """
         # TODO
         pass
-
 
     def get_descriptor(self, domain, selector, serialized=False):
         """
@@ -41,7 +39,6 @@ class DescriptorStorage(object):
                 return desc
             return self.dstore[domain][selector].serialize()
 
-
     def get_children(self, domain, selector, serialized=False, recurse=True):
         result = set()
         if selector not in self.dstore[domain]:
@@ -54,7 +51,6 @@ class DescriptorStorage(object):
             if recurse:
                 result |= self.get_children(child, domain, serialized, recurse)
         return result
-
 
     def add(self, descriptor, serialized_descriptor=None):
         selector = descriptor.selector

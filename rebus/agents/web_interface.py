@@ -19,7 +19,7 @@ class WebInterface(Agent):
         self.gui = Application(self.dstore)
         self.gui.listen(8080)
         self.ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target = self.ioloop.start)
+        t = threading.Thread(target=self.ioloop.start)
         t.daemon = True
         t.start()
 
@@ -32,13 +32,14 @@ class WebInterface(Agent):
 
     def inject(self, filename, buf):
         label = filename
-        selector = rebus.agents.inject.guess_selector(buffer=buf)
+        selector = rebus.agents.inject.guess_selector(buf=buf)
         data = buf
         domain = label
         desc = Descriptor(label, selector, data, domain)
         if not self.push(desc):
             for desc in self.bus.get_children(self, domain, desc.selector):
-                self.ioloop.add_callback(self.dstore.new_descriptor, desc, "storage-0")
+                self.ioloop.add_callback(self.dstore.new_descriptor, desc,
+                                         "storage-0")
 
 
 class Application(tornado.web.Application):
@@ -52,23 +53,28 @@ class Application(tornado.web.Application):
             (r"/get(.*)", DescriptorGetHandler),
         ]
         params = {
-            'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
+            'template_path': os.path.join(os.path.dirname(__file__),
+                                          'templates'),
             'static_path': os.path.join(os.path.dirname(__file__), 'static')
         }
         self.dstore = dstore
         tornado.web.Application.__init__(self, handlers, **params)
 
+
 class DescriptorStore(object):
     def __init__(self, agent):
-        # self.waiters[domain] is a set of callbacks for new descriptors on domain
-        # self.waiters['default'] is a set of callbacks for new descriptors on any domain
+        # self.waiters[domain] is a set of callbacks for new descriptors on
+        # domain
+        # self.waiters['default'] is a set of callbacks for new descriptors on
+        # any domain
         self.waiters = collections.defaultdict(set)
         self.cache = []
         self.cache_size = 200
         self.rlock = threading.RLock()
         self.agent = agent
 
-    def wait_for_descriptors(self, callback, cursor=None, page=None, domain='default'):
+    def wait_for_descriptors(self, callback, cursor=None, page=None,
+                             domain='default'):
         if cursor:
             with self.rlock:
                 new_count = 0
@@ -80,7 +86,8 @@ class DescriptorStore(object):
                     if domain == 'default':
                         callback(self.cache[-new_count:], page)
                     else:
-                        callback([d for d in self.cache[-new_count:] if d['domain']==domain], page)
+                        callback([d for d in self.cache[-new_count:] if
+                                  d['domain'] == domain], page)
                     return
         self.waiters[domain].add(functools.partial(callback, page=page))
 
@@ -109,30 +116,35 @@ class DescriptorStore(object):
             'printablevalue': printablevalue,
         }
         for callback in self.waiters['default'] | self.waiters[desc.domain]:
-                callback([descrinfo])
-                try:
-                    del self.waiters[desc.domain]
-                    del self.waiters['default']
-                except KeyError:
-                    # Happens when no waiters are registered for domains 'default' or desc.domain
-                    pass
+            callback([descrinfo])
+            try:
+                del self.waiters[desc.domain]
+                del self.waiters['default']
+            except KeyError:
+                # Happens when no waiters are registered for domains 'default'
+                # or desc.domain
+                pass
         with self.rlock:
             self.cache.append(descrinfo)
             if len(self.cache) > self.cache_size:
                 self.cache = self.cache[-self.cache_size:]
-    def inject(self, filename, buffer):
-        self.agent.inject(filename, buffer)
+
+    def inject(self, filename, buf):
+        self.agent.inject(filename, buf)
 
     def get_by_selector(self, s):
         return self.agent.get_descriptor_value(s).value
+
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('analysis.html')
 
+
 class MonitorHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('monitor.html', descriptors=self.application.dstore.cache)
+
 
 class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     """
@@ -144,7 +156,8 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
         page = self.get_argument('page', None)
         domain = self.get_argument('domain', 'default')
         self.application.dstore.wait_for_descriptors(self.on_new_descriptors,
-                cursor=cursor, page=page, domain=domain)
+                                                     cursor=cursor, page=page,
+                                                     domain=domain)
 
     def on_new_descriptors(self, descrinfos, page):
         # Closed client connection
@@ -156,18 +169,22 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
             for d in descrinfos:
                 info = {}
                 infos.append(info)
-                for k in ('hash', 'selector', 'fullselector', 'printablevalue', 'agent'):
+                for k in ('hash', 'selector', 'fullselector', 'printablevalue',
+                          'agent'):
                     info[k] = d[k]
                 if page == 'monitor':
                     for k in ('label', 'domain', 'uniqueid'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
-                    d['html_' + page] = self.render_string('descriptor_%s.html' % page, descriptor=d)
+                    d['html_' + page] = self.render_string('descriptor_%s.html'
+                                                           % page,
+                                                           descriptor=d)
                     info['html'] = d['html_' + page]
         self.finish(dict(descrinfos=infos))
 
     def on_connection_close(self):
         self.application.dstore.cancel_wait(self.on_new_descriptors)
+
 
 class DescriptorGetHandler(tornado.web.RequestHandler):
     """
@@ -176,11 +193,13 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     """
     def get(self, selector='', *args, **kwargs):
         if self.get_argument('download', '0') == '1':
-            self.set_header('Content-Disposition', 'attachment; filename=%s' % tornado.escape.url_escape(selector.split('/')[-1]))
+            self.set_header('Content-Disposition', 'attachment; filename=%s' %
+                            tornado.escape.url_escape(selector.split('/')[-1]))
         data = self.application.dstore.get_by_selector(selector)
         if type(data) not in ['unicode', 'str']:
             data = str(data)
         self.finish(data)
+
 
 class InjectHandler(tornado.web.RequestHandler):
     """
@@ -190,4 +209,3 @@ class InjectHandler(tornado.web.RequestHandler):
         f = self.request.files['file'][0]
         self.application.dstore.inject(f['filename'], f['body'])
         self.finish('{}')
-

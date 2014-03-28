@@ -1,21 +1,19 @@
 #! /usr/bin/env python
 
-import sys
 import os
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
-import subprocess
-import logging
 import magic
 
 
-def guess_selector(fname=None, buffer=None):
+def guess_selector(fname=None, buf=None):
     if fname is not None:
         guess = magic.from_file(fname)
-    elif buffer is not None:
-        guess = magic.from_buffer(buffer)
+    elif buf is not None:
+        guess = magic.from_buffer(buf)
     else:
-        raise Exception("Either fname or buffer must be set when calling guess_selector.")
+        raise Exception("Either fname or buffer must be set when calling "
+                        "guess_selector.")
     if "ELF" in guess:
         return "/binary/elf"
     if "PE" in guess:
@@ -31,6 +29,7 @@ def guess_selector(fname=None, buffer=None):
 class Inject(Agent):
     _name_ = "inject"
     _desc_ = "Inject files into the bus"
+
     @classmethod
     def add_arguments(cls, subparser):
         subparser.add_argument("files", nargs="+",
@@ -39,10 +38,12 @@ class Inject(Agent):
                                help="Use SELECTOR")
         subparser.add_argument("--label", "-l",
                                help="Use LABEL instead of file name")
+
     def run(self, options):
         for f in options.files:
             label = options.label if options.label else os.path.basename(f)
             data = open(f).read()
-            selector = options.selector if options.selector else guess_selector(fname=f)
+            selector = options.selector if options.selector else \
+                guess_selector(fname=f)
             desc = Descriptor(label, selector, data, options.domain)
             self.push(desc)

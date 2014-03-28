@@ -19,16 +19,22 @@ class Bus(object):
         pass
 
     def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
-        raise NotImplemented
+        raise NotImplementedError
+
     def lock(self, agent_id, lockid, desc_domain, selector):
-        raise NotImplemented
+        raise NotImplementedError
+
     def get(self, agent_id, desc_domain, selector):
-        raise NotImplemented
+        raise NotImplementedError
+
     def get_children(self, agent_id, desc_domain, selector):
-        raise NotImplemented
+        raise NotImplementedError
+
     def push(self, agent_id, descriptor):
-        raise NotImplemented
+        raise NotImplementedError
+
     def get_selectors(self, agent_id, selector_filter):
-        raise NotImplemented
+        raise NotImplementedError
+
     def mainloop(self, agent_id):
-        raise NotImplemented
+        raise NotImplementedError
