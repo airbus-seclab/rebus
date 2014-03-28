@@ -111,9 +111,15 @@ var updater = {
                 $("#inbox").append(container)
         }
         var node = $(descriptor.html);
-        node.hide();
-        container.find('.container-inbox').append(node);
-        node.fadeIn();
+        inbox = container.find('.container-inbox');
+        var existing = inbox.find("#m" + descriptor.hash);
+        if (existing.length > 0) {
+            existing.replaceWith(node);
+        } else {
+            node.hide();
+            inbox.append(node);
+            node.fadeIn();
+        }
     }
 };
 
@@ -127,7 +133,8 @@ $(function () {
             $('.upload-status-panel').show();
             $('#inbox').html('');
             updater.domain = data.files[0].name;
-        data.submit()
+            updater.cursor = 'any';
+            data.submit();
         },
         dataType: 'json',
         done: function(e, data) {

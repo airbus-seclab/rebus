@@ -85,8 +85,6 @@ var updater = {
     },
 
     showDescriptor: function(descriptor) {
-        var existing = $("#m" + descriptor.hash);
-        if (existing.length > 0) return;
         var node = $(descriptor.html);
         node.hide();
         $("#inbox").append(node);

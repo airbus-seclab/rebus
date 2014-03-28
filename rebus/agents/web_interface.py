@@ -77,7 +77,10 @@ class DescriptorStore(object):
                         break
                     new_count += 1
                 if new_count:
-                    callback(self.cache[-new_count:], page)
+                    if domain == 'default':
+                        callback(self.cache[-new_count:], page)
+                    else:
+                        callback([d for d in self.cache[-new_count:] if d['domain']==domain], page)
                     return
         self.waiters[domain].add(functools.partial(callback, page=page))
 
@@ -97,7 +100,8 @@ class DescriptorStore(object):
         descrinfo = {
             'hash': desc.hash,
             'domain': desc.domain,
-            'agent': agent,
+            'agent': desc.agents[0],
+            'sender': agent,
             'uniqueid': uniqueid,
             'selector': desc.selector.partition('%')[0],
             'fullselector': desc.selector,

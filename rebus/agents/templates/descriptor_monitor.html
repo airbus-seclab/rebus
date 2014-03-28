@@ -1,5 +1,5 @@
 <tr class="descriptor" id="m{{ escape(descriptor['hash']) }}">
-  <td title="unique id {{escape(descriptor['uniqueid'])}}">{{ escape(descriptor['agent']) }}</td>
+  <td title="agent {{escape(descriptor['agent'])}} unique id {{escape(descriptor['uniqueid'])}}">{{ escape(descriptor['sender']) }}</td>
   <td>{{ escape(descriptor['label']) }}</td>
   <td>{{ escape(descriptor['domain']) }}</td>
   <td><a href="/get{{ url_escape(descriptor['fullselector']) }}">{{ descriptor['selector'] }}</a></td>
