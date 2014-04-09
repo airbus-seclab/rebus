@@ -26,8 +26,8 @@ class WebInterface(Agent):
     def process(self, desc, sender_id):
         self.ioloop.add_callback(self.dstore.new_descriptor, desc, sender_id)
 
-    def get_descriptor_value(self, selector):
-        desc = self.bus.get(self, selector)
+    def get_descriptor_value(self, domain, selector):
+        desc = self.bus.get(self, domain, selector)
         return desc
 
     def inject(self, filename, buf):
@@ -132,8 +132,8 @@ class DescriptorStore(object):
     def inject(self, filename, buf):
         self.agent.inject(filename, buf)
 
-    def get_by_selector(self, s):
-        return self.agent.get_descriptor_value(s).value
+    def get_by_selector(self, domain, s):
+        return self.agent.get_descriptor_value(domain, s).value
 
 
 class AnalysisHandler(tornado.web.RequestHandler):
@@ -170,10 +170,10 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                 info = {}
                 infos.append(info)
                 for k in ('hash', 'selector', 'fullselector', 'printablevalue',
-                          'agent'):
+                          'agent', 'domain'):
                     info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'domain', 'uniqueid'):
+                    for k in ('label', 'uniqueid'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     d['html_' + page] = self.render_string('descriptor_%s.html'
@@ -195,7 +195,8 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         if self.get_argument('download', '0') == '1':
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(selector.split('/')[-1]))
-        data = self.application.dstore.get_by_selector(selector)
+        domain = self.get_argument('domain', 'default')
+        data = self.application.dstore.get_by_selector(domain, selector)
         if type(data) not in ['unicode', 'str']:
             data = str(data)
         self.finish(data)
