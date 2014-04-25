@@ -35,7 +35,7 @@ class WebInterface(Agent):
         selector = rebus.agents.inject.guess_selector(buf=buf)
         data = buf
         domain = label
-        desc = Descriptor(label, selector, data, domain)
+        desc = Descriptor(label, selector, data, domain, agents=[self._name_ + 'inject'])
         if not self.push(desc):
             for desc in self.bus.get_children(self, domain, desc.selector):
                 self.ioloop.add_callback(self.dstore.new_descriptor, desc,
