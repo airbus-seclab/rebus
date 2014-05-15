@@ -192,14 +192,43 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     Values are requested through the bus.
     """
     def get(self, selector='', *args, **kwargs):
-        if self.get_argument('download', '0') == '1':
+        download = (self.get_argument('download', '0') == '1')
+        if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(selector.split('/')[-1]))
         domain = self.get_argument('domain', 'default')
         data = self.application.dstore.get_by_selector(domain, selector)
-        if type(data) not in ['unicode', 'str']:
-            data = str(data)
-        self.finish(data)
+        if '/matrix/' in selector and not download:
+            contents = collections.OrderedDict()
+            hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
+            values = sorted(data[1].values())
+            colorclasses = ['info', 'success', 'warning', 'danger']
+            nbcolors = len(colorclasses)
+            if len(values) > 0:
+                colorthresh = [values[((i+1)*len(values))/nbcolors] for i in range((nbcolors-1))]
+            else:
+                colorthresh = [0] * (nbcolors-1)
+            colors = dict()
+            for h1 in hashes:
+                h1name = data[0][h1]
+                contents[h1name] = list()
+                for h2 in hashes:
+                    value = data[1].get(frozenset((h1, h2)), "X")
+                    contents[h1name].append((value, self.color(colorthresh, colorclasses, value)))
+            self.render('matrix.html', matrix=contents)
+        else:
+            if type(data) not in [unicode, str]:
+                data = str(data)
+            self.finish(data)
+    def color(self, colorthresh, colorclasses, value):
+        if type(value) in [unicode, str]:
+            return
+        if value < colorthresh[0]:
+            return colorclasses[0]
+        for idx, t in reversed(list(enumerate(colorthresh))):
+            if value >= t:
+                return colorclasses[idx+1]
+
 
 
 class InjectHandler(tornado.web.RequestHandler):
