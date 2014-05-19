@@ -1,2 +1,4 @@
 Dependencies:
-* python2-tornado >= 3.0
+* python2-tornado >= 3.0 (debian squeeze packages v2.3)
+* python-dbus
+* python-gobject
