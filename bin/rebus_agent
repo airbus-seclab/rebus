@@ -6,10 +6,10 @@ import rebus.buses
 from rebus.agent import AgentRegistry
 from rebus.bus import BusRegistry,DEFAULT_DOMAIN
 import logging
+import argparse
 
 def main():
     import sys
-    import argparse
 
     rebus.agents.import_all()
     rebus.buses.import_all()    
@@ -32,8 +32,8 @@ def main():
     parser.add_argument("--bus", choices=buslist.keys(), default="localbus",
                         help="choose bus")
     parser.add_argument("--busaddr",  help="Address of the bus")
-    parser.add_argument("--list-agents", action="store_true",
-                        help="list available agents")
+    parser.add_argument("--list-agents", action=ListAgents,
+                        help="list available agents", nargs=0)
     parser.add_argument("--domain", "-d", default=DEFAULT_DOMAIN,
                         help="Work in DOMAIN")
     parser.add_argument("--verbose", "-v", action="count", default=0,
@@ -41,6 +41,8 @@ def main():
     parser.add_argument("--module", "-m", action="append", default=[])
     
     # subparser options
+    # optional subparsers are only supported in python3
+    # http://bugs.python.org/issue9253
     agent_parser = parser.add_subparsers(dest="agent_name", help="Agents")
     for agent in AgentRegistry.itervalues():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
@@ -60,17 +62,18 @@ def main():
 
     logging.basicConfig(level=max(1,30-10*options.verbose))
 
-    if options.list_agents:
+    bus_class = BusRegistry.get(options.bus)
+    bus = bus_class(busaddr=options.busaddr)
+    for agent_name in options.agents:
+        agent_class = AgentRegistry.get(agent_name)
+        agent = agent_class(bus=bus, domain=options.domain)
+        agent.run_in_bus((options,))
+    bus.busloop()
+
+class ListAgents(argparse.Action):
+    def __call__(self, parser, namespace, values=None, option_string=None):
         for agent in AgentRegistry.itervalues():
-            print "{0._name_<12}: {0._desc}".format(agent)
-    else:
-        bus_class = BusRegistry.get(options.bus)
-        bus = bus_class(busaddr=options.busaddr)
-        for agent_name in options.agents:
-            agent_class = AgentRegistry.get(agent_name)
-            agent = agent_class(bus=bus, domain=options.domain)
-            agent.run_in_bus((options,))
-        bus.busloop()
+            print "{0._name_: <20}: {0._desc_}".format(agent)
     
 if __name__ == "__main__":
     main()
