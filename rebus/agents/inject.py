@@ -45,5 +45,5 @@ class Inject(Agent):
             data = open(f).read()
             selector = options.selector if options.selector else \
                 guess_selector(fname=f)
-            desc = Descriptor(label, selector, data, options.domain, agents=[self._name_])
+            desc = Descriptor(label, selector, data, options.domain, agent=self._name_)
             self.push(desc)
