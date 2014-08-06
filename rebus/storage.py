@@ -2,6 +2,7 @@
 
 
 from collections import defaultdict
+from collections import OrderedDict
 
 
 class DescriptorStorage(object):
@@ -11,7 +12,7 @@ class DescriptorStorage(object):
     def __init__(self):
         # self.dstore['domain']['/selector/%hash'] is a serialized descriptor
         self.dstore = defaultdict(dict)
-        self.serialized_store = defaultdict(dict)
+        self.serialized_store = defaultdict(OrderedDict)
 
         # self.edges['domain']['selectorA'] is a set of selectors of
         # descriptors that were spawned from selectorA.
@@ -38,7 +39,7 @@ class DescriptorStorage(object):
             selprefix, version = selector.split('!')
             latestv = -1
             latestvhash = ""
-            for k, v in self.dstore[domain].items():
+            for k, v in reversed(self.dstore[domain].items()):
                 if k.startswith(selprefix):
                     if str(v.version) == version:
                         selector = selprefix + '%' + v.hash
