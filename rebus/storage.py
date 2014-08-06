@@ -30,7 +30,24 @@ class DescriptorStorage(object):
     def get_descriptor(self, domain, selector, serialized=False):
         """
         Get a single descriptor.
+        /sel/ector/%hash
+        /sel/ector/!version (where version is an integer or "latest")
         """
+        # if version is specified, but no hash
+        if '%' not in selector and '!' in selector:
+            selprefix, version = selector.split('!')
+            latestv = -1
+            latestvhash = ""
+            for k, v in self.dstore[domain].items():
+                if k.startswith(selprefix):
+                    if str(v.version) == version:
+                        selector = selprefix + '%' + v.hash
+                        break
+                    if v.version > latestv:
+                        latestv = v.version
+                        latestvhash = v.hash
+            if version == 'latest' and latestvhash:
+                selector = selprefix + '%' + latestvhash
         if not serialized:
             return self.dstore[domain][selector]
         else:
