@@ -13,8 +13,6 @@ import logging
 
 
 log = logging.getLogger("rebus.bus")
-logging.basicConfig(level=1)
-
 
 class DBusMaster(dbus.service.Object):
     def __init__(self, bus, objpath):
