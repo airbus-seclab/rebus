@@ -26,7 +26,7 @@ class WebInterface(Agent):
     def process(self, desc, sender_id):
         self.ioloop.add_callback(self.dstore.new_descriptor, desc, sender_id)
 
-    def get_descriptor_value(self, domain, selector):
+    def get_descriptor(self, domain, selector):
         desc = self.bus.get(self, domain, selector)
         return desc
 
@@ -133,7 +133,7 @@ class DescriptorStore(object):
         self.agent.inject(filename, buf)
 
     def get_by_selector(self, domain, s):
-        return self.agent.get_descriptor_value(domain, s).value
+        return self.agent.get_descriptor(domain, s)
 
 
 class AnalysisHandler(tornado.web.RequestHandler):
@@ -193,11 +193,13 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     """
     def get(self, selector='', *args, **kwargs):
         download = (self.get_argument('download', '0') == '1')
+        domain = self.get_argument('domain', 'default')
+        label = self.application.dstore.get_by_selector(domain, selector).label
+        data = self.application.dstore.get_by_selector(domain, selector).value
+
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
-                            tornado.escape.url_escape(selector.split('/')[-1]))
-        domain = self.get_argument('domain', 'default')
-        data = self.application.dstore.get_by_selector(domain, selector)
+                            tornado.escape.url_escape(label))
         if '/matrix/' in selector and not download:
             contents = collections.OrderedDict()
             hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
