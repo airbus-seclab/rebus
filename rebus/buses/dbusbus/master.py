@@ -36,18 +36,18 @@ class DBusMaster(dbus.service.Object):
         selector = str(unserialized_descriptor.selector)
         if self.store.add(unserialized_descriptor,
                           serialized_descriptor=str(descriptor)):
-            log.info("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
+            log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             self.new_descriptor(agent_id, desc_domain, selector)
             return True
         else:
-            log.info("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
+            log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
                      selector)
             return False
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='s')
     def get(self, agent_id, desc_domain, selector):
-        log.info("GET: %s %s:%s", agent_id, desc_domain, selector)
+        log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         return self.store.get_descriptor(str(desc_domain), str(selector),
                                          serialized=True)
 
@@ -57,7 +57,7 @@ class DBusMaster(dbus.service.Object):
         objpath = self.clients[agent_id]
         processed = self.processed[desc_domain]
         key = (lockid, desc_domain, selector)
-        log.info("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
+        log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
                  key in processed, desc_domain, selector)
         if key in processed:
             return False
@@ -67,7 +67,7 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='as')
     def get_children(self, agent_id, desc_domain, selector):
-        log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
+        log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
                     recurse=True, serialized=True))
 

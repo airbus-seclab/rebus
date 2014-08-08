@@ -13,7 +13,7 @@ except getopt.GetoptError as err:
     usage()
     sys.exit()
 
-level=1
+level=10
 logfile = None
 for o, a in opts:
     if o in ("-v","--verbose"):
