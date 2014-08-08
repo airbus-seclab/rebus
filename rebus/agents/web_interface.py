@@ -194,8 +194,12 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     def get(self, selector='', *args, **kwargs):
         download = (self.get_argument('download', '0') == '1')
         domain = self.get_argument('domain', 'default')
-        label = self.application.dstore.get_by_selector(domain, selector).label
-        data = self.application.dstore.get_by_selector(domain, selector).value
+        desc = self.application.dstore.get_by_selector(domain, selector)
+        if desc is None:
+            send_error(status_code=404)
+
+        label = desc.label
+        data = desc.value
 
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
