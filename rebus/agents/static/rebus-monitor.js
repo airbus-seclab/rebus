@@ -46,7 +46,7 @@ jQuery.fn.enable = function(opt_enable) {
 };
 
 var updater = {
-    errorSleepTime: 500,
+    errorSleepTime: 1000,
     cursor: null,
 
     poll: function() {
