@@ -7,6 +7,7 @@ import rebus.agents.inject
 from rebus.descriptor import Descriptor
 import collections
 import functools
+import numpy
 
 
 @Agent.register
@@ -207,7 +208,15 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         if '/matrix/' in selector and not download:
             contents = collections.OrderedDict()
             hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
+
+            # Compute colors thresholds depending on values
             values = sorted(data[1].values())
+
+            # For merged matrix, compute average distance to determine colors
+            if type(values) is list and type(values[0]) is dict:
+                values = map(lambda x: x.values(), values)
+                values =sorted(map(numpy.average, values))
+
             colorclasses = ['info', 'success', 'warning', 'danger']
             nbcolors = len(colorclasses)
             if len(values) > 0:
@@ -220,12 +229,22 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                 contents[h1name] = list()
                 for h2 in hashes:
                     value = data[1].get(frozenset((h1, h2)), "X")
-                    contents[h1name].append((value, self.color(colorthresh, colorclasses, value)))
+                    if type(value) is dict:
+                        d = value.values()
+                        avg = numpy.average(d)
+                        sd = numpy.std(d)
+                        if sd < 0.2:
+                            contents[h1name].append((avg, self.color(colorthresh, colorclasses, value)))
+                        else:
+                            contents[h1name].append((str(int(sd*100))+str(value), self.color(colorthresh, colorclasses, avg)))
+                    else:
+                        contents[h1name].append((value, self.color(colorthresh, colorclasses, value)))
             self.render('matrix.html', matrix=contents)
         else:
             if type(data) not in [unicode, str]:
                 data = str(data)
             self.finish(data)
+
     def color(self, colorthresh, colorclasses, value):
         if type(value) in [unicode, str]:
             return
