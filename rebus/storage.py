@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 
+import re
 from collections import defaultdict
 from collections import OrderedDict
 
@@ -18,15 +19,24 @@ class DescriptorStorage(object):
         # descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
-    def find(self, constraints=None, limit=1):
+    def find(self, domain, selector_regex, limit=1):
         """
-        Specify search constraints :
+        Return array of selectors according to search constraints :
         * domain
-        * hash
-        * selector
+        * selector regular expression
+        * limit (max number of entries to return)
         """
-        # TODO
-        pass
+        regex = re.compile(selector_regex)
+        store = self.dstore[domain]
+        res = []
+
+        # FIXME : be more efficient ?
+        for k,v in reversed(store.items()):
+            if regex.match(k):
+                res.append(k)
+                if len(res) >= limit:
+                    return res
+        return res
 
     def get_descriptor(self, domain, selector, serialized=False):
         """
