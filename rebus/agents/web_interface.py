@@ -50,6 +50,7 @@ class Application(tornado.web.Application):
             (r"/monitor", MonitorHandler),
             (r"/inject", InjectHandler),
             (r"/analysis", AnalysisHandler),
+            (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
             (r"/get(.*)", DescriptorGetHandler),
         ]
@@ -136,11 +137,19 @@ class DescriptorStore(object):
     def get_by_selector(self, domain, s):
         return self.agent.get_descriptor(domain, s)
 
+    def find(self, domain, sel_regex, limit):
+        return self.agent.find(domain, sel_regex, limit)
+
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('analysis.html')
 
+
+class SelectorsHandler(tornado.web.RequestHandler):
+    def get(self):
+        sels = self.application.dstore.find(self.get_argument('domain','default'), '/.*', limit=100)
+        self.render('selectors.html', selectors = sorted(sels))
 
 class MonitorHandler(tornado.web.RequestHandler):
     def get(self):
