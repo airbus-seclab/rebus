@@ -24,6 +24,9 @@ class Bus(object):
     def lock(self, agent_id, lockid, desc_domain, selector):
         raise NotImplementedError
 
+    def find(self, agent_id, domain, selector_regex, limit):
+        raise NotImplementedError
+
     def get(self, agent_id, desc_domain, selector):
         raise NotImplementedError
 
