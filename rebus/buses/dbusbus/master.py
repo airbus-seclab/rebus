@@ -51,6 +51,13 @@ class DBusMaster(dbus.service.Object):
         return self.store.get_descriptor(str(desc_domain), str(selector),
                                          serialized=True)
 
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sssu', out_signature='as')
+    def find(self, agent_id, domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex, limit)
+        return self.store.find(domain, selector_regex, limit)
+
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
     def lock(self, agent_id, lockid, desc_domain, selector):
