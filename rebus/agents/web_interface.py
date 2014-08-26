@@ -224,7 +224,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             # For merged matrix, compute average distance to determine colors
             if type(values) is list and type(values[0]) is dict:
                 values = map(lambda x: x.values(), values)
-                values =sorted(map(numpy.average, values))
+                values = sorted(map(numpy.average, values))
 
             colorclasses = ['info', 'success', 'warning', 'danger']
             nbcolors = len(colorclasses)
@@ -243,7 +243,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         avg = numpy.average(d)
                         sd = numpy.std(d)
                         if sd < 0.2:
-                            contents[h1name].append((avg, self.color(colorthresh, colorclasses, value)))
+                            contents[h1name].append((avg, self.color(colorthresh, colorclasses, avg)))
                         else:
                             contents[h1name].append((str(int(sd*100))+str(value), self.color(colorthresh, colorclasses, avg)))
                     else:
