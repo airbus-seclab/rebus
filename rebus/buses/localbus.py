@@ -50,6 +50,10 @@ class LocalBus(Bus):
         return self.store.get_descriptor(desc_domain, selector,
                                          serialized=False)
 
+    def find(self, agent_id, domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex, limit)
+        return self.store.find(domain, selector_regex, limit)
+
     def lock(self, agent_id, lockid, desc_domain, selector):
         key = (lockid, desc_domain, selector)
         log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in
