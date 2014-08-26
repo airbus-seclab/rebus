@@ -222,7 +222,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             values = sorted(data[1].values())
 
             # For merged matrix, compute average distance to determine colors
-            if type(values) is list and type(values[0]) is dict:
+            if type(values) is list and values and type(values[0]) is dict:
                 values = map(lambda x: x.values(), values)
                 values = sorted(map(numpy.average, values))
 
