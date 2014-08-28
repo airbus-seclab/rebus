@@ -148,8 +148,10 @@ class AnalysisHandler(tornado.web.RequestHandler):
 
 class SelectorsHandler(tornado.web.RequestHandler):
     def get(self):
-        sels = self.application.dstore.find(self.get_argument('domain','default'), '/.*', limit=100)
-        self.render('selectors.html', selectors = sorted(sels))
+        sels = self.application.dstore.find(
+            self.get_argument('domain', 'default'), '/.*', limit=100)
+        self.render('selectors.html', selectors=sorted(sels))
+
 
 class MonitorHandler(tornado.web.RequestHandler):
     def get(self):

@@ -6,6 +6,7 @@ from logging import *
 
 log = getLogger("rebus.agent")
 
+
 class AgentRegistry(Registry):
     pass
 
@@ -40,7 +41,7 @@ class Agent(object):
     def push(self, descriptor):
         result = self.bus.push(self, descriptor)
         self.log.debug("pushed {0}, already present: {1}".format(descriptor,
-                                                                not result))
+                                                                 not result))
         return result
 
     def get(self, desc_domain, selector):
@@ -60,9 +61,9 @@ class Agent(object):
         if self.selector_filter(selector):
             if self.lock(self.name, desc_domain, selector):
                 desc = self.get(desc_domain, selector)
-                #TODO detect infinite loops ?
-                #if self.name in desc.agents:
-                #    return  # already processed
+                # TODO detect infinite loops ?
+                # if self.name in desc.agents:
+                #     return  # already processed
                 if self.descriptor_filter(desc):
                     self.log.info("START Processing %r" % desc)
                     start = time.time()
