@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 
-
 import re
 from collections import defaultdict
 from collections import OrderedDict
@@ -12,8 +11,8 @@ class DescriptorStorage(object):
     """
     def __init__(self):
         # self.dstore['domain']['/selector/%hash'] is a serialized descriptor
-        self.dstore = defaultdict(dict)
-        self.serialized_store = defaultdict(OrderedDict)
+        self.dstore = defaultdict(OrderedDict)
+        self.serialized_store = defaultdict(dict)
 
         # self.edges['domain']['selectorA'] is a set of selectors of
         # descriptors that were spawned from selectorA.
@@ -31,7 +30,7 @@ class DescriptorStorage(object):
         res = []
 
         # FIXME : be more efficient ?
-        for k,v in reversed(store.items()):
+        for k in reversed(store.keys()):
             if regex.match(k):
                 res.append(k)
                 if len(res) >= limit:
