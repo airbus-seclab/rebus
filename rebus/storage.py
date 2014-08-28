@@ -58,7 +58,12 @@ class DescriptorStorage(object):
                         latestvhash = v.hash
             if version == 'latest' and latestvhash:
                 selector = selprefix + '%' + latestvhash
-        # TODO : handle bad selector !
+        # Check whether domain & selector are known
+        if domain not in self.dstore or selector not in self.dstore[domain]:
+            if serialized:
+                return "N."  # serialized None
+            else:
+                return None
         if not serialized:
             return self.dstore[domain][selector]
         else:

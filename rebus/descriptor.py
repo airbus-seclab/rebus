@@ -65,7 +65,11 @@ class Descriptor(object):
 
     @classmethod
     def unserialize(cls, s):
-        return cls(**cPickle.loads(s))
+        unserialized = cPickle.loads(s)
+        if unserialized:
+            return cls(**unserialized)
+        else:
+            return None
 
     def __repr__(self):
         v = repr(self.value)
