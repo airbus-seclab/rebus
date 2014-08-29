@@ -1,1 +1,1 @@
-import slave
+import rebus.buses.dbusbus.slave

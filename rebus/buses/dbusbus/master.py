@@ -14,6 +14,7 @@ import logging
 
 log = logging.getLogger("rebus.bus")
 
+
 class DBusMaster(dbus.service.Object):
     def __init__(self, bus, objpath):
         dbus.service.Object.__init__(self, bus, objpath)
@@ -41,7 +42,7 @@ class DBusMaster(dbus.service.Object):
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
-                     selector)
+                      selector)
             return False
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -51,11 +52,11 @@ class DBusMaster(dbus.service.Object):
         return self.store.get_descriptor(str(desc_domain), str(selector),
                                          serialized=True)
 
-
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssu', out_signature='as')
     def find(self, agent_id, domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex, limit)
+        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex,
+                  limit)
         return self.store.find(domain, selector_regex, limit)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -65,7 +66,7 @@ class DBusMaster(dbus.service.Object):
         processed = self.processed[desc_domain]
         key = (lockid, desc_domain, selector)
         log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
-                 key in processed, desc_domain, selector)
+                  key in processed, desc_domain, selector)
         if key in processed:
             return False
         processed.add(key)
@@ -76,7 +77,7 @@ class DBusMaster(dbus.service.Object):
     def get_children(self, agent_id, desc_domain, selector):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
-                    recurse=True, serialized=True))
+                                            recurse=True, serialized=True))
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')

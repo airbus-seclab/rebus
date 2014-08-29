@@ -1,7 +1,7 @@
 from rebus.tools.registry import Registry
 from rebus.bus import DEFAULT_DOMAIN
 import time
-from logging import *
+from logging import getLogger, LoggerAdapter
 
 
 log = getLogger("rebus.agent")
@@ -69,7 +69,8 @@ class Agent(object):
                     start = time.time()
                     self.process(desc, sender_id)
                     done = time.time()
-                    self.log.info("END   Processing |%f| %r" % (done-start, desc))
+                    self.log.info("END   Processing |%f| %r" %
+                                  (done-start, desc))
 
     def run_in_bus(self, args):
         self.bus.run_agent(self, args)

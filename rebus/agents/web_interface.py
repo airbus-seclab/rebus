@@ -36,7 +36,8 @@ class WebInterface(Agent):
         selector = rebus.agents.inject.guess_selector(buf=buf)
         data = buf
         domain = label
-        desc = Descriptor(label, selector, data, domain, agent=self._name_ + '_inject')
+        desc = Descriptor(label, selector, data, domain,
+                          agent=self._name_ + '_inject')
         if not self.push(desc):
             for desc in self.bus.get_children(self, domain, desc.selector):
                 self.ioloop.add_callback(self.dstore.new_descriptor, desc,
@@ -225,16 +226,16 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
 
             # For merged matrix, compute average distance to determine colors
             if type(values) is list and values and type(values[0]) is dict:
-                values = map(lambda x: x.values(), values)
+                values = [x.values() for x in values]
                 values = sorted(map(numpy.average, values))
 
             colorclasses = ['info', 'success', 'warning', 'danger']
             nbcolors = len(colorclasses)
             if len(values) > 0:
-                colorthresh = [values[((i+1)*len(values))/nbcolors] for i in range((nbcolors-1))]
+                colorthresh = [values[((i+1)*len(values))/nbcolors]
+                               for i in range((nbcolors-1))]
             else:
                 colorthresh = [0] * (nbcolors-1)
-            colors = dict()
             for h1 in hashes:
                 h1name = data[0][h1]
                 contents[h1name] = list()
@@ -245,11 +246,17 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         avg = numpy.average(d)
                         sd = numpy.std(d)
                         if sd < 0.2:
-                            contents[h1name].append((avg, self.color(colorthresh, colorclasses, avg)))
+                            contents[h1name].append(
+                                (avg,
+                                 self.color(colorthresh, colorclasses, avg)))
                         else:
-                            contents[h1name].append((str(int(sd*100))+str(value), self.color(colorthresh, colorclasses, avg)))
+                            contents[h1name].append(
+                                (str(int(sd*100))+str(value),
+                                 self.color(colorthresh, colorclasses, avg)))
                     else:
-                        contents[h1name].append((value, self.color(colorthresh, colorclasses, value)))
+                        contents[h1name].append(
+                            (value,
+                             self.color(colorthresh, colorclasses, value)))
             self.render('matrix.html', matrix=contents)
         else:
             if type(data) not in [unicode, str]:
@@ -264,7 +271,6 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         for idx, t in reversed(list(enumerate(colorthresh))):
             if value >= t:
                 return colorclasses[idx+1]
-
 
 
 class InjectHandler(tornado.web.RequestHandler):

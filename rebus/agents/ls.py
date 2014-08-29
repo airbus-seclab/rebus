@@ -1,5 +1,4 @@
 import sys
-import re
 from rebus.agent import Agent
 
 
@@ -13,7 +12,8 @@ class Ls(Agent):
         subparser.add_argument("limit", nargs=1,
                                help="Max number of selectors to return")
         subparser.add_argument("selectors", nargs="+",
-                               help="Regex to match selectors, results will be displayed on stdout")
+                               help="Regex to match selectors,\
+                                     results will be displayed on stdout")
 
     def run(self, options):
         for s in options.selectors:
@@ -22,4 +22,5 @@ class Ls(Agent):
                 for s in sels:
                     sys.stdout.write(s+"\n")
             else:
-                self.log.warning("selector [%s:%s] not found", options.domain, s)
+                self.log.warning("selector [%s:%s] not found",
+                                 options.domain, s)
