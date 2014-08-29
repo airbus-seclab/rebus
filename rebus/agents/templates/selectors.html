@@ -31,6 +31,20 @@
       <table class="table table-striped table-condensed">
         <thead>
           <tr>
+            <th>latest version by selector type</th>
+          </tr>
+        </thead>
+        <tbody id="inbox">
+        {% for selector in sorted(set([s.split('%')[0] + "!latest" for s in selectors])) %}
+        <tr class="selector">
+          <td><a href="/get{{ url_escape(selector) }}">{{ selector }}</a></td>
+        </tr>
+        {% end %}
+        </tbody>
+      </table>
+      <table class="table table-striped table-condensed">
+        <thead>
+          <tr>
             <th>selector</th>
           </tr>
         </thead>
