@@ -210,6 +210,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         desc = self.application.dstore.get_by_selector(domain, selector)
         if desc is None:
             self.send_error(status_code=404)
+            return
 
         label = desc.label
         data = desc.value

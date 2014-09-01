@@ -35,7 +35,7 @@
           </tr>
         </thead>
         <tbody id="inbox">
-        {% for selector in sorted(set([s.split('%')[0] + "!latest" for s in selectors])) %}
+        {% for selector in sorted(set([s.split('%')[0] + "~-1" for s in selectors])) %}
         <tr class="selector">
           <td><a href="/get{{ url_escape(selector) }}">{{ selector }}</a></td>
         </tr>
