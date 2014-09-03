@@ -117,6 +117,7 @@ class DescriptorStore(object):
             'fullselector': desc.selector,
             'label': desc.label,
             'printablevalue': printablevalue,
+            'processing_time': format(desc.processing_time, '.3f'),
         }
         for callback in self.waiters['default'] | self.waiters[desc.domain]:
             callback([descrinfo])
@@ -186,7 +187,7 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                           'agent', 'domain'):
                     info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'uniqueid'):
+                    for k in ('label', 'uniqueid', 'processing_time'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     d['html_' + page] = self.render_string('descriptor_%s.html'

@@ -2,6 +2,7 @@
   <td title="agent {{escape(descriptor['agent'])}} unique id {{escape(descriptor['uniqueid'])}}">{{ escape(descriptor['sender']) }}</td>
   <td>{{ escape(descriptor['label']) }}</td>
   <td>{{ escape(descriptor['domain']) }}</td>
+  <td>{{ escape(descriptor['processing_time']) }}</td>
   <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?domain={{url_escape(descriptor['domain'])}}">{{ descriptor['selector'] }}</a></td>
   <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt"></span></a> {{ escape(descriptor['printablevalue']) }}</td>
 </tr>

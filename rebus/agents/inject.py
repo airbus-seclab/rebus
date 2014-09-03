@@ -4,6 +4,7 @@ import os
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
 import magic
+import time
 
 
 def guess_selector(fname=None, buf=None):
@@ -41,10 +42,12 @@ class Inject(Agent):
 
     def run(self, options):
         for f in options.files:
+            start = time.time()
             label = options.label if options.label else os.path.basename(f)
             data = open(f).read()
             selector = options.selector if options.selector else \
                 guess_selector(fname=f)
+            done = time.time()
             desc = Descriptor(label, selector, data, options.domain,
-                              agent=self._name_)
+                              agent=self._name_, processing_time=(done-start))
             self.push(desc)
