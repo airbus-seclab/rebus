@@ -8,7 +8,7 @@ log = logging.getLogger("rebus.descriptor")
 
 class Descriptor(object):
     def __init__(self, label, selector, value, domain="default",
-                 agent=None, precursors=None, version=0):
+                 agent=None, precursors=None, version=0, processing_time=-1):
         self.label = label
 
         # self.precursors contains a list of parent descriptors' selectors.
@@ -31,18 +31,21 @@ class Descriptor(object):
         self.value = value
         self.domain = domain
         self.version = version
+        self.processing_time = processing_time
 
-    def spawn_descriptor(self, selector, value, agent, label=None):
+    def spawn_descriptor(self, selector, value, agent, processing_time=-1,
+                         label=None):
         # Allow changing labels, e.g. when spawned descriptor contains same
         # data type as its precursor (ex. binary -> unpacked binary)
         if label is None:
             label = self.label
         desc = self.__class__(label, selector, value, self.domain,
                               agent=agent,
-                              precursors=[self.selector])
+                              precursors=[self.selector],
+                              processing_time=processing_time)
         return desc
 
-    def new_version(self, label, value, newprecursor):
+    def new_version(self, label, value, newprecursor, processing_time=-1):
         """
         Spawn a new version of a descriptor.
         Used for the output of analyzers that aggregate data from several
@@ -54,18 +57,23 @@ class Descriptor(object):
                               value, self.domain,
                               agent=self.agent,
                               precursors=[newprecursor] + self.precursors,
-                              version=self.version + 1)
+                              version=self.version + 1,
+                              processing_time=processing_time)
         return desc
 
     def serialize(self):
         return cPickle.dumps(
             {k: v for k, v in self.__dict__.iteritems()
-             if k in ["label", "selector", "value",
-                      "domain", "agent", "precursors", "version"]})
+             if k in ["label", "selector", "value", "domain", "agent",
+                      "precursors", "version", "processing_time"]})
 
     @classmethod
     def unserialize(cls, s):
-        return cls(**cPickle.loads(s))
+        unserialized = cPickle.loads(s)
+        if unserialized:
+            return cls(**unserialized)
+        else:
+            return None
 
     def __repr__(self):
         v = repr(self.value)

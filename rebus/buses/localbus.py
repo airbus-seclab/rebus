@@ -50,6 +50,11 @@ class LocalBus(Bus):
         return self.store.get_descriptor(desc_domain, selector,
                                          serialized=False)
 
+    def find(self, agent_id, domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex,
+                  limit)
+        return self.store.find(domain, selector_regex, limit)
+
     def lock(self, agent_id, lockid, desc_domain, selector):
         key = (lockid, desc_domain, selector)
         log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in
@@ -62,7 +67,7 @@ class LocalBus(Bus):
     def get_children(self, agent_id, desc_domain, selector):
         log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(desc_domain, selector,
-                    recurse=True, serialized=False))
+                                            recurse=True, serialized=False))
 
     def run_agent(self, agent, args):
         t = threading.Thread(target=agent.run, args=args)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 
-
 import re
 from collections import defaultdict
 from collections import OrderedDict
@@ -12,8 +11,12 @@ class DescriptorStorage(object):
     """
     def __init__(self):
         # self.dstore['domain']['/selector/%hash'] is a serialized descriptor
-        self.dstore = defaultdict(dict)
-        self.serialized_store = defaultdict(OrderedDict)
+        self.dstore = defaultdict(OrderedDict)
+        self.serialized_store = defaultdict(dict)
+
+        # self.version_cache['domain']['/selector/'][42] = /selector/%1234
+        # where 1234 is the hash of this selector's version 42
+        self.version_cache = defaultdict(lambda: defaultdict(dict))
 
         # self.edges['domain']['selectorA'] is a set of selectors of
         # descriptors that were spawned from selectorA.
@@ -31,7 +34,7 @@ class DescriptorStorage(object):
         res = []
 
         # FIXME : be more efficient ?
-        for k,v in reversed(store.items()):
+        for k in reversed(store.keys()):
             if regex.match(k):
                 res.append(k)
                 if len(res) >= limit:
@@ -42,24 +45,29 @@ class DescriptorStorage(object):
         """
         Get a single descriptor.
         /sel/ector/%hash
-        /sel/ector/!version (where version is an integer or "latest")
+        /sel/ector/~version (where version is an integer. Negative values are
+        evaluated from the most recent versions, counting backwards)
         """
         # if version is specified, but no hash
-        if '%' not in selector and '!' in selector:
-            selprefix, version = selector.split('!')
-            latestv = -1
-            latestvhash = ""
-            for k, v in reversed(self.dstore[domain].items()):
-                if k.startswith(selprefix):
-                    if str(v.version) == version:
-                        selector = selprefix + '%' + v.hash
-                        break
-                    if v.version > latestv:
-                        latestv = v.version
-                        latestvhash = v.hash
-            if version == 'latest' and latestvhash:
-                selector = selprefix + '%' + latestvhash
-        # TODO : handle bad selector !
+        if '%' not in selector and '~' in selector:
+            selprefix, version = selector.split('~')
+            try:
+                intversion = int(version)
+                if intversion < 0:
+                    maxversion = max(self.version_cache[domain][selprefix])
+                    intversion = maxversion + intversion + 1
+                selector = self.version_cache[domain][selprefix][intversion]
+            except (KeyError, ValueError):
+                # ValueError: invalid version integer
+                # KeyError: unknown version
+                selector = None
+
+        # Check whether domain & selector are known
+        if domain not in self.dstore or selector not in self.dstore[domain]:
+            if serialized:
+                return "N."  # serialized None
+            else:
+                return None
         if not serialized:
             return self.dstore[domain][selector]
         else:
@@ -89,6 +97,8 @@ class DescriptorStorage(object):
         if serialized_descriptor is not None:
             self.serialized_store[domain][selector] = serialized_descriptor
         self.dstore[domain][selector] = descriptor
+        self.version_cache[domain][selector.split('%')[0]][descriptor.version]\
+            = selector
         for precursor in descriptor.precursors:
             self.edges[domain][precursor].add(selector)
         return True

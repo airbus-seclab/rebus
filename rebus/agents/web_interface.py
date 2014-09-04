@@ -36,7 +36,8 @@ class WebInterface(Agent):
         selector = rebus.agents.inject.guess_selector(buf=buf)
         data = buf
         domain = label
-        desc = Descriptor(label, selector, data, domain, agent=self._name_ + '_inject')
+        desc = Descriptor(label, selector, data, domain,
+                          agent=self._name_ + '_inject')
         if not self.push(desc):
             for desc in self.bus.get_children(self, domain, desc.selector):
                 self.ioloop.add_callback(self.dstore.new_descriptor, desc,
@@ -50,6 +51,7 @@ class Application(tornado.web.Application):
             (r"/monitor", MonitorHandler),
             (r"/inject", InjectHandler),
             (r"/analysis", AnalysisHandler),
+            (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
             (r"/get(.*)", DescriptorGetHandler),
         ]
@@ -115,6 +117,7 @@ class DescriptorStore(object):
             'fullselector': desc.selector,
             'label': desc.label,
             'printablevalue': printablevalue,
+            'processing_time': format(desc.processing_time, '.3f'),
         }
         for callback in self.waiters['default'] | self.waiters[desc.domain]:
             callback([descrinfo])
@@ -136,10 +139,20 @@ class DescriptorStore(object):
     def get_by_selector(self, domain, s):
         return self.agent.get_descriptor(domain, s)
 
+    def find(self, domain, sel_regex, limit):
+        return self.agent.find(domain, sel_regex, limit)
+
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('analysis.html')
+
+
+class SelectorsHandler(tornado.web.RequestHandler):
+    def get(self):
+        sels = self.application.dstore.find(
+            self.get_argument('domain', 'default'), '/.*', limit=100)
+        self.render('selectors.html', selectors=sorted(sels))
 
 
 class MonitorHandler(tornado.web.RequestHandler):
@@ -174,7 +187,7 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                           'agent', 'domain'):
                     info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'uniqueid'):
+                    for k in ('label', 'uniqueid', 'processing_time'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     d['html_' + page] = self.render_string('descriptor_%s.html'
@@ -197,7 +210,8 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         domain = self.get_argument('domain', 'default')
         desc = self.application.dstore.get_by_selector(domain, selector)
         if desc is None:
-            send_error(status_code=404)
+            self.send_error(status_code=404)
+            return
 
         label = desc.label
         data = desc.value
@@ -213,17 +227,17 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             values = sorted(data[1].values())
 
             # For merged matrix, compute average distance to determine colors
-            if type(values) is list and type(values[0]) is dict:
-                values = map(lambda x: x.values(), values)
-                values =sorted(map(numpy.average, values))
+            if type(values) is list and values and type(values[0]) is dict:
+                values = [x.values() for x in values]
+                values = sorted(map(numpy.average, values))
 
             colorclasses = ['info', 'success', 'warning', 'danger']
             nbcolors = len(colorclasses)
             if len(values) > 0:
-                colorthresh = [values[((i+1)*len(values))/nbcolors] for i in range((nbcolors-1))]
+                colorthresh = [values[((i+1)*len(values))/nbcolors]
+                               for i in range((nbcolors-1))]
             else:
                 colorthresh = [0] * (nbcolors-1)
-            colors = dict()
             for h1 in hashes:
                 h1name = data[0][h1]
                 contents[h1name] = list()
@@ -234,11 +248,17 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         avg = numpy.average(d)
                         sd = numpy.std(d)
                         if sd < 0.2:
-                            contents[h1name].append((avg, self.color(colorthresh, colorclasses, value)))
+                            contents[h1name].append(
+                                (avg,
+                                 self.color(colorthresh, colorclasses, avg)))
                         else:
-                            contents[h1name].append((str(int(sd*100))+str(value), self.color(colorthresh, colorclasses, avg)))
+                            contents[h1name].append(
+                                (str(int(sd*100))+str(value),
+                                 self.color(colorthresh, colorclasses, avg)))
                     else:
-                        contents[h1name].append((value, self.color(colorthresh, colorclasses, value)))
+                        contents[h1name].append(
+                            (value,
+                             self.color(colorthresh, colorclasses, value)))
             self.render('matrix.html', matrix=contents)
         else:
             if type(data) not in [unicode, str]:
@@ -253,7 +273,6 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         for idx, t in reversed(list(enumerate(colorthresh))):
             if value >= t:
                 return colorclasses[idx+1]
-
 
 
 class InjectHandler(tornado.web.RequestHandler):

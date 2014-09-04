@@ -2,7 +2,7 @@
 import getopt, sys, logging
 
 def usage():
-    print("Usage : rebus_master_debus [--verbose=X] [--logfile=X]")
+    print("Usage : rebus_master_debus [--verbose=X] [--logfile=X]")
 
 
 try:
