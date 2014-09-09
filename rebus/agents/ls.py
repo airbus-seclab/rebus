@@ -9,7 +9,7 @@ class Ls(Agent):
 
     @classmethod
     def add_arguments(cls, subparser):
-        subparser.add_argument("limit", nargs=1,
+        subparser.add_argument("--limit", nargs='?', type=int,
                                help="Max number of selectors to return")
         subparser.add_argument("selectors", nargs="+",
                                help="Regex to match selectors,\
@@ -17,7 +17,7 @@ class Ls(Agent):
 
     def run(self, options):
         for s in options.selectors:
-            sels = self.find(self.domain, s, int(options.limit[0]))
+            sels = self.find(self.domain, s, options.limit)
             if len(sels) > 0:
                 for s in sels:
                     sys.stdout.write(s+"\n")
