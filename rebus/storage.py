@@ -22,7 +22,7 @@ class DescriptorStorage(object):
         # descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
-    def find(self, domain, selector_regex, limit=1):
+    def find(self, domain, selector_regex, limit):
         """
         Return array of selectors according to search constraints :
         * domain
@@ -37,7 +37,7 @@ class DescriptorStorage(object):
         for k in reversed(store.keys()):
             if regex.match(k):
                 res.append(k)
-                if len(res) >= limit:
+                if limit != 0 and len(res) >= limit:
                     return res
         return res
 

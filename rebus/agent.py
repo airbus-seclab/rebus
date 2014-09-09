@@ -50,7 +50,7 @@ class Agent(object):
     def get(self, desc_domain, selector):
         return self.bus.get(self, desc_domain, selector)
 
-    def find(self, domain, selector_regex, limit=1):
+    def find(self, domain, selector_regex, limit):
         return self.bus.find(self, domain, selector_regex, limit)
 
     def lock(self, lockid, desc_domain, selector):
