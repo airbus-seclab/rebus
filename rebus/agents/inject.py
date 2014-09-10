@@ -15,6 +15,8 @@ def guess_selector(fname=None, buf=None):
     else:
         raise Exception("Either fname or buffer must be set when calling "
                         "guess_selector.")
+    if ".Net" in guess:
+        return "/binary/net"
     if "ELF" in guess:
         return "/binary/elf"
     if "PE" in guess:
