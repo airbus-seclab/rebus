@@ -4,6 +4,7 @@ import os
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
 import magic
+import struct
 import time
 
 
@@ -22,6 +23,18 @@ def guess_selector(fname=None, buf=None):
     if "PE" in guess:
         return "/binary/pe"
     if "DOS" in guess:
+        # libmagic is a bit buggy
+        # make sure it's not a PE
+        try:
+            if fname is not None:
+                buf = open(fname).read()
+            if buf is not None:
+                # MZ.e_lfanew
+                e_lfanew = struct.unpack('<I',buf[0x3C:0x3C+4])[0]
+                if buf[e_lfanew:e_lfanew+4] == "PE\x00\x00":
+                    return "/binary/pe"
+        except:
+            return "/binary/dos"
         return "/binary/dos"
     if "Mach-O" in guess:
         return "/binary/macho"
@@ -48,7 +61,7 @@ class Inject(Agent):
             label = options.label if options.label else os.path.basename(f)
             data = open(f).read()
             selector = options.selector if options.selector else \
-                guess_selector(fname=f)
+                guess_selector(buf=data)
             done = time.time()
             desc = Descriptor(label, selector, data, options.domain,
                               agent=self._name_, processing_time=(done-start))
