@@ -73,11 +73,11 @@ class DBusMaster(dbus.service.Object):
         return True
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sss', out_signature='as')
-    def get_children(self, agent_id, desc_domain, selector):
+                         in_signature='sssb', out_signature='as')
+    def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
-                                            recurse=True, serialized=True))
+                                            serialized=True, recurse=recurse))
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')

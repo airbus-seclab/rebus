@@ -64,10 +64,10 @@ class LocalBus(Bus):
         self.locks[desc_domain].add(key)
         return True
 
-    def get_children(self, agent_id, desc_domain, selector):
+    def get_children(self, agent_id, desc_domain, selector, recurse=True):
         log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(desc_domain, selector,
-                                            recurse=True, serialized=False))
+                                            recurse, serialized=False))
 
     def run_agent(self, agent, args):
         t = threading.Thread(target=agent.run, args=args)

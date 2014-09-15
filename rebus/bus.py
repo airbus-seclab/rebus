@@ -30,7 +30,7 @@ class Bus(object):
     def get(self, agent_id, desc_domain, selector):
         raise NotImplementedError
 
-    def get_children(self, agent_id, desc_domain, selector):
+    def get_children(self, agent_id, desc_domain, selector, recurse=True):
         raise NotImplementedError
 
     def push(self, agent_id, descriptor):
