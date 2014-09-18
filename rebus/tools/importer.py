@@ -1,3 +1,4 @@
+import sys
 import logging
 
 log = logging.getLogger("rebus.importer")
@@ -8,6 +9,8 @@ def importer_for(path, prefix):
         folder = os.path.dirname(path)
         for importer,name,_ in pkgutil.iter_modules([folder]):
             name = prefix+"."+name
+            if name in sys.modules:
+                continue
             loader = importer.find_module(name)
             try:
                 loader.load_module(name)
