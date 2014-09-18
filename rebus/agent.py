@@ -70,8 +70,11 @@ class Agent(object):
                 #     return  # already processed
                 if self.descriptor_filter(desc):
                     self.log.info("START Processing %r" % desc)
+                    self.start_time = time.time()
                     self.process(desc, sender_id)
-                    self.log.info("END   Processing %r" % desc)
+                    done = time.time()
+                    self.log.info("END   Processing |%f| %r" %
+                                  (done-self.start_time, desc))
 
     def run_in_bus(self, args):
         self.bus.run_agent(self, args)
