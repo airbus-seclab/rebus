@@ -1,17 +1,18 @@
 from rebus.tools.registry import Registry
 from rebus.bus import DEFAULT_DOMAIN
+import logging
 import time
-from logging import getLogger, LoggerAdapter
 
 
-log = getLogger("rebus.agent")
+log = logging.getLogger("rebus.agent")
+
 
 
 class AgentRegistry(Registry):
     pass
 
 
-class AgentLogger(LoggerAdapter):
+class AgentLogger(logging.LoggerAdapter):
     def process(self, msg, kargs):
         return "[%s] %s" % (self.extra["agent_id"], msg), kargs
 
@@ -69,11 +70,8 @@ class Agent(object):
                 #     return  # already processed
                 if self.descriptor_filter(desc):
                     self.log.info("START Processing %r" % desc)
-                    self.start_time = time.time()
                     self.process(desc, sender_id)
-                    done = time.time()
-                    self.log.info("END   Processing |%f| %r" %
-                                  (done-self.start_time, desc))
+                    self.log.info("END   Processing %r" % desc)
 
     def run_in_bus(self, args):
         self.bus.run_agent(self, args)
