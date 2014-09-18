@@ -1,7 +1,3 @@
-def import_all():
-    import os
-    import pkgutil
-    folder = os.path.dirname(__file__)
-    for importer, name, _ in pkgutil.iter_modules([folder]):
-        loader = importer.find_module(name)
-        loader.load_module(name)
+from rebus.tools.importer import importer_for
+
+import_all = importer_for(__file__)
