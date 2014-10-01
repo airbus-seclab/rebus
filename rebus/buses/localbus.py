@@ -55,6 +55,10 @@ class LocalBus(Bus):
                   limit)
         return self.store.find(domain, selector_regex, limit)
 
+    def find_by_uuid(self, agent_id, domain, uuid):
+        log.debug("FINDBYUUID: %s %s:%s", agent_id, domain, uuid)
+        return self.store.find_by_uuid(domain, uuid, serialized=False)
+
     def lock(self, agent_id, lockid, desc_domain, selector):
         key = (lockid, desc_domain, selector)
         log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in

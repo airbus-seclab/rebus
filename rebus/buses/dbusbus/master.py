@@ -60,6 +60,12 @@ class DBusMaster(dbus.service.Object):
         return self.store.find(domain, selector_regex, limit)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sss', out_signature='as')
+    def find_by_uuid(self, agent_id, domain, uuid):
+        log.debug("FINDBYUUID: %s %s:%s", agent_id, domain, uuid)
+        return self.store.find_by_uuid(domain, uuid, serialized=True)
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
     def lock(self, agent_id, lockid, desc_domain, selector):
         objpath = self.clients[agent_id]

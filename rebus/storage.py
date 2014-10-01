@@ -41,6 +41,19 @@ class DescriptorStorage(object):
                     return res
         return res
 
+    def find_by_uuid(self, domain, uuid, serialized=False):
+        """
+        Return a list of descriptors whose uuid match given parameter
+        """
+        result = []
+        for selector, desc in self.dstore[domain].iteritems():
+            if desc.uuid == uuid:
+                if serialized:
+                    result.append(self.serialized_store[domain][selector])
+                else:
+                    result.append(desc)
+        return result
+
     def get_descriptor(self, domain, selector, serialized=False):
         """
         Get a single descriptor.
