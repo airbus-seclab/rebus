@@ -1,14 +1,16 @@
-import os
-import hashlib
 import cPickle
+import hashlib
 import logging
+import os
+from uuid import uuid4
 
 log = logging.getLogger("rebus.descriptor")
 
 
 class Descriptor(object):
     def __init__(self, label, selector, value, domain="default",
-                 agent=None, precursors=None, version=0, processing_time=-1):
+                 agent=None, precursors=None, version=0, processing_time=-1,
+                 uuid=None):
         self.label = label
 
         # self.precursors contains a list of parent descriptors' selectors.
@@ -32,6 +34,13 @@ class Descriptor(object):
         self.domain = domain
         self.version = version
         self.processing_time = processing_time
+        if uuid is None:
+            # A new uuid is generated for
+            # * newly injected descriptors
+            # * descriptors that will have several versions
+            # * new versions of descriptors
+            uuid = str(uuid4())
+        self.uuid = uuid
 
     def spawn_descriptor(self, selector, value, agent, processing_time=-1,
                          label=None):
@@ -42,7 +51,8 @@ class Descriptor(object):
         desc = self.__class__(label, selector, value, self.domain,
                               agent=agent,
                               precursors=[self.selector],
-                              processing_time=processing_time)
+                              processing_time=processing_time,
+                              uuid=self.uuid)
         return desc
 
     def new_version(self, label, value, newprecursor, processing_time=-1):
@@ -58,14 +68,15 @@ class Descriptor(object):
                               agent=self.agent,
                               precursors=[newprecursor] + self.precursors,
                               version=self.version + 1,
-                              processing_time=processing_time)
+                              processing_time=processing_time,
+                              uuid=str(uuid4()))
         return desc
 
     def serialize(self):
         return cPickle.dumps(
             {k: v for k, v in self.__dict__.iteritems()
              if k in ["label", "selector", "value", "domain", "agent",
-                      "precursors", "version", "processing_time"]})
+                      "precursors", "version", "processing_time", "uuid"]})
 
     @classmethod
     def unserialize(cls, s):
