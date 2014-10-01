@@ -72,6 +72,33 @@ class Descriptor(object):
                               uuid=str(uuid4()))
         return desc
 
+    def create_links(self, otherdesc, agentname, short_reason, reason):
+        """
+        Creates and returns two /link/ descriptors
+        Selector names: /link/agentname/short_reason/other_UUID
+        One link is created in both self's and otherdesc's UUID
+        Value: (selector1, selector2, text description of the link reason)
+        """
+        link1 = Descriptor(
+            label='linked',
+            selector='/linked/%s/%s/%s' % (agentname, short_reason,
+                                           otherdesc.uuid),
+            value=(self.selector, otherdesc.selector, reason),
+            domain="default",
+            agent=agentname,
+            precursors=[self.selector, otherdesc.selector],
+            uuid=self.uuid)
+
+        link2 = Descriptor(
+            label='linked',
+            selector='/linked/%s/%s/%s' % (agentname, short_reason, self.uuid),
+            value=(self.selector, otherdesc.selector, reason),
+            domain="default",
+            agent=agentname,
+            precursors=[self.selector, otherdesc.selector],
+            uuid=otherdesc.uuid)
+        return link1, link2
+
     def serialize(self):
         return cPickle.dumps(
             {k: v for k, v in self.__dict__.iteritems()

@@ -1,3 +1,4 @@
+from rebus.descriptor import Descriptor
 from rebus.tools.registry import Registry
 from rebus.bus import DEFAULT_DOMAIN
 import logging
@@ -82,10 +83,23 @@ class Agent(object):
     def agentloop(self):
         self.bus.agentloop(self)
 
-    # These are the main methods that any agent would want
-    # to overload
+    # These are the main methods that any agent might want to overload
     def init_agent(self):
         pass
+
+    def declare_linked(self, desc1, desc2, short_reason, reason):
+        """
+        Helper function.
+        Requests two new /link/ descriptors, then pushes them.
+        :param desc1: Descriptor instance
+        :param desc2: Descriptor instance
+        :param short_reason: string, will be part of the selector
+        :param reason: Text description of the link reason
+        """
+        link1, link2 = desc1.create_links(desc2, self.name, short_reason,
+                                          reason)
+        self.push(link1)
+        self.push(link2)
 
     def selector_filter(self, selector):
         return True
