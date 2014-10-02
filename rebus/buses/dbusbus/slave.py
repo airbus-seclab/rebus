@@ -52,7 +52,8 @@ class DBus(Bus):
         return self.iface.find(agent.id, domain, selector_regex, limit)
 
     def find_by_uuid(self, agent, domain, uuid):
-        return self.iface.find_by_uuid(agent.id, domain, uuid)
+        return [Descriptor.unserialize(str(s)) for s in
+                self.iface.find_by_uuid(agent.id, domain, uuid)]
 
     def get_children(self, agent, desc_domain, selector, recurse=True):
         return [Descriptor.unserialize(str(s)) for s in
