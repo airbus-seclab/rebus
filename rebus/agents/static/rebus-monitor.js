@@ -50,7 +50,8 @@ var updater = {
     cursor: null,
 
     poll: function() {
-        var args = {"_xsrf": getCookie("_xsrf"), "page": "monitor"};
+        var args = {"_xsrf": getCookie("_xsrf"), "page": "monitor", "domain":
+                    "", "uuid": ""};
         if (updater.cursor) args.cursor = updater.cursor;
         $.ajax({url: "/poll_descriptors", type: "POST", dataType: "text",
             data: $.param(args), success: updater.onSuccess,

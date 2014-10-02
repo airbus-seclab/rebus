@@ -5,8 +5,7 @@ import tornado.ioloop
 import tornado.web
 import rebus.agents.inject
 from rebus.descriptor import Descriptor
-import collections
-import functools
+from collections import OrderedDict
 import numpy
 
 
@@ -34,14 +33,15 @@ class WebInterface(Agent):
     def inject(self, filename, buf):
         label = filename
         selector = rebus.agents.inject.guess_selector(buf=buf)
-        data = buf
-        domain = label
-        desc = Descriptor(label, selector, data, domain,
+        value = buf
+        domain = "default"  # TODO allow user to specify domain
+        desc = Descriptor(label, selector, value, domain,
                           agent=self._name_ + '_inject')
         if not self.push(desc):
-            for desc in self.bus.get_children(self, domain, desc.selector):
+            for desc in self.bus.find_by_uuid(self, domain, desc.uuid):
                 self.ioloop.add_callback(self.dstore.new_descriptor, desc,
                                          "storage-0")
+        return desc.uuid
 
 
 class Application(tornado.web.Application):
@@ -66,42 +66,67 @@ class Application(tornado.web.Application):
 
 class DescriptorStore(object):
     def __init__(self, agent):
-        # self.waiters[domain] is a set of callbacks for new descriptors on
-        # domain
-        # self.waiters['default'] is a set of callbacks for new descriptors on
-        # any domain
-        self.waiters = collections.defaultdict(set)
-        self.cache = []
-        self.cache_size = 200
-        self.rlock = threading.RLock()
         self.agent = agent
 
-    def wait_for_descriptors(self, callback, cursor=None, page=None,
-                             domain='default'):
+        # self.waiters is a set of (domain, uuid, callback, page) for new
+        # descriptors on specified uuid and domain
+        # "domain" and "uuid" may be empty for callback to be called on any
+        # value
+        self.waiters = set()
+
+        # Most recent descriptor is in self.cache[0]
+        self.cache = []
+        self.cache_size = 200
+
+        # Used to protect access to self.cache from both threads (bus and
+        # tornado)
+        self.rlock = threading.RLock()
+
+    def wait_for_descriptors(self, callback, domain, uuid, page, cursor=None):
+        """
+        :param callback: callback function, will be called when necessary
+        :param domain: domain filter. Empty if any
+        :param uuid: uuid filter. Empty if any
+        :param cursor: descriptor of most recent displayed hash
+        :param page: string parameter to be passed to callback()
+
+        Registers callback to be called when a matching descriptor is received.
+        """
         if cursor:
+            # Immediately return matching descriptors if available
             with self.rlock:
                 new_count = 0
                 for desc in reversed(self.cache):
                     if desc['hash'] == cursor:
                         break
                     new_count += 1
-                if new_count:
-                    if domain == 'default':
-                        callback(self.cache[-new_count:], page)
-                    else:
-                        callback([d for d in self.cache[-new_count:] if
-                                  d['domain'] == domain], page)
-                    return
-        self.waiters[domain].add(functools.partial(callback, page=page))
+                if new_count > 0:
+                    # New descriptors are available. Send them if they match.
+                    matching_descs = []
+                    for desc in self.cache[-new_count:]:
+                        if domain == desc['domain'] or not domain:
+                            if uuid == desc['uuid'] or not uuid:
+                                matching_descs.append(desc)
+                    if matching_descs:
+                        callback(matching_descs, page)
+                        return
+        # No new matching descriptors have been found, start waiting
+        self.waiters.add((domain, uuid, callback, page))
 
     def cancel_wait(self, callback):
-        for domainset in self.waiters.values():
-            try:
-                domainset.remove(callback)
-            except KeyError:
-                pass
+        for (domain, uuid, cb, page) in set(self.waiters):
+            if callback == cb:
+                self.waiters.remove((domain, uuid, cb, page))
 
     def new_descriptor(self, desc, sender_id):
+        """
+        :param desc: new descriptor
+        :param sender_id: sender agent ID
+
+        Callback function
+        Called whenever a new descriptor is available (received from bus, or
+        injected by web_interface)
+        """
         agent, uniqueid = str(sender_id).rsplit('-', 1)
         printablevalue = desc.value if isinstance(desc.value, unicode) else ''
         if len(printablevalue) > 80:
@@ -110,6 +135,7 @@ class DescriptorStore(object):
         descrinfo = {
             'hash': desc.hash,
             'domain': desc.domain,
+            'uuid': desc.uuid,
             'agent': desc.agent,
             'sender': agent,
             'uniqueid': uniqueid,
@@ -119,22 +145,18 @@ class DescriptorStore(object):
             'printablevalue': printablevalue,
             'processing_time': format(desc.processing_time, '.3f'),
         }
-        for callback in self.waiters['default'] | self.waiters[desc.domain]:
-            callback([descrinfo])
-            try:
-                del self.waiters[desc.domain]
-                del self.waiters['default']
-            except KeyError:
-                # Happens when no waiters are registered for domains 'default'
-                # or desc.domain
-                pass
+        for (domain, uuid, callback, page) in list(self.waiters):
+            if domain == desc.domain or not domain:
+                if uuid == desc.uuid or not uuid:
+                    callback([descrinfo], page)
+                    self.waiters.remove((domain, uuid, callback, page))
         with self.rlock:
             self.cache.append(descrinfo)
             if len(self.cache) > self.cache_size:
                 self.cache = self.cache[-self.cache_size:]
 
     def inject(self, filename, buf):
-        self.agent.inject(filename, buf)
+        return self.agent.inject(filename, buf)
 
     def get_by_selector(self, domain, s):
         return self.agent.get_descriptor(domain, s)
@@ -167,11 +189,12 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         cursor = self.get_argument('cursor', None)
-        page = self.get_argument('page', None)
-        domain = self.get_argument('domain', 'default')
+        page = self.get_argument('page')
+        domain = self.get_argument('domain')
+        uuid = self.get_argument('uuid')
         self.application.dstore.wait_for_descriptors(self.on_new_descriptors,
-                                                     cursor=cursor, page=page,
-                                                     domain=domain)
+                                                     domain, uuid, page,
+                                                     cursor)
 
     def on_new_descriptors(self, descrinfos, page):
         # Closed client connection
@@ -220,7 +243,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(label))
         if '/matrix/' in selector and not download:
-            contents = collections.OrderedDict()
+            contents = OrderedDict()
             hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
 
             # Compute colors thresholds depending on values
@@ -281,5 +304,5 @@ class InjectHandler(tornado.web.RequestHandler):
     """
     def post(self, *args, **kwargs):
         f = self.request.files['file'][0]
-        self.application.dstore.inject(f['filename'], f['body'])
-        self.finish('{}')
+        uuid = self.application.dstore.inject(f['filename'], f['body'])
+        self.finish(dict(uuid=uuid))

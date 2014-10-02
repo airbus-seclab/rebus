@@ -49,6 +49,7 @@ var updater = {
     cursor: null,
     currentAjaxQuery: null,
     domain: null,
+    uuid: null,
 
     stopPolling: function() {
         if (updater.currentAjaxQuery) {
@@ -57,7 +58,8 @@ var updater = {
     },
 
     poll: function() {
-        var args = {"_xsrf": getCookie("_xsrf"), "page": "analysis", "domain": updater.domain};
+        var args = {"_xsrf": getCookie("_xsrf"), "page": "analysis",
+                    "domain": updater.domain, "uuid": updater.uuid};
         if (updater.cursor) args.cursor = updater.cursor;
         updater.stopPolling();
         updater.currentAjaxQuery = $.ajax({url: "/poll_descriptors",
@@ -97,7 +99,6 @@ var updater = {
         if (!response.descrinfos) return;
         var descrinfos = response.descrinfos;
         updater.cursor = descrinfos[descrinfos.length - 1].hash;
-        console.log(descrinfos.length, "new descriptors, cursor:", updater.cursor);
         for (var i = 0; i < descrinfos.length; i++) {
             updater.showDescriptor(descrinfos[i]);
         }
@@ -132,7 +133,7 @@ $(function () {
             $('.upload-status').text('Uploading file ' + data.files[0].name + '...');
             $('.upload-status-panel').show();
             $('#inbox').html('');
-            updater.domain = data.files[0].name;
+            updater.domain = 'default';
             updater.cursor = 'any';
             data.submit();
         },
@@ -141,6 +142,7 @@ $(function () {
             $('.upload-status').text('File ' + data.files[0].name + ' has successfully been uploaded.');
             $('#progress .progress-bar').css('width', '100%');
             $('.upload-status-panel').delay(2000).hide(200);
+            updater.uuid = data.result.uuid;
             updater.poll();
         },
         progressall: function (e, data) {

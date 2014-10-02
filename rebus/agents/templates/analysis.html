@@ -68,34 +68,6 @@
     <script src="{{ static_url("jquery-file-upload/jquery.iframe-transport.js") }}" type="text/javascript"></script>
     <script src="{{ static_url("rebus-analysis.js") }}" type="text/javascript"></script>
     <script>
-/*
-    $(function () {
-      $('#fileupload').fileupload({
-        dataType: 'json',
-        add: function(e, data) {
-          updater.stopPolling();
-          $('#progress .progress-bar').css('width', '0%');
-          $('.upload-status').text('Uploading file ' + data.files[0].name + '...');
-          $('.upload-status-panel').show();
-          $('#inbox').html('')
-          data.submit()
-        },
-        dataType: 'json',
-        done: function(e, data) {
-          $('.upload-status').text('File ' + data.files[0].name + ' has successfully been uploaded.');
-          $('#progress .progress-bar').css('width', '100%');
-          $('.upload-status-panel').delay(5000).hide(200);
-          updater.poll();
-        },
-        progressall: function (e, data) {
-          var progress = parseInt(data.loaded / data.total * 100, 10);
-          $('#progress .progress-bar').css(
-            'width',
-            progress + '%'
-          );
-        }
-      });
-    });*/
     </script>
     <script src="{{ static_url("bootstrap-3.1.1-dist/js/bootstrap.min.js") }}" type="text/javascript"></script>
   </body>
