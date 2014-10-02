@@ -2,12 +2,15 @@ import cPickle
 import hashlib
 import logging
 import os
-from uuid import uuid4
+import uuid as m_uuid
 
 log = logging.getLogger("rebus.descriptor")
 
 
 class Descriptor(object):
+
+    NAMESPACE_REBUS = m_uuid.uuid5(m_uuid.NAMESPACE_DNS, "rebus.airbus.com")
+
     def __init__(self, label, selector, value, domain="default",
                  agent=None, precursors=None, version=0, processing_time=-1,
                  uuid=None):
@@ -39,7 +42,7 @@ class Descriptor(object):
             # * newly injected descriptors
             # * descriptors that will have several versions
             # * new versions of descriptors
-            uuid = str(uuid4())
+            uuid = str(m_uuid.uuid5(self.NAMESPACE_REBUS, self.hash))
         self.uuid = uuid
 
     def spawn_descriptor(self, selector, value, agent, processing_time=-1,
@@ -68,8 +71,7 @@ class Descriptor(object):
                               agent=self.agent,
                               precursors=[newprecursor] + self.precursors,
                               version=self.version + 1,
-                              processing_time=processing_time,
-                              uuid=str(uuid4()))
+                              processing_time=processing_time)
         return desc
 
     def create_links(self, otherdesc, agentname, short_reason, reason):
