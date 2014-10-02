@@ -87,7 +87,7 @@ class Agent(object):
     def init_agent(self):
         pass
 
-    def declare_linked(self, desc1, desc2, short_reason, reason):
+    def declare_link(self, desc1, desc2, short_reason, reason):
         """
         Helper function.
         Requests two new /link/ descriptors, then pushes them.

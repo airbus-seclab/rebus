@@ -82,9 +82,9 @@ class Descriptor(object):
         Value: (selector1, selector2, text description of the link reason)
         """
         link1 = Descriptor(
-            label='linked',
-            selector='/linked/%s/%s/%s' % (agentname, short_reason,
-                                           otherdesc.uuid),
+            label='link',
+            selector='/link/%s/%s/%s' % (agentname, short_reason,
+                                         otherdesc.uuid),
             value=(self.selector, otherdesc.selector, reason),
             domain="default",
             agent=agentname,
@@ -92,8 +92,8 @@ class Descriptor(object):
             uuid=self.uuid)
 
         link2 = Descriptor(
-            label='linked',
-            selector='/linked/%s/%s/%s' % (agentname, short_reason, self.uuid),
+            label='link',
+            selector='/link/%s/%s/%s' % (agentname, short_reason, self.uuid),
             value=(self.selector, otherdesc.selector, reason),
             domain="default",
             agent=agentname,
