@@ -5,6 +5,7 @@ import tornado.ioloop
 import tornado.web
 import rebus.agents.inject
 from rebus.descriptor import Descriptor
+import re
 from collections import OrderedDict
 import numpy
 
@@ -50,7 +51,7 @@ class Application(tornado.web.Application):
             (r"/", tornado.web.RedirectHandler, {'url': '/monitor'}),
             (r"/monitor", MonitorHandler),
             (r"/inject", InjectHandler),
-            (r"/analysis", AnalysisHandler),
+            (r"/analysis(|/.*)", AnalysisHandler),
             (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
             (r"/get(.*)", DescriptorGetHandler),
@@ -87,7 +88,8 @@ class DescriptorStore(object):
         :param callback: callback function, will be called when necessary
         :param domain: domain filter. Empty if any
         :param uuid: uuid filter. Empty if any
-        :param cursor: descriptor of most recent displayed hash
+        :param cursor: descriptor of most recent displayed hash. Do not search
+            known descriptors if empty.
         :param page: string parameter to be passed to callback()
 
         Registers callback to be called when a matching descriptor is received.
@@ -166,8 +168,18 @@ class DescriptorStore(object):
 
 
 class AnalysisHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render('analysis.html')
+    def get(self, uuid=''):
+        """
+        URL format: /analysis (blank page)
+                    /analysis/aaaaaaaa-1234-5678-abcd-123456789abc (uuid)
+        """
+        if uuid not in ('', '/') and\
+           not re.match('/[a-zA-Z0-9-_]+/[0-9a-fA-F-]{36}', uuid):
+            # invalid uuid
+            self.send_error(400)
+            return
+
+        self.render('analysis.html', uuid=uuid)
 
 
 class SelectorsHandler(tornado.web.RequestHandler):
@@ -227,6 +239,9 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     """
     Handles requests for descriptor values.
     Values are requested through the bus.
+    URL format: /get/sel/ector/%1234?domain=default&download=1
+    The forward slash after "/get" is part of the selector
+    The selector hash (ex. %1234...) may be replaced with a version (ex. ~-1)
     """
     def get(self, selector='', *args, **kwargs):
         download = (self.get_argument('download', '0') == '1')

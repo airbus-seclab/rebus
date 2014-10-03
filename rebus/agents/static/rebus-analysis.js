@@ -2,7 +2,14 @@
 $(document).ready(function() {
     if (!window.console) window.console = {};
     if (!window.console.log) window.console.log = function() {};
-
+    splitpath = location.pathname.split('/');
+    if (splitpath.length == 4) {
+        updater.domain = splitpath[2];
+        updater.uuid = splitpath[3];
+        updater.cursor = 'any';
+        updater.poll();
+        console.log("polling", splitpath, location.pathname)
+    }
 });
 
 function getCookie(name) {
@@ -143,6 +150,8 @@ $(function () {
             $('#progress .progress-bar').css('width', '100%');
             $('.upload-status-panel').delay(2000).hide(200);
             updater.uuid = data.result.uuid;
+            history.pushState({}, '', ['/analysis', updater.domain,
+                                       updater.uuid].join('/'));
             updater.poll();
         },
         progressall: function (e, data) {
