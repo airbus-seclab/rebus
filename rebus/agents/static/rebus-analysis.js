@@ -6,7 +6,7 @@ $(document).ready(function() {
     if (splitpath.length == 4) {
         updater.domain = splitpath[2];
         updater.uuid = splitpath[3];
-        updater.cursor = 'any';
+        updater.cursor = 'all';
         updater.poll();
         console.log("polling", splitpath, location.pathname)
     }
@@ -141,7 +141,7 @@ $(function () {
             $('.upload-status-panel').show();
             $('#inbox').html('');
             updater.domain = 'default';
-            updater.cursor = 'any';
+            updater.cursor = 'cached';
             data.submit();
         },
         dataType: 'json',

@@ -69,33 +69,58 @@ class DescriptorStore(object):
     def __init__(self, agent):
         self.agent = agent
 
-        # self.waiters is a set of (domain, uuid, callback, page) for new
-        # descriptors on specified uuid and domain
-        # "domain" and "uuid" may be empty for callback to be called on any
-        # value
+        #: self.waiters is a set of (domain, uuid, callback, page) for new
+        #: descriptors on specified uuid and domain
+        #: "domain" and "uuid" may be empty for callback to be called on any
+        #: value
         self.waiters = set()
 
-        # Most recent descriptor is in self.cache[0]
+        #: Most recent descriptor is in self.cache[-1].
+        #: The cache is used:
+        #: * in the Bus Monitor view when a user first loads the page
+        #: * in every page that updates dynamically, to cache descriptors
+        #:   between two (long) pollings
         self.cache = []
         self.cache_size = 200
 
-        # Used to protect access to self.cache from both threads (bus and
-        # tornado)
+        #: Used to protect access to self.cache from both threads (bus and
+        #: tornado)
         self.rlock = threading.RLock()
 
-    def wait_for_descriptors(self, callback, domain, uuid, page, cursor=None):
+    def wait_for_descriptors(self, callback, domain, uuid, page, cursor):
         """
         :param callback: callback function, will be called when necessary
         :param domain: domain filter. Empty if any
         :param uuid: uuid filter. Empty if any
-        :param cursor: descriptor of most recent displayed hash. Do not search
-            known descriptors if empty.
+        :param cursor: 'cached', 'all', or hash of the most recent displayed
+            descriptors.
         :param page: string parameter to be passed to callback()
 
-        Registers callback to be called when a matching descriptor is received.
+        Returns matching descriptor information if available.
+        Else, registers callback to be called when a matching descriptor is
+        received.
+
+        Usage scenarios:
+        * Fetch any old descriptor matching uuid and domain. Wait if none
+            match.
+        * Fetch matching cached descriptors (domain and uuid may or may not be
+            specified).
         """
-        if cursor:
-            # Immediately return matching descriptors if available
+        matching_infos = []
+
+        if cursor == 'all':
+            # Search whole bus
+            # Domain or uuid must be defined
+            # Wait if none have been found
+            descs = []
+            if domain and uuid:
+                descs = self.agent.bus.find_by_uuid(self.agent, domain, uuid)
+            matching_infos = self.info_from_desc(descs)
+
+        else:
+            # Return cached descriptors that are newer than cursor (all cached
+            # if cursor is not in cache anymore).
+            # Also works for cursor == 'cached'
             with self.rlock:
                 new_count = 0
                 for desc in reversed(self.cache):
@@ -104,16 +129,46 @@ class DescriptorStore(object):
                     new_count += 1
                 if new_count > 0:
                     # New descriptors are available. Send them if they match.
-                    matching_descs = []
                     for desc in self.cache[-new_count:]:
                         if domain == desc['domain'] or not domain:
                             if uuid == desc['uuid'] or not uuid:
-                                matching_descs.append(desc)
-                    if matching_descs:
-                        callback(matching_descs, page)
+                                matching_infos.append(desc)
+                    if matching_infos:
+                        callback(matching_infos, page)
                         return
+
+        if matching_infos:
+            callback(matching_infos, page)
+            return
         # No new matching descriptors have been found, start waiting
         self.waiters.add((domain, uuid, callback, page))
+
+    def info_from_desc(self, descriptors):
+        """
+        :param descriptors: list of descriptors
+
+        Return a list of descriptor summary dictionnaries
+        """
+
+        descrinfos = []
+        for desc in descriptors:
+            printablevalue = desc.value if isinstance(desc.value, unicode) else ''
+            if len(printablevalue) > 80:
+                printablevalue = (printablevalue[:80] + '...')
+
+            descrinfo = {
+                'hash': desc.hash,
+                'domain': desc.domain,
+                'uuid': desc.uuid,
+                'agent': desc.agent,
+                'selector': desc.selector.partition('%')[0],
+                'fullselector': desc.selector,
+                'label': desc.label,
+                'printablevalue': printablevalue,
+                'processing_time': format(desc.processing_time, '.3f'),
+            }
+            descrinfos.append(descrinfo)
+        return descrinfos
 
     def cancel_wait(self, callback):
         for (domain, uuid, cb, page) in set(self.waiters):
@@ -129,24 +184,7 @@ class DescriptorStore(object):
         Called whenever a new descriptor is available (received from bus, or
         injected by web_interface)
         """
-        agent, uniqueid = str(sender_id).rsplit('-', 1)
-        printablevalue = desc.value if isinstance(desc.value, unicode) else ''
-        if len(printablevalue) > 80:
-            printablevalue = (printablevalue[:80] + '...')
-
-        descrinfo = {
-            'hash': desc.hash,
-            'domain': desc.domain,
-            'uuid': desc.uuid,
-            'agent': desc.agent,
-            'sender': agent,
-            'uniqueid': uniqueid,
-            'selector': desc.selector.partition('%')[0],
-            'fullselector': desc.selector,
-            'label': desc.label,
-            'printablevalue': printablevalue,
-            'processing_time': format(desc.processing_time, '.3f'),
-        }
+        descrinfo = self.info_from_desc([desc])[0]
         for (domain, uuid, callback, page) in list(self.waiters):
             if domain == desc.domain or not domain:
                 if uuid == desc.uuid or not uuid:
@@ -191,6 +229,7 @@ class SelectorsHandler(tornado.web.RequestHandler):
 
 class MonitorHandler(tornado.web.RequestHandler):
     def get(self):
+        # TODO do not render descriptors here, fetch them with poll_descriptors
         self.render('monitor.html', descriptors=self.application.dstore.cache)
 
 
@@ -200,7 +239,7 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     """
     @tornado.web.asynchronous
     def post(self):
-        cursor = self.get_argument('cursor', None)
+        cursor = self.get_argument('cursor', '')
         page = self.get_argument('page')
         domain = self.get_argument('domain')
         uuid = self.get_argument('uuid')
@@ -209,10 +248,10 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                                                      cursor)
 
     def on_new_descriptors(self, descrinfos, page):
-        # Closed client connection
         if self.request.connection.stream.closed():
             return
-        # contains only data from descrinfos needed to render page
+
+        #: Contains only data from descrinfos needed to render page
         infos = []
         with self.application.dstore.rlock:
             for d in descrinfos:
@@ -222,7 +261,7 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                           'agent', 'domain'):
                     info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'uniqueid', 'processing_time'):
+                    for k in ('label', 'processing_time'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     d['html_' + page] = self.render_string('descriptor_%s.html'

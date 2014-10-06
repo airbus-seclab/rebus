@@ -16,8 +16,8 @@ class Descriptor(object):
                  uuid=None):
         self.label = label
 
-        # self.precursors contains a list of parent descriptors' selectors.
-        # typically contains 0 (ex. injected binaries), or (version+1) values
+        #: contains a list of parent descriptors' selectors. Typically contains
+        #: 0 (ex. injected binaries), or (version+1) values
         self.precursors = precursors if precursors is not None else []
 
         self.agent = agent
