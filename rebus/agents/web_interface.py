@@ -3,6 +3,7 @@ from rebus.agent import Agent
 import threading
 import tornado.ioloop
 import tornado.web
+import tornado.template
 import rebus.agents.inject
 from rebus.descriptor import Descriptor
 import re
@@ -45,6 +46,70 @@ class WebInterface(Agent):
         return desc.uuid
 
 
+class CustomLoader(tornado.template.Loader):
+    """
+    Use parent class Loader to load any template other than descriptors.
+
+    To render descriptor of type "desctype" (first selector part, e.g.
+    "matrix"), for page "thepage", try to use
+    templates/descriptor/desctype_thepage. If it does not exist, use
+    templates/descriptor/default_thepage.
+
+    Load descriptor templates either from the descriptor/ folders, or using
+    agent-registered templates (allows agents that live outside the rebus
+    repository to specify how to render their custom desctypes).
+
+    To render any other type of templates (e.g. /analysis page), use static
+    template files in templates/
+    """
+
+    #: contains descriptor templates that have been registered by external (out
+    #: of rebus) agents, as well of static files that are part of rebus
+    templates = dict()
+
+    def __init__(self, root_directory, **kwargs):
+        """
+        Register existing static files
+        """
+        super(CustomLoader, self).__init__(root_directory, **kwargs)
+
+        for fname in os.listdir(os.path.join(root_directory, "descriptor")):
+            fullpath = os.path.join(root_directory, "descriptor", fname)
+            if not os.path.isfile(fullpath):
+                break
+            # filename format: descriptor/desctype/page
+            desc_type, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
+            CustomLoader.register(desc_type, page, open(fullpath, 'rb').read())
+
+    @staticmethod
+    def register(desc_type, page, templatestr):
+        """
+        Called to register a renderering template for the given page and
+        descriptor type.
+        """
+        CustomLoader.templates[(desc_type, page)] = templatestr
+
+    def resolve_path(self, name, parent_path=None):
+        name = super(CustomLoader, self).resolve_path(name, parent_path)
+        return name
+
+    def _create_template(self, name):
+        """
+        Return the requested template object.
+        """
+
+        if not name.startswith('descriptor/'):
+            return super(CustomLoader, self)._create_template(name)
+
+        desc_type, page = name.rsplit('/', 1)[1].split('_')
+        templatestr = CustomLoader.templates.get(
+            (desc_type, page),  # try to load specific template
+            CustomLoader.templates[('default', page)])  # use default otherwise
+        template = tornado.template.Template(templatestr, name=name,
+                                             loader=self)
+        return template
+
+
 class Application(tornado.web.Application):
     def __init__(self, dstore):
         handlers = [
@@ -57,9 +122,10 @@ class Application(tornado.web.Application):
             (r"/get(.*)", DescriptorGetHandler),
         ]
         params = {
-            'template_path': os.path.join(os.path.dirname(__file__),
-                                          'templates'),
-            'static_path': os.path.join(os.path.dirname(__file__), 'static')
+            'static_path': os.path.join(os.path.dirname(__file__), 'static'),
+            'template_loader':
+                CustomLoader(os.path.join(os.path.dirname(__file__),
+                                          'templates'),)
         }
         self.dstore = dstore
         tornado.web.Application.__init__(self, handlers, **params)
@@ -241,7 +307,7 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     """
     @tornado.web.asynchronous
     def post(self):
-        cursor = self.get_argument('cursor', '')
+        cursor = self.get_argument('cursor')
         page = self.get_argument('page')
         domain = self.get_argument('domain')
         uuid = self.get_argument('uuid')
@@ -266,8 +332,9 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                     for k in ('label', 'processing_time'):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
-                    d['html_' + page] = self.render_string('descriptor_%s.html'
-                                                           % page,
+                    desc_type = d['selector'].split('/')[1]
+                    d['html_' + page] = self.render_string('descriptor/%s_%s'
+                                                           % (desc_type, page),
                                                            descriptor=d)
                     info['html'] = d['html_' + page]
         self.finish(dict(descrinfos=infos))
@@ -298,7 +365,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(label))
-        if '/matrix/' in selector and not download:
+        if selector.startswith('/matrix/') and not download:
             contents = OrderedDict()
             hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
 
@@ -338,7 +405,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         contents[h1name].append(
                             (value,
                              self.color(colorthresh, colorclasses, value)))
-            self.render('matrix.html', matrix=contents)
+            self.finish(self.render_string('descriptor/matrix_view', matrix=contents))
         else:
             if type(data) not in [unicode, str]:
                 data = str(data)
