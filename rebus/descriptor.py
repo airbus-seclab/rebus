@@ -38,11 +38,12 @@ class Descriptor(object):
         self.version = version
         self.processing_time = processing_time
         if uuid is None:
-            # A new uuid is generated for
-            # * newly injected descriptors
-            # * descriptors that will have several versions
-            # * new versions of descriptors
             uuid = str(m_uuid.uuid5(self.NAMESPACE_REBUS, self.hash))
+        #: A new uuid is generated for:
+        #:
+        #: * newly injected descriptors
+        #: * descriptors that will have several versions
+        #: * new versions of descriptors
         self.uuid = uuid
 
     def spawn_descriptor(self, selector, value, agent, processing_time=-1,
@@ -77,10 +78,10 @@ class Descriptor(object):
     def create_links(self, otherdesc, agentname, short_reason, reason):
         """
         Creates and returns two /link/ descriptors
-        Selector names: /link/agentname/short_reason/other_UUID
+        Selector names for links: /link/agentname/short_reason/other_UUID
         One link is created in both self's and otherdesc's UUID
         Value: dictionary containing origin selector, destination selector and
-            reason for linking
+        reason for linking
         """
         link1 = Descriptor(
             label='link',

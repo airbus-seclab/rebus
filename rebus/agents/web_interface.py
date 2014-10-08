@@ -77,6 +77,7 @@ class DescriptorStore(object):
 
         #: Most recent descriptor is in self.cache[-1].
         #: The cache is used:
+        #:
         #: * in the Bus Monitor view when a user first loads the page
         #: * in every page that updates dynamically, to cache descriptors
         #:   between two (long) pollings
@@ -101,6 +102,7 @@ class DescriptorStore(object):
         received.
 
         Usage scenarios:
+
         * Fetch any old descriptor matching uuid and domain. Wait if none
             match.
         * Fetch matching cached descriptors (domain and uuid may or may not be

@@ -25,6 +25,7 @@ class DescriptorStorage(object):
     def find(self, domain, selector_regex, limit):
         """
         Return array of selectors according to search constraints :
+
         * domain
         * selector regular expression
         * limit (max number of entries to return)
