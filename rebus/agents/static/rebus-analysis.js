@@ -8,22 +8,21 @@ $(document).ready(function() {
         updater.uuid = splitpath[3];
         updater.cursor = 'all';
         updater.poll();
-        console.log("polling", splitpath, location.pathname)
     }
 });
 
 function getCookie(name) {
-    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    var r = document.cookie.match('\\b' + name + '=([^;]*)\\b');
     return r ? r[1] : undefined;
 }
 
 jQuery.postJSON = function(url, args, callback) {
-    args._xsrf = getCookie("_xsrf");
-    $.ajax({url: url, data: $.param(args), dataType: "text", type: "POST",
+    args._xsrf = getCookie('_xsrf');
+    $.ajax({url: url, data: $.param(args), dataType: 'text', type: 'POST',
         success: function(response) {
-            if (callback) callback(eval("(" + response + ")"));
+            if (callback) callback(eval('(' + response + ')'));
         }, error: function(response) {
-            console.log("ERROR:", response)
+            console.log('ERROR:', response)
         }});
 };
 
@@ -44,12 +43,14 @@ jQuery.fn.disable = function() {
 
 jQuery.fn.enable = function(opt_enable) {
     if (arguments.length && !opt_enable) {
-        this.attr("disabled", "disabled");
+        this.attr('disabled', 'disabled');
     } else {
-        this.removeAttr("disabled");
+        this.removeAttr('disabled');
     }
     return this;
 };
+
+var links = {}
 
 var updater = {
     errorSleepTime: 500,
@@ -65,13 +66,13 @@ var updater = {
     },
 
     poll: function() {
-        var args = {"_xsrf": getCookie("_xsrf"), "page": "analysis",
-                    "domain": updater.domain, "uuid": updater.uuid};
+        var args = {'_xsrf': getCookie('_xsrf'), 'page': 'analysis',
+                    'domain': updater.domain, 'uuid': updater.uuid};
         if (updater.cursor) args.cursor = updater.cursor;
         updater.stopPolling();
-        updater.currentAjaxQuery = $.ajax({url: "/poll_descriptors",
-            type: "POST",
-            dataType: "text",
+        updater.currentAjaxQuery = $.ajax({url: '/poll_descriptors',
+            type: 'POST',
+            dataType: 'text',
             data: $.param(args),
             success: updater.onSuccess,
             error: updater.onError,
@@ -80,7 +81,7 @@ var updater = {
 
     onSuccess: function(response) {
         try {
-            updater.newDescriptors(eval("(" + response + ")"));
+            updater.newDescriptors(eval('(' + response + ')'));
         } catch (e) {
             updater.onError();
             return;
@@ -90,11 +91,11 @@ var updater = {
     },
 
     onError: function(response, errortype) {
-        if (errortype == "abort") {
+        if (errortype == 'abort') {
             return;
         }
         updater.errorSleepTime *= 2;
-        console.log("Poll error; sleeping for", updater.errorSleepTime, "ms");
+        console.log('Poll error; sleeping for', updater.errorSleepTime, 'ms');
         window.setTimeout(updater.poll, updater.errorSleepTime);
     },
 
@@ -112,21 +113,47 @@ var updater = {
     },
 
     showDescriptor: function(descriptor) {
-        var container = $("#container_" + descriptor.agent);
-        if (container.length == 0) {
-            container = $('#template_container').clone().attr('id', 'container_' + descriptor.agent)
-                container.find('.panel-title').text(descriptor.agent)
-                $("#inbox").append(container)
-        }
-        var node = $(descriptor.html);
-        inbox = container.find('.container-inbox');
-        var existing = inbox.find("#m" + descriptor.hash);
-        if (existing.length > 0) {
-            existing.replaceWith(node);
+        if (descriptor.selector.indexOf('/link/') == 0) {
+            if (!(descriptor.linksrchash in links)) {
+                links[descriptor.linksrchash] = {};
+            }
+            links[descriptor.linksrchash][descriptor.hash] = descriptor.html;
+            var linkicon = $('.linkicon', '#m' + descriptor.linksrchash);
+            linkicon.fadeTo(100, 0.25).fadeTo(300, 1.0);
+            linkicon.popover({
+                trigger: 'focus',
+                content: function(t) {
+                    res = '<table>';
+                    ls = links[descriptor.linksrchash];
+                    for (var link in ls) {
+                        res += ls[link];
+                    }
+                    res += '</table>';
+                    return res;
+                },
+                html: true}).click(function(e){ // fix for chrome
+                    e.preventDefault();
+                    $(this).focus();
+                    });
         } else {
-            node.hide();
-            inbox.append(node);
-            node.fadeIn();
+            var container = $('#container_' + descriptor.agent);
+            if (container.length == 0) {
+                container = $('#template_container').clone().attr('id', 'container_' + descriptor.agent);
+                    container.find('.panel-title').text(descriptor.agent);
+                    $('#inbox').append(container);
+            }
+            inbox = container.find('.container-inbox');
+
+            var node = $(descriptor.html);
+            var incoming_hash = node[0].id;
+            var existing = inbox.find("#"+incoming_hash);
+            if (existing.length > 0) {
+                existing.replaceWith(node);
+            } else {
+                node.hide();
+                inbox.append(node);
+                node.fadeIn();
+            }
         }
     }
 };

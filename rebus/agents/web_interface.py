@@ -75,8 +75,8 @@ class CustomLoader(tornado.template.Loader):
 
         for fname in os.listdir(os.path.join(root_directory, "descriptor")):
             fullpath = os.path.join(root_directory, "descriptor", fname)
-            if not os.path.isfile(fullpath):
-                break
+            if not (fname.endswith('.html') and os.path.isfile(fullpath)):
+                continue
             # filename format: descriptor/desctype/page
             desc_type, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
             CustomLoader.register(desc_type, page, open(fullpath, 'rb').read())
@@ -102,9 +102,12 @@ class CustomLoader(tornado.template.Loader):
             return super(CustomLoader, self)._create_template(name)
 
         desc_type, page = name.rsplit('/', 1)[1].split('_')
-        templatestr = CustomLoader.templates.get(
-            (desc_type, page),  # try to load specific template
-            CustomLoader.templates[('default', page)])  # use default otherwise
+        if (desc_type, page) in CustomLoader.templates:
+            # try to load specific template
+            templatestr = CustomLoader.templates[(desc_type, page)]
+        else:
+            # use default otherwise
+            templatestr = CustomLoader.templates[('default', page)]
         template = tornado.template.Template(templatestr, name=name,
                                              loader=self)
         return template
@@ -235,6 +238,9 @@ class DescriptorStore(object):
                 'printablevalue': printablevalue,
                 'processing_time': format(desc.processing_time, '.3f'),
             }
+            if desc.selector.startswith('/link/'):
+                descrinfo['value'] = desc.value
+                descrinfo['linksrchash'] = desc.value['selector'].split('%')[1]
             descrinfos.append(descrinfo)
         return descrinfos
 
@@ -297,8 +303,7 @@ class SelectorsHandler(tornado.web.RequestHandler):
 
 class MonitorHandler(tornado.web.RequestHandler):
     def get(self):
-        # TODO do not render descriptors here, fetch them with poll_descriptors
-        self.render('monitor.html', descriptors=self.application.dstore.cache)
+        self.render('monitor.html')
 
 
 class DescriptorUpdatesHandler(tornado.web.RequestHandler):
@@ -326,8 +331,9 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                 info = {}
                 infos.append(info)
                 for k in ('hash', 'selector', 'fullselector', 'printablevalue',
-                          'agent', 'domain'):
-                    info[k] = d[k]
+                          'agent', 'domain', 'linksrchash'):
+                    if k in d:
+                        info[k] = d[k]
                 if page == 'monitor':
                     for k in ('label', 'processing_time'):
                         info[k] = d[k]

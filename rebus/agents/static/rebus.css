@@ -31,6 +31,10 @@ body {
   width: 60%;
 }
 
+.linkicon {
+  display: none;
+}
+
 .upload-status-panel {
   display: none;
 }

@@ -1,8 +1,8 @@
 <tr class="descriptor" id="m{{ escape(descriptor['hash']) }}">
   <td title="agent {{escape(descriptor['agent'])}}">{{ escape(descriptor['agent']) }}</td>
-  <td>{{ escape(descriptor['label']) }}</td>
+  <td><a href="/analysis/{{ escape(descriptor['domain'] ) }}/{{ escape(descriptor['uuid'] ) }}">{{ escape(descriptor['label']) }}</a></td>
   <td>{{ escape(descriptor['domain']) }}</td>
   <td>{{ escape(descriptor['processing_time']) }}</td>
-  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?domain={{url_escape(descriptor['domain'])}}">{{ descriptor['selector'] }}</a></td>
-  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt"></span></a> {{ escape(descriptor['printablevalue']) }}</td>
+  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?domain={{url_escape(descriptor['domain'])}}">{{ escape(descriptor['selector']) }}</a></td>
+  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt" /></a> {{ escape(descriptor['printablevalue']) }}</td>
 </tr>

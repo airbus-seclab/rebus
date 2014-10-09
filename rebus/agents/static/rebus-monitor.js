@@ -79,7 +79,6 @@ var updater = {
         if (!response.descrinfos) return;
         var descrinfos = response.descrinfos;
         updater.cursor = descrinfos[descrinfos.length - 1].hash;
-        console.log(descrinfos.length, "new descriptors, cursor:", updater.cursor);
         for (var i = 0; i < descrinfos.length; i++) {
             updater.showDescriptor(descrinfos[i]);
         }
