@@ -37,7 +37,7 @@
         <tbody id="inbox">
         {% for selector in sorted(set([s.split('%')[0] + "~-1" for s in selectors])) %}
         <tr class="selector">
-          <td><a href="/get{{ url_escape(selector) }}">{{ selector }}</a></td>
+          <td><a href="/get{{ url_escape(selector) }}">{{ escape(selector) }}</a></td>
         </tr>
         {% end %}
         </tbody>
@@ -51,7 +51,7 @@
         <tbody id="inbox">
         {% for selector in selectors %}
         <tr class="selector">
-          <td><a href="/get{{ url_escape(selector) }}">{{ selector }}</a></td>
+          <td><a href="/get{{ url_escape(selector) }}">{{ escape(selector) }}</a></td>
         </tr>
         {% end %}
         </tbody>

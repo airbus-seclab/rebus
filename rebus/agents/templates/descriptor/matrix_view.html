@@ -34,16 +34,16 @@
           <tr>
             <th></th>
             {% for label in matrix.keys() %}
-            <th class="rotate-45"><div><span>{{ label }}</span></div></th>
+            <th class="rotate-45"><div><span>{{ escape(label) }}</span></div></th>
             {% end %}
           </tr>
         </thead>
         <tbody>
           {% for label, values in matrix.items() %}
           <tr>
-            <th class="row-header">{{ label }}</th>
+            <th class="row-header">{{ escape(label) }}</th>
             {% for value in values %}
-            <td{% if value[1] is not None %} class="{{ value[1] }}"{% end %}>{{ value[0] }}</td>
+            <td{% if value[1] is not None %} class="{{ escape(value[1]) }}"{% end %}>{{ escape(value[0]) }}</td>
             {% end %}
           </tr>
           {% end %}
