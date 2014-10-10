@@ -43,7 +43,7 @@
           <tr>
             <th class="row-header">{{ escape(label) }}</th>
             {% for value in values %}
-            <td{% if value[1] is not None %} class="{{ escape(value[1]) }}"{% end %}>{{ escape(value[0]) }}</td>
+            <td{% if value[1] is not None %} class="{{ escape(str(value[1])) }}"{% end %}>{{ escape(str(value[0])) }}</td>
             {% end %}
           </tr>
           {% end %}
