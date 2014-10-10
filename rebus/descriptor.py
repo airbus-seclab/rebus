@@ -84,7 +84,7 @@ class Descriptor(object):
         reason for linking and destination descriptor's label
         """
         link1 = Descriptor(
-            label='link',
+            label=self.label,
             selector='/link/%s/%s/%s' % (agentname, short_reason,
                                          otherdesc.uuid),
             value={'selector': self.selector,
@@ -97,7 +97,7 @@ class Descriptor(object):
             uuid=self.uuid)
 
         link2 = Descriptor(
-            label='link',
+            label=otherdesc.label,
             selector='/link/%s/%s/%s' % (agentname, short_reason, self.uuid),
             value={'selector': otherdesc.selector,
                    'otherselector': self.selector,
