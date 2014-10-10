@@ -119,6 +119,7 @@ class Application(tornado.web.Application):
             (r"/", tornado.web.RedirectHandler, {'url': '/monitor'}),
             (r"/monitor", MonitorHandler),
             (r"/inject", InjectHandler),
+            (r"/uuid/(.*)", UUIDHandler),
             (r"/analysis(|/.*)", AnalysisHandler),
             (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
@@ -278,12 +279,15 @@ class DescriptorStore(object):
     def find(self, domain, sel_regex, limit):
         return self.agent.find(domain, sel_regex, limit)
 
+    def list_uuids(self, desc_domain):
+        return self.agent.list_uuids(desc_domain)
+
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self, uuid=''):
         """
         URL format: /analysis (blank page)
-                    /analysis/aaaaaaaa-1234-5678-abcd-123456789abc (uuid)
+                    /analysis/domain/aaaaaaaa-1234-5678-abcd-123456789abc
         """
         if uuid not in ('', '/') and\
            not re.match('/[a-zA-Z0-9-_]+/[0-9a-fA-F-]{36}', uuid):
@@ -292,6 +296,13 @@ class AnalysisHandler(tornado.web.RequestHandler):
             return
 
         self.render('analysis.html', uuid=uuid)
+
+
+class UUIDHandler(tornado.web.RequestHandler):
+    def get(self, domain):
+        uuid_label = self.application.dstore.list_uuids(domain)
+        self.render('uuid.html', domain=domain,
+                    selectors=sorted(uuid_label.items(), key=lambda x: x[1]))
 
 
 class SelectorsHandler(tornado.web.RequestHandler):

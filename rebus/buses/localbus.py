@@ -21,12 +21,12 @@ class LocalBus(Bus):
         self.agents = {}
         self.threads = []
 
-    def join(self, name, domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, name, desc_domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (name, self.agent_count)
         self.agent_count += 1
         if callback:
             self.callbacks.append((agid, callback))
-        self.agents[agid] = agent_desc(agid, domain, callback)
+        self.agents[agid] = agent_desc(agid, desc_domain, callback)
         return agid
 
     def push(self, agent_id, descriptor):
@@ -50,14 +50,18 @@ class LocalBus(Bus):
         return self.store.get_descriptor(desc_domain, selector,
                                          serialized=False)
 
-    def find(self, agent_id, domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, domain, selector_regex,
+    def find(self, agent_id, desc_domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
                   limit)
-        return self.store.find(domain, selector_regex, limit)
+        return self.store.find(desc_domain, selector_regex, limit)
 
-    def find_by_uuid(self, agent_id, domain, uuid):
-        log.debug("FINDBYUUID: %s %s:%s", agent_id, domain, uuid)
-        return self.store.find_by_uuid(domain, uuid, serialized=False)
+    def list_uuids(self, agent_id, desc_domain, selector_regex, limit):
+        log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
+        return self.store.list_uuids(desc_domain)
+
+    def find_by_uuid(self, agent_id, desc_domain, uuid):
+        log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
+        return self.store.find_by_uuid(desc_domain, uuid, serialized=False)
 
     def lock(self, agent_id, lockid, desc_domain, selector):
         key = (lockid, desc_domain, selector)

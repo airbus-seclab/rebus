@@ -27,6 +27,9 @@ class Bus(object):
     def find(self, agent_id, domain, selector_regex, limit):
         raise NotImplementedError
 
+    def list_uuids(self, agent_id, domain, selector_regex, limit):
+        raise NotImplementedError
+
     def find_by_uuid(self, agent_id, domain, uuid):
         raise NotImplementedError
 

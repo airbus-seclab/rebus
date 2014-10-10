@@ -10,8 +10,10 @@ class DescriptorStorage(object):
     Storage and retrieval of descriptor objects.
     """
     def __init__(self):
-        # self.dstore['domain']['/selector/%hash'] is a serialized descriptor
         self.dstore = defaultdict(OrderedDict)
+
+        #: self.serialized_store['domain']['/selector/%hash'] is a serialized
+        #: descriptor
         self.serialized_store = defaultdict(dict)
 
         # self.version_cache['domain']['/selector/'][42] = /selector/%1234
@@ -53,6 +55,18 @@ class DescriptorStorage(object):
                     result.append(self.serialized_store[domain][selector])
                 else:
                     result.append(desc)
+        return result
+
+    def list_uuids(self, domain):
+        """
+        :param domain: domain from which UUID should be enumerated
+
+        Returns a dictionnary mapping known UUID to corresponding labels.
+        """
+        result = dict()
+        for desc in self.dstore[domain].values():
+            print "DESC", desc, type(desc)
+            result[desc.uuid] = desc.label
         return result
 
     def get_descriptor(self, domain, selector, serialized=False):

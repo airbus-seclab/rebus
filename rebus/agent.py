@@ -55,6 +55,9 @@ class Agent(object):
     def find(self, domain, selector_regex, limit):
         return self.bus.find(self, domain, selector_regex, limit)
 
+    def list_uuids(self, desc_domain):
+        return self.bus.list_uuids(self, desc_domain)
+
     def lock(self, lockid, desc_domain, selector):
         return self.bus.lock(self, lockid, desc_domain, selector)
 
