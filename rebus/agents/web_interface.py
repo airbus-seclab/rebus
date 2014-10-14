@@ -342,11 +342,11 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                 info = {}
                 infos.append(info)
                 for k in ('hash', 'selector', 'fullselector', 'printablevalue',
-                          'agent', 'domain', 'linksrchash'):
+                          'agent', 'domain', 'label', 'linksrchash'):
                     if k in d:
                         info[k] = d[k]
                 if page == 'monitor':
-                    for k in ('label', 'processing_time'):
+                    for k in ('processing_time',):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
                     desc_type = d['selector'].split('/')[1]

@@ -58,6 +58,7 @@ var updater = {
     currentAjaxQuery: null,
     domain: null,
     uuid: null,
+    filenametext: null,
 
     stopPolling: function() {
         if (updater.currentAjaxQuery) {
@@ -113,6 +114,10 @@ var updater = {
     },
 
     showDescriptor: function(descriptor) {
+        if (!updater.filenametext) {
+            updater.filenametext = descriptor.label;
+            $('#filename-uuid').html('Results for file <b>' + updater.filenametext + '</b>, uuid <b>' + updater.uuid + '</b>');
+        }
         if (descriptor.selector.indexOf('/link/') == 0) {
             if (!(descriptor.linksrchash in links)) {
                 links[descriptor.linksrchash] = {};
@@ -123,7 +128,7 @@ var updater = {
             linkicon.popover({
                 trigger: 'focus',
                 content: function(t) {
-                    res = '<table>';
+                    res = '<table><th><tr><td>linked to</td><td>reason</td></tr></th>';
                     ls = links[descriptor.linksrchash];
                     for (var link in ls) {
                         res += ls[link];
@@ -167,6 +172,8 @@ $(function () {
             $('.upload-status').text('Uploading file ' + data.files[0].name + '...');
             $('.upload-status-panel').show();
             $('#inbox').html('');
+            updater.filenametext = null;
+            $('#filename-uuid').html('');
             updater.domain = 'default';
             updater.cursor = 'cached';
             data.submit();
