@@ -3,6 +3,7 @@ $(document).ready(function() {
     if (!window.console) window.console = {};
     if (!window.console.log) window.console.log = function() {};
     splitpath = location.pathname.split('/');
+
     if (splitpath.length == 4) {
         updater.domain = splitpath[2];
         updater.uuid = splitpath[3];
