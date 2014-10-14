@@ -384,7 +384,8 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                             tornado.escape.url_escape(label))
         if selector.startswith('/matrix/') and not download:
             contents = OrderedDict()
-            hashes = sorted(data[0].keys(), key=lambda x: data[0][x])
+            # sort hashes by label
+            hashes = sorted(data[0].keys(), key=lambda x: data[0][x][1])
 
             # Compute colors thresholds depending on values
             values = sorted(data[1].values())
@@ -402,8 +403,8 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             else:
                 colorthresh = [0] * (nbcolors-1)
             for h1 in hashes:
-                h1name = data[0][h1]
-                contents[h1name] = list()
+                h1uuidname = data[0][h1]
+                contents[h1uuidname] = list()
                 for h2 in hashes:
                     value = data[1].get(frozenset((h1, h2)), "X")
                     if type(value) is dict:
@@ -411,15 +412,15 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         avg = numpy.average(d)
                         sd = numpy.std(d)
                         if sd < 0.2:
-                            contents[h1name].append(
+                            contents[h1uuidname].append(
                                 (avg,
                                  self.color(colorthresh, colorclasses, avg)))
                         else:
-                            contents[h1name].append(
+                            contents[h1uuidname].append(
                                 (str(int(sd*100))+str(value),
                                  self.color(colorthresh, colorclasses, avg)))
                     else:
-                        contents[h1name].append(
+                        contents[h1uuidname].append(
                             (value,
                              self.color(colorthresh, colorclasses, value)))
             self.finish(self.render_string('descriptor/matrix_view', matrix=contents))
