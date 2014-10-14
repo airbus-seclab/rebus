@@ -1,5 +1,5 @@
 <tr id="link_{{ escape(descriptor['hash']) }}_{{ escape(descriptor['linksrchash']) }}">
   <td>
-    <a href="/analysis/{{ escape(descriptor['domain'] ) }}/{{ escape(descriptor['selector'].split('/')[-2] ) }}">{{ escape(descriptor['value']['otherlabel'] ) }}</a></td>
+    <a href="/analysis/{{ escape(descriptor['domain'] ) }}/{{ escape(descriptor['selector'].split('/')[3] ) }}">{{ escape(descriptor['value']['otherlabel'] ) }}</a></td>
   <td>{{ escape(descriptor['value']['reason']) }}</td>
 </tr>
