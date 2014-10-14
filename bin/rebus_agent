@@ -11,6 +11,7 @@ import argparse
 def main():
     import sys
 
+    logging.basicConfig()
     rebus.agents.import_all()
     rebus.buses.import_all()    
     buslist = BusRegistry.get_all()
@@ -60,7 +61,7 @@ def main():
             options.agents.append(options.agent_name)
             options.agent_name = None
 
-    logging.basicConfig(level=max(1,30-10*options.verbose))
+    logging.getLogger().setLevel(max(1,30-10*options.verbose))
 
     bus_class = BusRegistry.get(options.bus)
     bus = bus_class(busaddr=options.busaddr)
