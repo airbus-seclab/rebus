@@ -128,9 +128,9 @@ var updater = {
             var linkicon = $('.linkicon', '#m' + descriptor.linksrchash);
             linkicon.fadeTo(100, 0.25).fadeTo(300, 1.0);
             linkicon.popover({
-                trigger: 'focus',
+                trigger: 'click',
                 content: function(t) {
-                    res = '<table><th><tr><td>linked to</td><td>reason</td></tr></th>';
+                    res = '<table class="table table-striped table-condensed"><thead><th>linked to</th><th>reason</th></thead>';
                     ls = links[descriptor.linksrchash];
                     for (var link in ls) {
                         res += ls[link];

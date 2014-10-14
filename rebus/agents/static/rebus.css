@@ -39,6 +39,10 @@ body {
   display: none;
 }
 
+.popover {
+  max-width: 600px;
+}
+
 .upload-status-panel {
   display: none;
 }
