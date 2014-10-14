@@ -38,7 +38,16 @@
             <input id="fileupload" type="file" name="file" data-url="/inject" />
           </span>
         </h1>
-        <span id="filename-uuid"></span>
+        <div id="filename-uuid" class="panel panel-default">
+          <div class="panel-body">
+            <table class="table table-striped table-condensed">
+              <tbody>
+                <tr><td class="container-key">File name</td><td id="display-filename"></td></tr>
+                <tr><td class="container-key">Analysis UUID</td><td id="display-uuid"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <div class="panel panel-default upload-status-panel">
         <div class="panel-body">

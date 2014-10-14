@@ -31,6 +31,10 @@ body {
   width: 60%;
 }
 
+#filename-uuid {
+  display: none;
+}
+
 .linkicon {
   display: none;
 }
@@ -47,7 +51,7 @@ body {
   width: 200px;
 }
 
-#inbox table {
+.panel-body table {
   margin-bottom: 0;
 }
 

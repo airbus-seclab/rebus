@@ -116,7 +116,9 @@ var updater = {
     showDescriptor: function(descriptor) {
         if (!updater.filenametext) {
             updater.filenametext = descriptor.label;
-            $('#filename-uuid').html('Results for file <b>' + updater.filenametext + '</b>, uuid <b>' + updater.uuid + '</b>');
+            $('#display-filename').html(descriptor.label);
+            $('#display-uuid').html('<a href="/analysis/default/' + updater.uuid + '">' + updater.uuid + '</a>');
+            $('#filename-uuid').fadeIn();
         }
         if (descriptor.selector.indexOf('/link/') == 0) {
             if (!(descriptor.linksrchash in links)) {
@@ -173,7 +175,7 @@ $(function () {
             $('.upload-status-panel').show();
             $('#inbox').html('');
             updater.filenametext = null;
-            $('#filename-uuid').html('');
+            $('#filename-uuid').hide();
             updater.domain = 'default';
             updater.cursor = 'cached';
             data.submit();
