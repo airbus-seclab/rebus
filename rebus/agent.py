@@ -90,17 +90,16 @@ class Agent(object):
     def init_agent(self):
         pass
 
-    def declare_link(self, desc1, desc2, short_reason, reason):
+    def declare_link(self, desc1, desc2, linktype, reason):
         """
         Helper function.
         Requests two new /link/ descriptors, then pushes them.
         :param desc1: Descriptor instance
         :param desc2: Descriptor instance
-        :param short_reason: string, will be part of the selector
+        :param lintype: word describing the type of the link, that will be part of the selector
         :param reason: Text description of the link reason
         """
-        link1, link2 = desc1.create_links(desc2, self.name, short_reason,
-                                          reason)
+        link1, link2 = desc1.create_links(desc2, self.name, linktype, reason)
         self.push(link1)
         self.push(link2)
 
