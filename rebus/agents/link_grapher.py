@@ -3,6 +3,9 @@ import time
 from itertools import chain
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
+from rebus.tools import color
+
+_color_scheme = color.ProxCS(lmin=1)
 
 
 @Agent.register
@@ -71,13 +74,14 @@ class LinkGrapher(Agent):
         dot = [ 'graph "links" {' ]
 
         for n,l in labels.iteritems():
-            dot.append('\t"%s" [ label="%s", fontsize=10, fillcolor="#ffccdd", style=filled, shape=note, href="/analysis/%s/%s"];' % (n,l,self.domain,n))
+            dot.append('\t"%s" [ label="%s", fontsize=10, fillcolor="#dddddd", style=filled, shape=note, href="/analysis/%s/%s"];' % (n,l,self.domain,n))
 
         dot.append("")
 
         for comp in set(links.values()):
             compname = ltname.next()
-            dot.append('\t"%s" [ label="%s", fontsize=8, fillcolor="#ccddff", style=filled, shape=oval];' % (compname, comp.linktype))
+            dot.append('\t"%s" [ label="%s", fontsize=8, fillcolor="#%s", style=filled, shape=oval];'
+                       % (compname, comp.linktype, _color_scheme.get_as_hex(comp.linktype)))
             for elt in comp.nodes:
                 dot.append('\t"%s" -- "%s" [ len=2 ];' % (compname, elt))
             dot.append("")
