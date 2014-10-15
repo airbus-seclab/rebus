@@ -47,6 +47,10 @@ body {
   display: none;
 }
 
+.nav {
+  text-transform: capitalize;
+}
+
 #template_container {
   display: none;
 }
