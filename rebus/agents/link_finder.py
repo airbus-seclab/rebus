@@ -30,6 +30,7 @@ class LinkFinder(Agent):
             for r in related:
                 rel_sel = pth+r
                 rel_desc = self.get(self.domain, rel_sel)
-                self.declare_link(descriptor, rel_desc, pth, "Same value on %s" % pth)
+                linktype = pth.strip("/").replace("/","-")
+                self.declare_link(descriptor, rel_desc, linktype, "Same value on %s" % pth)
         self.memories[key].append(hsh)
 
