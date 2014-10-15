@@ -33,7 +33,7 @@ class RandomCS(ColorScheme):
         if name in self.col:
             col = self.col[name]
         else:
-            self.col = col = self.rnd.random(), self.rnd.random(), self.rnd.random()
+            self.col[name] = col = self.rnd.random(), self.rnd.random(), self.rnd.random()
         return col
 
 
