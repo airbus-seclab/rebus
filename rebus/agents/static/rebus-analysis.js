@@ -61,7 +61,16 @@ var updater = {
     uuid: null,
     filenametext: null,
 
-    stopPolling: function() {
+    reset: function() {
+        updater.stopPolling();
+        $('#inbox').html('');
+        updater.filenametext = null;
+        $('#filename-uuid').hide();
+        updater.domain = 'default';
+        updater.cursor = 'cached';
+    },
+
+    stopPolling: function(reset) {
         if (updater.currentAjaxQuery) {
             updater.currentAjaxQuery.abort();
         }
@@ -120,6 +129,7 @@ var updater = {
             $('#display-filename').html(descriptor.label);
             $('#display-uuid').html('<a href="/analysis/default/' + updater.uuid + '">' + updater.uuid + '</a>');
             $('#filename-uuid').fadeIn();
+            $('#helptext').hide();
         }
         if (descriptor.selector.indexOf('/link/') == 0) {
             if (!(descriptor.linksrchash in links)) {
@@ -129,7 +139,7 @@ var updater = {
             var linkicon = $('.linkicon', '#m' + descriptor.linksrchash);
             linkicon.fadeTo(100, 0.25).fadeTo(300, 1.0);
             linkicon.popover({
-                trigger: 'click',
+                trigger: 'focus',
                 content: function(t) {
                     res = '<table class="table table-striped table-condensed"><thead><th>linked to</th><th>reason</th></thead>';
                     ls = links[descriptor.linksrchash];
@@ -163,41 +173,6 @@ var updater = {
                 node.fadeIn();
             }
         }
-    }
+    },
 };
-
-$(function () {
-    $('#fileupload').fileupload({
-        dataType: 'json',
-        add: function(e, data) {
-            updater.stopPolling();
-            $('#progress .progress-bar').css('width', '0%');
-            $('.upload-status').text('Uploading file ' + data.files[0].name + '...');
-            $('.upload-status-panel').show();
-            $('#inbox').html('');
-            updater.filenametext = null;
-            $('#filename-uuid').hide();
-            updater.domain = 'default';
-            updater.cursor = 'cached';
-            data.submit();
-        },
-        dataType: 'json',
-        done: function(e, data) {
-            $('.upload-status').text('File ' + data.files[0].name + ' has successfully been uploaded.');
-            $('#progress .progress-bar').css('width', '100%');
-            $('.upload-status-panel').delay(2000).hide(200);
-            updater.uuid = data.result.uuid;
-            history.pushState({}, '', ['/analysis', updater.domain,
-                                       updater.uuid].join('/'));
-            updater.poll();
-        },
-        progressall: function (e, data) {
-            var progress = parseInt(data.loaded / data.total * 100, 10);
-            $('#progress .progress-bar').css(
-                'width',
-                progress + '%'
-                );
-        }
-    });
-});
 

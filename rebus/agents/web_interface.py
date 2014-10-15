@@ -11,6 +11,10 @@ from collections import OrderedDict
 import numpy
 
 
+from tornado.log import enable_pretty_logging
+enable_pretty_logging()
+
+
 @Agent.register
 class WebInterface(Agent):
     _name_ = "web_interface"

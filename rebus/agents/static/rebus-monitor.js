@@ -49,6 +49,16 @@ var updater = {
     errorSleepTime: 1000,
     cursor: null,
 
+    reset: function() {
+        updater.stopPolling();
+    },
+
+    stopPolling: function() {
+        if (updater.currentAjaxQuery) {
+            updater.currentAjaxQuery.abort();
+        }
+    },
+
     poll: function() {
         var args = {"_xsrf": getCookie("_xsrf"), "page": "monitor", "domain":
                     "", "uuid": "", cursor: "cached"};
@@ -89,5 +99,5 @@ var updater = {
         node.hide();
         $("#inbox").append(node);
         node.fadeIn();
-    }
+    },
 };

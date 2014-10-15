@@ -9,6 +9,8 @@
     <script src="{{ static_url("jquery.ui.widget.js") }}" type="text/javascript"></script>
     <script src="{{ static_url("bootstrap-3.1.1-dist/js/bootstrap.min.js") }}" type="text/javascript"></script>
     <script src="{{ static_url("rebus-common.js") }}" type="text/javascript"></script>
+    <script src="{{ static_url("jquery-file-upload/jquery.fileupload.js") }}" type="text/javascript"></script>
+    <script src="{{ static_url("jquery-file-upload/jquery.iframe-transport.js") }}" type="text/javascript"></script>
   </head>
   <body>
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -29,6 +31,23 @@
             <li><a href="/selectors">Selectors</a></li>
             <li><a href="/monitor">Bus monitor</a></li>
           </ul>
+          <span class="btn btn-success btn-default navbar-btn fileinput-button">
+            <i class="glyphicon glyphicon-plus"></i>
+            <span>Analyse file...</span>
+            <input id="fileupload" type="file" name="file" data-url="/inject" />
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="panel panel-default upload-status-panel">
+        <div class="panel-body">
+          <span class="upload-status"></span>
+          <span class="progress-bar-container">
+            <div id="progress" class="progress">
+              <span class="progress-bar progress-bar-success"></span>
+            </div>
+          </span>
         </div>
       </div>
     </div>
