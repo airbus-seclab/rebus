@@ -30,6 +30,9 @@ class Agent(object):
         self.name = name if name else self._name_
         self.domain = domain
         self.bus = bus
+        # {key: value} containing relevant parameters that may influence the
+        # agent's outputs
+        self.config = dict()
         self.id = self.bus.join(self.name, domain,
                                 callback=self.on_new_descriptor)
         self.log = AgentLogger(log, dict(agent_id=self.id))
