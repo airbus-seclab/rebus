@@ -24,6 +24,7 @@ class DBus(Bus):
     def join(self, name, agent_domain='default', callback=None):
         self.callback = callback
         self.objpath = os.path.join("/agent", name)
+        self.agentname = name
         self.obj = dbus.service.Object(self.bus, self.objpath)
         self.well_known_name = dbus.service.BusName("com.airbus.rebus.agent.%s"
                                                     % name, self.bus)
@@ -71,7 +72,8 @@ class DBus(Bus):
         return self.iface.get_selectors(agent.id, selector_filter)
 
     def callback_wrapper(self, sender_id, desc_domain, selector):
-        if sender_id != self.agent_id:
+        agentname, _ = str(sender_id).rsplit('-', 1)
+        if agentname != self.agentname:
             self.callback(sender_id, desc_domain, selector)
 
     def run_agent(self, agent, args):
