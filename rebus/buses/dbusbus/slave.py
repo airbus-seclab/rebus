@@ -43,29 +43,30 @@ class DBus(Bus):
         return self.agent_id
 
     def lock(self, agent, lockid, desc_domain, selector):
-        return self.iface.lock(agent.id, lockid, desc_domain, selector)
+        return self.iface.lock(str(agent), lockid, desc_domain, selector)
 
     def get(self, agent, desc_domain, selector):
-        return Descriptor.unserialize(str(self.iface.get(agent.id, desc_domain,
-                                                         selector)))
+        return Descriptor.unserialize(str(
+            self.iface.get(str(agent), desc_domain, selector)), bus=self)
 
     def get_value(self, agent, desc_domain, selector):
-        return self.iface.get(agent.id, desc_domain, selector)
+        return Descriptor.unserialize_value(str(
+            self.iface.get_value(str(agent), desc_domain, selector)))
 
     def find(self, agent, desc_domain, selector_regex, limit):
-        return self.iface.find(agent.id, desc_domain, selector_regex, limit)
+        return self.iface.find(str(agent), desc_domain, selector_regex, limit)
 
     def list_uuids(self, agent, desc_domain):
         return {str(k): str(v) for k, v in
-                self.iface.list_uuids(agent.id, desc_domain).items()}
+                self.iface.list_uuids(str(agent), desc_domain).items()}
 
     def find_by_uuid(self, agent, desc_domain, uuid):
-        return [Descriptor.unserialize(str(s)) for s in
-                self.iface.find_by_uuid(agent.id, desc_domain, uuid)]
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.iface.find_by_uuid(str(agent), desc_domain, uuid)]
 
     def get_children(self, agent, desc_domain, selector, recurse=True):
-        return [Descriptor.unserialize(str(s)) for s in
-                self.iface.get_children(agent.id, desc_domain, selector,
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.iface.get_children(str(agent), desc_domain, selector,
                                         recurse)]
 
     def mark_processed(self, desc_domain, selector, agent_name, config_txt):
@@ -73,10 +74,10 @@ class DBus(Bus):
                                   config_txt)
 
     def push(self, agent, descriptor):
-        return self.iface.push(agent.id, descriptor.serialize())
+        return self.iface.push(str(agent), descriptor.serialize())
 
     def get_selectors(self, agent, selector_filter):
-        return self.iface.get_selectors(agent.id, selector_filter)
+        return self.iface.get_selectors(str(agent), selector_filter)
 
     def callback_wrapper(self, sender_id, desc_domain, selector):
         agentname, _ = str(sender_id).rsplit('-', 1)

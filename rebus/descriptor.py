@@ -11,9 +11,9 @@ class Descriptor(object):
 
     NAMESPACE_REBUS = m_uuid.uuid5(m_uuid.NAMESPACE_DNS, "rebus.airbus.com")
 
-    def __init__(self, label, selector, value, domain="default",
+    def __init__(self, label, selector, value=None, domain="default",
                  agent=None, precursors=None, version=0, processing_time=-1,
-                 uuid=None):
+                 uuid=None, bus=None):
         self.label = label
 
         #: contains a list of parent descriptors' selectors. Typically contains
@@ -22,6 +22,8 @@ class Descriptor(object):
 
         self.agent = agent
 
+        self.bus = bus
+
         p = selector.rfind("%")
         if p >= 0:
             self.hash = selector[(p + 1):]
@@ -29,7 +31,11 @@ class Descriptor(object):
             if self.agent and self.precursors:
                 v = str(self.agent) + str(self.precursors) + selector
             else:
-                v = value if type(value) is str else cPickle.dumps(value)
+                if value is None:
+                    # v should only be None when Descriptor is instanciated
+                    # from metadata only (implicit reference to stored value)
+                    raise Exception('Hash value missing')
+                v = value
             self.hash = hashlib.sha256(v).hexdigest()
             selector = os.path.join(selector, "%" + self.hash)
         self.selector = selector
@@ -37,6 +43,7 @@ class Descriptor(object):
         self.domain = domain
         self.version = version
         self.processing_time = processing_time
+        self.value = value
         if uuid is None:
             uuid = str(m_uuid.uuid5(self.NAMESPACE_REBUS, self.hash))
         #: A new uuid is generated for:
@@ -115,17 +122,51 @@ class Descriptor(object):
 
     def serialize(self):
         return cPickle.dumps(
-            {k: v for k, v in self.__dict__.iteritems()
+            {k: getattr(self, k) for k in dir(self)
              if k in ["label", "selector", "value", "domain", "agent",
                       "precursors", "version", "processing_time", "uuid"]})
 
+    def serialize_meta(self):
+        """
+        Serialize descriptor, without its value.
+        """
+        return cPickle.dumps(
+            {k: getattr(self, k) for k in dir(self)
+             if k in ["label", "selector", "domain", "agent", "precursors",
+                      "version", "processing_time"]})
+
+    def serialize_value(self):
+        """
+        Serialize descriptor value.
+        """
+        return cPickle.dumps(self.value)
+
+    @staticmethod
+    def unserialize_value(s):
+        return cPickle.loads(s)
+
     @classmethod
-    def unserialize(cls, s):
+    def unserialize(cls, s, bus=None):
         unserialized = cPickle.loads(s)
         if unserialized:
-            return cls(**unserialized)
+            return cls(bus=bus, **unserialized)
         else:
             return None
+
+    @property
+    def value(self):
+        if self._value:
+            return self._value
+        else:
+            if self.bus:
+                return self.bus.get_value(self.agent, self.domain,
+                                          self.selector)
+        raise Exception('Trying to get unobtainable descriptor value')
+        return None
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
     def __repr__(self):
         v = repr(self.value)

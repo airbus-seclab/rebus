@@ -128,9 +128,11 @@ class Agent(object):
             # TODO request from storage if locally available - implement when
             # agent has a reference to maybe existent local storage
             return self.bus.get_value(self, descriptor.domain,
-                    descriptor.selector)
+                                      descriptor.selector)
             # possible trade-off: store now-fetched value in descriptor
 
+    def __repr__(self):
+        return self.id
 
     @classmethod
     def add_arguments(cls, subparser):
