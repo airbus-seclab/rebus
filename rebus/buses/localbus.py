@@ -50,6 +50,11 @@ class LocalBus(Bus):
         return self.store.get_descriptor(desc_domain, selector,
                                          serialized=False)
 
+    def get_value(self, agent_id, desc_domain, selector):
+        log.info("GET: %s %s:%s", agent_id, desc_domain, selector)
+        return self.store.get_value(desc_domain, selector)
+
+
     def find(self, agent_id, desc_domain, selector_regex, limit):
         log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
                   limit)

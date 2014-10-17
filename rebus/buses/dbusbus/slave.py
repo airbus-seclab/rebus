@@ -49,6 +49,9 @@ class DBus(Bus):
         return Descriptor.unserialize(str(self.iface.get(agent.id, desc_domain,
                                                          selector)))
 
+    def get_value(self, agent, desc_domain, selector):
+        return self.iface.get(agent.id, desc_domain, selector)
+
     def find(self, agent, desc_domain, selector_regex, limit):
         return self.iface.find(agent.id, desc_domain, selector_regex, limit)
 

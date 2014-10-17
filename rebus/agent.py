@@ -121,6 +121,17 @@ class Agent(object):
     def run(self, options):
         self.bus.agentloop(self)
 
+    def get_value(self, descriptor):
+        if hasattr(descriptor, 'value'):
+            return descriptor.value
+        else:
+            # TODO request from storage if locally available - implement when
+            # agent has a reference to maybe existent local storage
+            return self.bus.get_value(self, descriptor.domain,
+                    descriptor.selector)
+            # possible trade-off: store now-fetched value in descriptor
+
+
     @classmethod
     def add_arguments(cls, subparser):
         pass

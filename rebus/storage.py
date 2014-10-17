@@ -58,6 +58,16 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def get_value(self, domain, selector):
+        """
+        Get a selector's value.
+        /sel/ector/%hash
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        """
+        raise NotImplementedError
+
     def get_children(self, domain, selector, serialized=False, recurse=True):
         """
         Returns a set of children descriptors from given selector.
