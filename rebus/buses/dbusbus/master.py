@@ -91,6 +91,14 @@ class DBusMaster(dbus.service.Object):
         return list(self.store.get_children(str(desc_domain), str(selector),
                                             serialized=True, recurse=recurse))
 
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ssss', out_signature='')
+    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
+        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
+                  agent_name, config_txt)
+        self.store.mark_processed(desc_domain, selector, agent_name,
+                                  config_txt)
+
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, desc_domain, selector):

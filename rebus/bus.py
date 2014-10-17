@@ -45,5 +45,8 @@ class Bus(object):
     def get_selectors(self, agent_id, selector_filter):
         raise NotImplementedError
 
+    def mark_processed(self, domain, selector, agent, config_txt):
+        raise NotImplementedError
+
     def mainloop(self, agent_id):
         raise NotImplementedError

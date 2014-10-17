@@ -3,6 +3,7 @@ from rebus.tools.registry import Registry
 from rebus.bus import DEFAULT_DOMAIN
 import logging
 import time
+import json
 
 
 log = logging.getLogger("rebus.agent")
@@ -82,6 +83,8 @@ class Agent(object):
                     done = time.time()
                     self.log.info("END   Processing |%f| %r" %
                                   (done-self.start_time, desc))
+        config_txt = json.dumps(self.config, sort_keys=True)
+        self.bus.mark_processed(desc_domain, selector, self.name, config_txt)
 
     def run_in_bus(self, args):
         self.bus.run_agent(self, args)

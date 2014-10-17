@@ -65,6 +65,10 @@ class DBus(Bus):
                 self.iface.get_children(agent.id, desc_domain, selector,
                                         recurse)]
 
+    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
+        self.iface.mark_processed(desc_domain, selector, agent_name,
+                                  config_txt)
+
     def push(self, agent, descriptor):
         return self.iface.push(agent.id, descriptor.serialize())
 

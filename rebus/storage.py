@@ -24,6 +24,12 @@ class DescriptorStorage(object):
         # descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
+        # self.processed['domain']['/selector/%hash'] is a set of (agent names,
+        # configuration text) that have finished processing, or declined to
+        # process this descriptor. Allows stopping and resuming the bus when
+        # not all descriptors have been processed
+        self.processed = defaultdict(lambda: defaultdict(set))
+
     def find(self, domain, selector_regex, limit):
         """
         Return array of selectors according to search constraints :
@@ -130,3 +136,13 @@ class DescriptorStorage(object):
         for precursor in descriptor.precursors:
             self.edges[domain][precursor].add(selector)
         return True
+
+    def mark_processed(self, domain, selector, agent, config_txt):
+        self.processed[domain][selector].add((agent, config_txt))
+
+    def get_processed(self, domain, selector):
+        """
+        Returns the list of (agents, config_txt) that have processed this
+        selector
+        """
+        return self[domain][selector]
