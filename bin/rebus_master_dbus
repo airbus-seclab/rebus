@@ -1,16 +1,37 @@
 #! /usr/bin/python
-import argparse, sys, logging
-
-parser = argparse.ArgumentParser(description='Rebus DBUS master')
-parser.add_argument('-f', '--logfile', help="Destination log file")
-parser.add_argument('-v', '--verbose', help="Verbosity, 0 is lowest, 50 highest", type=int, default=10, metavar="LEVEL")
-
-options = parser.parse_args()
-
-logging.basicConfig(level=options.verbose,filename=options.logfile)
+import argparse
+import sys
+import logging
+import rebus.storage_backends
+from rebus.storage import StorageRegistry
 
 from rebus.buses.dbusbus.master import DBusMaster
 
-if __name__ == "__main__":
-    DBusMaster.run()
 
+def main():
+    rebus.storage_backends.import_all()
+
+    parser = argparse.ArgumentParser(description='Rebus DBUS master',
+                                     epilog='Uses the ramstorage backend if\
+                                     none is specified.')
+    parser.add_argument('-f', '--logfile', help="Destination log file")
+    parser.add_argument('-v', '--verbose',
+                        help="Verbosity, 0 is lowest, 50 highest",
+                        type=int, default=10, metavar="LEVEL")
+    subparsers = parser.add_subparsers(help='Storage backends', dest='storage')
+    for backend, cls in StorageRegistry.iteritems():
+        subparser = subparsers.add_parser(backend)
+        cls.add_arguments(subparser)
+
+    if len(sys.argv) < 2:
+        options = parser.parse_args(["ramstorage"])
+    else:
+        options = parser.parse_args()
+
+    logging.basicConfig(level=options.verbose, filename=options.logfile)
+    storage_class = StorageRegistry.get(options.storage)
+    storage = storage_class(**vars(options))
+    DBusMaster.run(storage)
+
+if __name__ == "__main__":
+    main()

@@ -5,7 +5,6 @@ from collections import defaultdict
 import dbus.service
 import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
-import rebus.storage
 from rebus.descriptor import Descriptor
 import gobject
 
@@ -16,9 +15,9 @@ log = logging.getLogger("rebus.bus")
 
 
 class DBusMaster(dbus.service.Object):
-    def __init__(self, bus, objpath):
+    def __init__(self, bus, objpath, store):
         dbus.service.Object.__init__(self, bus, objpath)
-        self.store = rebus.storage.DescriptorStorage()
+        self.store = store
         self.clients = {}
         self.processed = defaultdict(set)
 
@@ -105,14 +104,14 @@ class DBusMaster(dbus.service.Object):
         pass
 
     @classmethod
-    def run(cls):
+    def run(cls, store):
         gobject.threads_init()
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
 
         bus = dbus.SessionBus()
         name = dbus.service.BusName("com.airbus.rebus.bus", bus)
-        svc = cls(bus, "/bus")
+        svc = cls(bus, "/bus", store)
 
         mainloop = gobject.MainLoop()
         log.info("Entering main loop.")

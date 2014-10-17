@@ -1,34 +1,21 @@
 #!/usr/bin/env python2
-
-import re
-from collections import defaultdict
-from collections import OrderedDict
+from rebus.tools.registry import Registry
 
 
-class DescriptorStorage(object):
-    """
-    Storage and retrieval of descriptor objects.
-    """
-    def __init__(self):
-        self.dstore = defaultdict(OrderedDict)
+class StorageRegistry(Registry):
+    pass
 
-        #: self.serialized_store['domain']['/selector/%hash'] is a serialized
-        #: descriptor
-        self.serialized_store = defaultdict(dict)
 
-        # self.version_cache['domain']['/selector/'][42] = /selector/%1234
-        # where 1234 is the hash of this selector's version 42
-        self.version_cache = defaultdict(lambda: defaultdict(dict))
+class Storage(object):
+    _name_ = "Storage"
+    _desc_ = "N/A"
 
-        # self.edges['domain']['selectorA'] is a set of selectors of
-        # descriptors that were spawned from selectorA.
-        self.edges = defaultdict(lambda: defaultdict(set))
+    @staticmethod
+    def register(f):
+        return StorageRegistry.register_ref(f, key="_name_")
 
-        # self.processed['domain']['/selector/%hash'] is a set of (agent names,
-        # configuration text) that have finished processing, or declined to
-        # process this descriptor. Allows stopping and resuming the bus when
-        # not all descriptors have been processed
-        self.processed = defaultdict(lambda: defaultdict(set))
+    def __init__(self, **kwargs):
+        pass
 
     def find(self, domain, selector_regex, limit):
         """
@@ -37,31 +24,18 @@ class DescriptorStorage(object):
         * domain
         * selector regular expression
         * limit (max number of entries to return)
-        """
-        regex = re.compile(selector_regex)
-        store = self.dstore[domain]
-        res = []
 
-        # FIXME : be more efficient ?
-        for k in reversed(store.keys()):
-            if regex.match(k):
-                res.append(k)
-                if limit != 0 and len(res) >= limit:
-                    return res
-        return res
+        :param domain: string, domain on which operations are performed
+        :param selector_regex: string, regex
+        :param limit: int, max number of selectors to return. Unlimited if 0.
+        """
+        raise NotImplementedError
 
     def find_by_uuid(self, domain, uuid, serialized=False):
         """
         Return a list of descriptors whose uuid match given parameter
         """
-        result = []
-        for selector, desc in self.dstore[domain].iteritems():
-            if desc.uuid == uuid:
-                if serialized:
-                    result.append(self.serialized_store[domain][selector])
-                else:
-                    result.append(desc)
-        return result
+        raise NotImplementedError
 
     def list_uuids(self, domain):
         """
@@ -69,11 +43,7 @@ class DescriptorStorage(object):
 
         Returns a dictionnary mapping known UUID to corresponding labels.
         """
-        result = dict()
-        for desc in self.dstore[domain].values():
-            print "DESC", desc, type(desc)
-            result[desc.uuid] = desc.label
-        return result
+        raise NotImplementedError
 
     def get_descriptor(self, domain, selector, serialized=False):
         """
@@ -81,68 +51,59 @@ class DescriptorStorage(object):
         /sel/ector/%hash
         /sel/ector/~version (where version is an integer. Negative values are
         evaluated from the most recent versions, counting backwards)
-        """
-        # if version is specified, but no hash
-        if '%' not in selector and '~' in selector:
-            selprefix, version = selector.split('~')
-            try:
-                intversion = int(version)
-                if intversion < 0:
-                    maxversion = max(self.version_cache[domain][selprefix])
-                    intversion = maxversion + intversion + 1
-                selector = self.version_cache[domain][selprefix][intversion]
-            except (KeyError, ValueError):
-                # ValueError: invalid version integer
-                # KeyError: unknown version
-                selector = None
 
-        # Check whether domain & selector are known
-        if domain not in self.dstore or selector not in self.dstore[domain]:
-            if serialized:
-                return "N."  # serialized None
-            else:
-                return None
-        if not serialized:
-            return self.dstore[domain][selector]
-        else:
-            desc = self.serialized_store[domain][selector]
-            if desc:
-                return desc
-            return self.dstore[domain][selector].serialize()
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        :param serialized: boolean, return serialized descriptors if True
+        """
+        raise NotImplementedError
 
     def get_children(self, domain, selector, serialized=False, recurse=True):
-        result = set()
-        if selector not in self.dstore[domain]:
-            return result
-        for child in self.edges[domain][selector]:
-            if serialized:
-                result.add(self.serialized_store[domain][child])
-            else:
-                result.add(self.dstore[domain][child])
-            if recurse:
-                result |= self.get_children(child, domain, serialized, recurse)
-        return result
+        """
+        Returns a set of children descriptors from given selector.
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        :param serialized: boolean, return serialized descriptors if True
+        :param recurse: boolean, recursively fetch children if True
+        """
+        raise NotImplementedError
 
     def add(self, descriptor, serialized_descriptor=None):
-        selector = descriptor.selector
-        domain = descriptor.domain
-        if selector in self.dstore[domain]:
-            return False
-        if serialized_descriptor is not None:
-            self.serialized_store[domain][selector] = serialized_descriptor
-        self.dstore[domain][selector] = descriptor
-        self.version_cache[domain][selector.split('%')[0]][descriptor.version]\
-            = selector
-        for precursor in descriptor.precursors:
-            self.edges[domain][precursor].add(selector)
-        return True
+        """
+        Add new descriptor to storage
+
+        :param descriptor: descriptor to be stored
+        :param serialized_descriptor: string, optionally contains a serialized
+            version of the descriptor
+        """
+        raise NotImplementedError
 
     def mark_processed(self, domain, selector, agent, config_txt):
-        self.processed[domain][selector].add((agent, config_txt))
+        """
+        Mark given selector as having been processed by given agent whose
+        configuration is serialized in config_txt.
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        :param agent: string, agent name
+        :param config_txt: string, JSON-serialized configuration of agent
+        """
+        raise NotImplementedError
 
     def get_processed(self, domain, selector):
         """
         Returns the list of (agents, config_txt) that have processed this
-        selector
+        selector.
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
         """
-        return self[domain][selector]
+        raise NotImplementedError
+
+    @staticmethod
+    def add_arguments(subparser):
+        """
+        Allow storage backend to receive optional arguments
+        """
+        pass
