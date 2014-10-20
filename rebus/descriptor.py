@@ -133,7 +133,7 @@ class Descriptor(object):
         return cPickle.dumps(
             {k: getattr(self, k) for k in dir(self)
              if k in ["label", "selector", "domain", "agent", "precursors",
-                      "version", "processing_time"]})
+                      "version", "processing_time", "uuid"]})
 
     def serialize_value(self):
         """

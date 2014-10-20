@@ -41,7 +41,7 @@ class Storage(object):
         """
         :param domain: domain from which UUID should be enumerated
 
-        Returns a dictionnary mapping known UUID to corresponding labels.
+        Returns a dictionary mapping known UUID to corresponding labels.
         """
         raise NotImplementedError
 
