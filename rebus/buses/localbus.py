@@ -1,7 +1,7 @@
 import threading
 from collections import defaultdict, namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
-import rebus.storage
+from rebus.storage_backends.ramstorage import RAMStorage
 import logging
 
 log = logging.getLogger("rebus.localbus")
@@ -17,7 +17,7 @@ class LocalBus(Bus):
         self.callbacks = []
         self.locks = defaultdict(set)
         self.agent_count = 0
-        self.store = rebus.storage.DescriptorStorage()
+        self.store = RAMStorage()
         self.agents = {}
         self.threads = []
 
