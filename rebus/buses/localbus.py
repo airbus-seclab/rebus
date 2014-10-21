@@ -60,6 +60,11 @@ class LocalBus(Bus):
                   limit)
         return self.store.find(desc_domain, selector_regex, limit)
 
+    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
+        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
+                  agent_name, config_txt)
+        self.store.mark_processed(desc_domain, selector, agent_name,
+                                  config_txt)
     def list_uuids(self, agent_id, desc_domain, selector_regex, limit):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         return self.store.list_uuids(desc_domain)
