@@ -119,6 +119,7 @@ class Agent(object):
         pass
 
     def run(self, options):
+        self.options = options
         self.bus.agentloop(self)
 
     def get_value(self, descriptor):
