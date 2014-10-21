@@ -10,13 +10,16 @@ class Cat(Agent):
     @classmethod
     def add_arguments(cls, subparser):
         subparser.add_argument("selectors", nargs="+",
-                               help="Dump selector values on stdout")
+                               help="Dump selector values on stdout. Selectors can be regexes")
 
     def run(self, options):
-        for s in options.selectors:
-            desc = self.get(options.domain, s)
-            if desc:
-                sys.stdout.write(str(desc.value))
-            else:
-                self.log.warning("selector [%s:%s] not found", options.domain,
-                                 s)
+        for selregex in options.selectors:
+            sels = self.find(self.domain, selregex, 3)
+            print selregex, sels
+            if len(sels) > 0:
+                for s in sels:
+                    desc = self.get(options.domain, s)
+                    if desc:
+                        sys.stdout.write(str(desc.value))
+                    else:
+                        self.log.warning("selector [%s:%s] not found", options.domain, s)
