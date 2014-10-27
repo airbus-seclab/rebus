@@ -35,12 +35,11 @@ class LocalBus(Bus):
         if self.store.add(descriptor):
             log.info("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             for agid, cb in self.callbacks:
-                if agid != agent_id.id:
-                    try:
-                        log.debug("Calling %s callback", agid)
-                        cb(agent_id.id, desc_domain, selector)
-                    except Exception, e:
-                        log.error("ERROR agent [%s]: %s", agid, e)
+                try:
+                    log.debug("Calling %s callback", agid)
+                    cb(agent_id.id, desc_domain, selector)
+                except Exception, e:
+                    log.error("ERROR agent [%s]: %s", agid, e)
         else:
             log.info("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
                      selector)

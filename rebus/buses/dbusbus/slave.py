@@ -80,9 +80,7 @@ class DBus(Bus):
         return self.iface.get_selectors(str(agent), selector_filter)
 
     def callback_wrapper(self, sender_id, desc_domain, selector):
-        agentname, _ = str(sender_id).rsplit('-', 1)
-        if agentname != self.agentname:
-            self.callback(sender_id, desc_domain, selector)
+        self.callback(sender_id, desc_domain, selector)
 
     def run_agent(self, agent, args):
         agent.run(*args)

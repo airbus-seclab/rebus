@@ -30,7 +30,7 @@ def guess_selector(fname=None, buf=None):
                 buf = open(fname).read()
             if buf is not None:
                 # MZ.e_lfanew
-                e_lfanew = struct.unpack('<I',buf[0x3C:0x3C+4])[0]
+                e_lfanew = struct.unpack('<I', buf[0x3C:0x3C+4])[0]
                 if buf[e_lfanew:e_lfanew+4] == "PE\x00\x00":
                     return "/binary/pe"
         except:
@@ -38,6 +38,18 @@ def guess_selector(fname=None, buf=None):
         return "/binary/dos"
     if "Mach-O" in guess:
         return "/binary/macho"
+
+    # Compressed files
+    if "gzip compressed data" in guess:
+        return "/compressed/gzip"
+    if "bzip2 compressed data" in guess:
+        return "/compressed/bzip2"
+
+    # Archive files
+    if "POSIX tar archive" in guess:
+        return "/archive/tar"
+    if "Zip archive data" in guess:
+        return "/archive/zip"
     return "/unknown"
 
 
