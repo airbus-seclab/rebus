@@ -2,3 +2,16 @@ Dependencies:
 * python2-tornado >= 3.0 (debian squeeze packages v2.3)
 * python-dbus
 * python-gobject
+
+Building the documentation
+==========================
+
+$ cd rebus/doc
+
+Make sure sphinx-apidoc2 and sphinx-build2 are installed on your system.
+Override the SPHINXBUILD and SPHINXAPIDOC if necessary.
+
+$ make generate
+This will overwrite .rst files in source/.
+
+$ make singlehtml

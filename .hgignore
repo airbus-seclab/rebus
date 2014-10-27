@@ -5,3 +5,5 @@ syntax: glob
 build/
 rebus.egg-info/
 dist/
+rebus/doc/build
+rebus/doc/source/rebus.*.rst
