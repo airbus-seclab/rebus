@@ -79,7 +79,8 @@ class Descriptor(object):
                               agent=self.agent,
                               precursors=[newprecursor] + self.precursors,
                               version=self.version + 1,
-                              processing_time=processing_time)
+                              processing_time=processing_time,
+                              uuid=self.uuid)
         return desc
 
     def create_links(self, otherdesc, agentname, linktype, reason):
