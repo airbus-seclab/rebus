@@ -238,6 +238,7 @@ class DescriptorStore(object):
                 'label': desc.label,
                 'printablevalue': printablevalue,
                 'processing_time': format(desc.processing_time, '.3f'),
+                'version': desc.version,
             }
             if desc.selector.startswith('/link/'):
                 descrinfo['value'] = desc.value
@@ -342,7 +343,8 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                 info = {}
                 infos.append(info)
                 for k in ('hash', 'selector', 'fullselector', 'printablevalue',
-                          'agent', 'domain', 'label', 'linksrchash'):
+                          'agent', 'domain', 'label', 'linksrchash',
+                          'version'):
                     if k in d:
                         info[k] = d[k]
                 if page == 'monitor':

@@ -1,0 +1,4 @@
+<tr class="descriptor" id="m{{ escape(descriptor['hash']) }}">
+  <td class='container-key'><a href="/get{{ url_escape(descriptor['fullselector']) }}?domain={{url_escape(descriptor['domain'])}}">{{ escape(descriptor['selector']) }}</a></td>
+  <td><a href="/get{{ url_escape(descriptor['fullselector']) }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt"> </span></a> <a href='#' class="glyphicon glyphicon-link linkicon"></a>{{ escape(" ".join(descriptor['selector'].split("/")[2:])) }} matrix version v{{ escape(str(descriptor['version'])) }}</td>
+</tr>
