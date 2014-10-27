@@ -153,25 +153,24 @@ var updater = {
                     e.preventDefault();
                     $(this).focus();
                     });
-        } else {
-            var container = $('#container_' + descriptor.agent);
-            if (container.length == 0) {
-                container = $('#template_container').clone().attr('id', 'container_' + descriptor.agent);
-                    container.find('.panel-title').text(descriptor.agent);
-                    $('#inbox').append(container);
-            }
-            inbox = container.find('.container-inbox');
+        }
+        var container = $('#container_' + descriptor.agent);
+        if (container.length == 0) {
+            container = $('#template_container').clone().attr('id', 'container_' + descriptor.agent);
+                container.find('.panel-title').text(descriptor.agent);
+                $('#inbox').append(container);
+        }
+        inbox = container.find('.container-inbox');
 
-            var node = $(descriptor.html);
-            var incoming_hash = node[0].id;
-            var existing = inbox.find("#"+incoming_hash);
-            if (existing.length > 0) {
-                existing.replaceWith(node);
-            } else {
-                node.hide();
-                inbox.append(node);
-                node.fadeIn();
-            }
+        var node = $(descriptor.html);
+        var incoming_hash = node[0].id;
+        var existing = inbox.find("#"+incoming_hash);
+        if (existing.length > 0) {
+            existing.replaceWith(node);
+        } else {
+            node.hide();
+            inbox.append(node);
+            node.fadeIn();
         }
     },
 };
