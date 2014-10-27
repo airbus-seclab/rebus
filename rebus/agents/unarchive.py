@@ -7,6 +7,7 @@ import time
 from StringIO import StringIO
 
 
+
 @Agent.register
 class Unarchive(Agent):
     _name_ = "unarchive"
@@ -25,14 +26,34 @@ class Unarchive(Agent):
         unarchived = []
         # Compressed files
         if "/compressed/bzip2" in selector:
-            import bz2
-            data = bz2.decompress(descriptor.value)
-            unarchived.append(("bunzipped %s" % descriptor.label, data))
+            # Try and extract - might be a .tar.bz2
+            import tarfile
+            try:
+                tar = tarfile.open(fileobj=StringIO(descriptor.value),
+                                   mode="r:bz2")
+                for fname in tar.getnames():
+                    unarchived.append((descriptor.label + ":" + fname,
+                                       tar.extractfile(fname).read()))
+            except tarfile.TarError:
+                # Probably not a compressed tar file
+                import bz2
+                data = bz2.decompress(descriptor.value)
+                unarchived.append(("bunzipped %s" % descriptor.label, data))
         if "/compressed/gzip" in selector:
-            from gzip import GzipFile
-            data = GzipFile(fileobj=StringIO(descriptor.value),
-                            mode='rb').read()
-            unarchived.append(("gunzipped %s" % descriptor.label, data))
+            # Try and extract - might be a .tar.gz
+            import tarfile
+            try:
+                tar = tarfile.open(fileobj=StringIO(descriptor.value),
+                                   mode="r:gz")
+                for fname in tar.getnames():
+                    unarchived.append((descriptor.label + ":" + fname,
+                                       tar.extractfile(fname).read()))
+            except tarfile.TarError:
+                # Probably not a compressed tar file
+                from gzip import GzipFile
+                data = GzipFile(fileobj=StringIO(descriptor.value),
+                                mode='rb').read()
+                unarchived.append(("gunzipped %s" % descriptor.label, data))
 
         # Archive files
         if "/archive/tar" in selector:
