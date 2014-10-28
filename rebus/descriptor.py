@@ -29,7 +29,7 @@ class Descriptor(object):
             self.hash = selector[(p + 1):]
         else:
             if self.agent and self.precursors:
-                v = str(self.agent) + str(self.precursors) + selector
+                v = str(self.agent) + str(self.precursors) + selector + value
             else:
                 if value is None:
                     # v should only be None when Descriptor is instanciated
@@ -162,8 +162,8 @@ class Descriptor(object):
             if self.bus:
                 return self.bus.get_value(self.agent, self.domain,
                                           self.selector)
-        raise Exception('Trying to get unobtainable descriptor value')
-        return None
+        raise Exception('Trying to get unobtainable descriptor value - no '
+                        'reference to bus nor value')
 
     @value.setter
     def value(self, value):
