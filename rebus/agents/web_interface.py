@@ -101,7 +101,7 @@ class CustomLoader(tornado.template.Loader):
         if not name.startswith('descriptor/'):
             return super(CustomLoader, self)._create_template(name)
 
-        desc_type, page = name.rsplit('/', 1)[1].split('_')
+        desc_type, page = name.rsplit('/', 1)[1].rsplit('_', 1)
         if (desc_type, page) in CustomLoader.templates:
             # try to load specific template
             templatestr = CustomLoader.templates[(desc_type, page)]
