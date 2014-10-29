@@ -29,7 +29,8 @@ class Descriptor(object):
             self.hash = selector[(p + 1):]
         else:
             if self.agent and self.precursors:
-                v = str(self.agent) + str(self.precursors) + selector + value
+                v = str(self.agent) + str(self.precursors) + selector + \
+                    str(value)
             else:
                 if value is None:
                     # v should only be None when Descriptor is instanciated
