@@ -73,11 +73,12 @@ class DBus(Bus):
         self.iface.mark_processed(desc_domain, selector, agent_name,
                                   config_txt)
 
+    def processed_stats(self, agent, desc_domain):
+        stats, total = self.iface.processed_stats(str(agent), desc_domain)
+        return [(str(k), int(v)) for k, v in stats], int(total)
+
     def push(self, agent, descriptor):
         return self.iface.push(str(agent), descriptor.serialize())
-
-    def get_selectors(self, agent, selector_filter):
-        return self.iface.get_selectors(str(agent), selector_filter)
 
     def callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)

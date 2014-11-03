@@ -2,6 +2,7 @@ from rebus.storage import Storage
 import re
 from collections import defaultdict
 from collections import OrderedDict
+from collections import Counter
 
 
 @Storage.register
@@ -123,3 +124,15 @@ class RAMStorage(Storage):
 
     def get_processed(self, domain, selector):
         return self[domain][selector]
+
+    def processed_stats(self, domain):
+        """
+        Returns a list of couples, (agent names, number of processed selectors)
+        and the total amount of selectors in this domain.
+
+        """
+        result = Counter()
+        processed = self.processed[domain]
+        for agentlist in processed.values():
+            result.update([name for name, _ in agentlist])
+        return result.items(), len(processed)

@@ -62,6 +62,9 @@ class Agent(object):
     def list_uuids(self, desc_domain):
         return self.bus.list_uuids(self, desc_domain)
 
+    def processed_stats(self, desc_domain):
+        return self.bus.processed_stats(self, desc_domain)
+
     def lock(self, lockid, desc_domain, selector):
         return self.bus.lock(self, lockid, desc_domain, selector)
 

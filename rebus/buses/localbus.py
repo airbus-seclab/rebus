@@ -64,6 +64,11 @@ class LocalBus(Bus):
                   agent_name, config_txt)
         self.store.mark_processed(desc_domain, selector, agent_name,
                                   config_txt)
+
+    def processed_stats(self, agent_id, desc_domain):
+        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        return self.store.processed_stats(desc_domain)
+
     def list_uuids(self, agent_id, desc_domain, selector_regex, limit):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         return self.store.list_uuids(desc_domain)

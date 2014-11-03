@@ -104,6 +104,12 @@ class DBusMaster(dbus.service.Object):
         self.store.mark_processed(desc_domain, selector, agent_name,
                                   config_txt)
 
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ss', out_signature='a(su)u')
+    def processed_stats(self, agent_id, desc_domain):
+        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        return self.store.processed_stats(desc_domain)
+
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, desc_domain, selector):

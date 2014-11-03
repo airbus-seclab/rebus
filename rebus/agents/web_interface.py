@@ -124,6 +124,7 @@ class Application(tornado.web.Application):
             (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
             (r"/get(.*)", DescriptorGetHandler),
+            (r"/agents", AgentsHandler),
         ]
         params = {
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
@@ -282,6 +283,9 @@ class DescriptorStore(object):
 
     def list_uuids(self, desc_domain):
         return self.agent.list_uuids(desc_domain)
+
+    def processed_stats(self, desc_domain):
+        return self.agent.processed_stats(desc_domain)
 
 
 class AnalysisHandler(tornado.web.RequestHandler):
@@ -449,3 +453,18 @@ class InjectHandler(tornado.web.RequestHandler):
         f = self.request.files['file'][0]
         uuid = self.application.dstore.inject(f['filename'], f['body'])
         self.finish(dict(uuid=uuid))
+
+
+class AgentsHandler(tornado.web.RequestHandler):
+    """
+    Displays information about agents.
+    """
+    def get(self):
+        self.render('agents.html')
+
+    def post(self, *args, **kwargs):
+        # TODO fetch agents descriptions
+        domain = self.get_argument('domain', 'default')
+        stats, total = self.application.dstore.processed_stats(domain)
+        sorted_stats = sorted(stats, key=lambda x: x[1])
+        self.finish(dict(agents_stats=sorted_stats, total=total))

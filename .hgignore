@@ -6,4 +6,5 @@ build/
 rebus.egg-info/
 dist/
 rebus/doc/build
-rebus/doc/source/rebus.*.rst
+rebus/doc/source/rebus*.rst
+rebus/doc/source/modules.rst
