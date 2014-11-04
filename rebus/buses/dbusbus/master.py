@@ -19,7 +19,6 @@ class DBusMaster(dbus.service.Object):
         dbus.service.Object.__init__(self, bus, objpath)
         self.store = store
         self.clients = {}
-        self.processed = defaultdict(set)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sso', out_signature='')
@@ -32,13 +31,12 @@ class DBusMaster(dbus.service.Object):
                          in_signature='ssss', out_signature='b')
     def lock(self, agent_id, lockid, desc_domain, selector):
         objpath = self.clients[agent_id]
-        processed = self.processed[desc_domain]
+        processed = self.store.processed[desc_domain]
         key = (lockid, desc_domain, selector)
         log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
                   key in processed, desc_domain, selector)
         if key in processed:
             return False
-        processed.add(key)
         return True
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
