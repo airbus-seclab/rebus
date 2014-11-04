@@ -6,13 +6,13 @@ class Monitor(Agent):
     _name_ = "monitor"
     _desc_ = "Dump all descriptors exchanged on the bus"
 
-    def process(self, desc, sender_id):
+    def process(self, descriptor, sender_id):
         print "=" * 60
         print "From=%s" % sender_id
-        print "Domain=%s" % desc.domain
-        print "Label=%s" % desc.label
-        print "Selector=%s" % desc.selector
-        v = repr(desc.value)
+        print "Domain=%s" % descriptor.domain
+        print "Label=%s" % descriptor.label
+        print "Selector=%s" % descriptor.selector
+        v = repr(descriptor.value)
         print "Len=%i" % len(v)
         print "-" * 60
         print v[:1500]

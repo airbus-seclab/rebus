@@ -21,8 +21,8 @@ class Wait(Agent):
                     return True
         return False
 
-    def process(self, desc, sender_id):
-        print repr(desc.value[:500])
+    def process(self, descriptor, sender_id):
+        print repr(descriptor.value[:500])
 
     def run(self, options):
         self.wait_for += options.selectors

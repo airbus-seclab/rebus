@@ -4,7 +4,7 @@ import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
 import dbus.service
 import gobject
-from rebus.bus import Bus
+from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
 import logging
 log = logging.getLogger("rebus.bus.dbus")
@@ -21,7 +21,7 @@ class DBus(Bus):
             dbus.bus.BusConnection(busaddr)
         self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
 
-    def join(self, name, agent_domain='default', callback=None):
+    def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
         self.callback = callback
         self.objpath = os.path.join("/agent", name)
         self.agentname = name
@@ -42,43 +42,43 @@ class DBus(Bus):
                                          signal_name="new_descriptor")
         return self.agent_id
 
-    def lock(self, agent, lockid, desc_domain, selector):
-        return self.iface.lock(str(agent), lockid, desc_domain, selector)
+    def lock(self, agent_id, lockid, desc_domain, selector):
+        return self.iface.lock(str(agent_id), lockid, desc_domain, selector)
 
-    def get(self, agent, desc_domain, selector):
+    def push(self, agent_id, descriptor):
+        return self.iface.push(str(agent_id), descriptor.serialize())
+
+    def get(self, agent_id, desc_domain, selector):
         return Descriptor.unserialize(str(
-            self.iface.get(str(agent), desc_domain, selector)), bus=self)
+            self.iface.get(str(agent_id), desc_domain, selector)), bus=self)
 
-    def get_value(self, agent, desc_domain, selector):
+    def get_value(self, agent_id, desc_domain, selector):
         return Descriptor.unserialize_value(str(
-            self.iface.get_value(str(agent), desc_domain, selector)))
+            self.iface.get_value(str(agent_id), desc_domain, selector)))
 
-    def find(self, agent, desc_domain, selector_regex, limit):
-        return self.iface.find(str(agent), desc_domain, selector_regex, limit)
-
-    def list_uuids(self, agent, desc_domain):
+    def list_uuids(self, agent_id, desc_domain):
         return {str(k): str(v) for k, v in
-                self.iface.list_uuids(str(agent), desc_domain).items()}
+                self.iface.list_uuids(str(agent_id), desc_domain).items()}
 
-    def find_by_uuid(self, agent, desc_domain, uuid):
+    def find(self, agent_id, desc_domain, selector_regex, limit):
+        return self.iface.find(str(agent_id), desc_domain, selector_regex,
+                               limit)
+
+    def find_by_uuid(self, agent_id, desc_domain, uuid):
         return [Descriptor.unserialize(str(s), bus=self) for s in
-                self.iface.find_by_uuid(str(agent), desc_domain, uuid)]
+                self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
 
-    def get_children(self, agent, desc_domain, selector, recurse=True):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
-                self.iface.get_children(str(agent), desc_domain, selector,
-                                        recurse)]
+    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+        self.iface.mark_processed(desc_domain, selector, agent_id, config_txt)
 
-    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
-        self.iface.mark_processed(desc_domain, selector, agent_name,
-                                  config_txt)
-
-    def processed_stats(self, agent, desc_domain):
-        stats, total = self.iface.processed_stats(str(agent), desc_domain)
+    def processed_stats(self, agent_id, desc_domain):
+        stats, total = self.iface.processed_stats(str(agent_id), desc_domain)
         return [(str(k), int(v)) for k, v in stats], int(total)
 
-    def push(self, agent, descriptor):
-        return self.iface.push(str(agent), descriptor.serialize())
+    def get_children(self, agent_id, desc_domain, selector, recurse=True):
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.iface.get_children(str(agent_id), desc_domain, selector,
+                                        recurse)]
 
     def callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)

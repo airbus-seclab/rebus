@@ -42,9 +42,6 @@ class Agent(object):
         self.start_time = 0
         self.init_agent()
 
-    def get_selectors(self, selector_filter="/"):
-        return self.bus.get_selectors(self, selector_filter)
-
     def push(self, descriptor):
         if descriptor.processing_time == -1:
             descriptor.processing_time = time.time() - self.start_time

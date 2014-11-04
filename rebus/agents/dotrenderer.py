@@ -12,19 +12,19 @@ class DotRenderer(Agent):
     def selector_filter(self, selector):
         return selector.startswith("/graph/dot/")
 
-    def process(self, desc, sender_id):
-        dot = desc.value
+    def process(self, descriptor, sender_id):
+        dot = descriptor.value
 
         # ex. /graph/dot/qum/minhash%1234 is a qumgraph based on minhash
         # distances
-        graphsrc, datatype = desc.selector.split('%')[0].split('/')[3:5]
+        graphsrc, datatype = descriptor.selector.split('%')[0].split('/')[3:5]
         p = subprocess.Popen(["neato", "-Tsvg"],
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = p.communicate(input=dot)
 
-        d2 = desc.spawn_descriptor(
+        d2 = descriptor.spawn_descriptor(
             "/graph/svg/%s/%s" % (graphsrc, datatype),
             out,
             self.name,
-            label=desc.label + ' svg')
+            label=descriptor.label + ' svg')
         self.push(d2)

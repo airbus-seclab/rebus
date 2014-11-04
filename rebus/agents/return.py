@@ -20,7 +20,7 @@ class Return(Agent):
                 return True
         return False
     
-    def process(self, descriptor, sender_ir):
+    def process(self, descriptor, sender_id):
         if not self.options.raw:
             print "---------------------------"
             print "selector = %s" % descriptor.selector

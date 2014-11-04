@@ -29,6 +29,26 @@ class DBusMaster(dbus.service.Object):
                  agent_id)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ssss', out_signature='b')
+    def lock(self, agent_id, lockid, desc_domain, selector):
+        objpath = self.clients[agent_id]
+        processed = self.processed[desc_domain]
+        key = (lockid, desc_domain, selector)
+        log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
+                  key in processed, desc_domain, selector)
+        if key in processed:
+            return False
+        processed.add(key)
+        return True
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sssu', out_signature='as')
+    def find(self, agent_id, desc_domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
+                  limit)
+        return self.store.find(desc_domain, selector_regex, limit)
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='b')
     def push(self, agent_id, descriptor):
         unserialized_descriptor = Descriptor.unserialize(str(descriptor))
@@ -58,13 +78,6 @@ class DBusMaster(dbus.service.Object):
         return self.store.get_value(str(desc_domain), str(selector))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sssu', out_signature='as')
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
-                  limit)
-        return self.store.find(desc_domain, selector_regex, limit)
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a{ss}')
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
@@ -77,17 +90,17 @@ class DBusMaster(dbus.service.Object):
         return self.store.find_by_uuid(desc_domain, uuid, serialized=True)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ssss', out_signature='b')
-    def lock(self, agent_id, lockid, desc_domain, selector):
-        objpath = self.clients[agent_id]
-        processed = self.processed[desc_domain]
-        key = (lockid, desc_domain, selector)
-        log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
-                  key in processed, desc_domain, selector)
-        if key in processed:
-            return False
-        processed.add(key)
-        return True
+                         in_signature='ssss', out_signature='')
+    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
+                  agent_id, config_txt)
+        self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ss', out_signature='a(su)u')
+    def processed_stats(self, agent_id, desc_domain):
+        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        return self.store.processed_stats(desc_domain)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssb', out_signature='as')
@@ -95,20 +108,6 @@ class DBusMaster(dbus.service.Object):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
                                             serialized=True, recurse=recurse))
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ssss', out_signature='')
-    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
-        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
-                  agent_name, config_txt)
-        self.store.mark_processed(desc_domain, selector, agent_name,
-                                  config_txt)
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ss', out_signature='a(su)u')
-    def processed_stats(self, agent_id, desc_domain):
-        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
-        return self.store.processed_stats(desc_domain)
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')

@@ -25,8 +25,8 @@ class WebInterface(Agent):
         t.daemon = True
         t.start()
 
-    def process(self, desc, sender_id):
-        self.ioloop.add_callback(self.dstore.new_descriptor, desc, sender_id)
+    def process(self, descriptor, sender_id):
+        self.ioloop.add_callback(self.dstore.new_descriptor, descriptor, sender_id)
 
     def get_descriptor(self, domain, selector):
         desc = self.bus.get(self, domain, selector)
@@ -252,19 +252,19 @@ class DescriptorStore(object):
             if callback == cb:
                 self.waiters.remove((domain, uuid, cb, page))
 
-    def new_descriptor(self, desc, sender_id):
+    def new_descriptor(self, descriptor, sender_id):
         """
-        :param desc: new descriptor
+        :param descriptor: new descriptor
         :param sender_id: sender agent ID
 
         Callback function
         Called whenever a new descriptor is available (received from bus, or
         injected by web_interface)
         """
-        descrinfo = self.info_from_desc([desc])[0]
+        descrinfo = self.info_from_desc([descriptor])[0]
         for (domain, uuid, callback, page) in list(self.waiters):
-            if domain == desc.domain or not domain:
-                if uuid == desc.uuid or not uuid:
+            if domain == descriptor.domain or not domain:
+                if uuid == descriptor.uuid or not uuid:
                     callback([descrinfo], page)
                     self.waiters.remove((domain, uuid, callback, page))
         with self.rlock:

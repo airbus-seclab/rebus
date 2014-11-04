@@ -24,13 +24,7 @@ class Bus(object):
     def lock(self, agent_id, lockid, desc_domain, selector):
         raise NotImplementedError
 
-    def find(self, agent_id, domain, selector_regex, limit):
-        raise NotImplementedError
-
-    def list_uuids(self, agent_id, desc_domain):
-        raise NotImplementedError
-
-    def find_by_uuid(self, agent_id, domain, uuid):
+    def push(self, agent_id, descriptor):
         raise NotImplementedError
 
     def get(self, agent_id, desc_domain, selector):
@@ -39,16 +33,22 @@ class Bus(object):
     def get_value(self, agent_id, desc_domain, selector):
         raise NotImplementedError
 
+    def list_uuids(self, agent_id, desc_domain):
+        raise NotImplementedError
+
+    def find(self, agent_id, desc_domain, selector_regex, limit):
+        raise NotImplementedError
+
+    def find_by_uuid(self, agent_id, desc_domain, uuid):
+        raise NotImplementedError
+
+    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+        raise NotImplementedError
+
+    def processed_stats(self, agent_id, desc_domain):
+        raise NotImplementedError
+
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
-        raise NotImplementedError
-
-    def push(self, agent_id, descriptor):
-        raise NotImplementedError
-
-    def get_selectors(self, agent_id, selector_filter):
-        raise NotImplementedError
-
-    def mark_processed(self, domain, selector, agent, config_txt):
         raise NotImplementedError
 
     def mainloop(self, agent_id):

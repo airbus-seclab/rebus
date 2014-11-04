@@ -21,13 +21,22 @@ class LocalBus(Bus):
         self.agents = {}
         self.threads = []
 
-    def join(self, name, desc_domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (name, self.agent_count)
         self.agent_count += 1
         if callback:
             self.callbacks.append((agid, callback))
-        self.agents[agid] = agent_desc(agid, desc_domain, callback)
+        self.agents[agid] = agent_desc(agid, agent_domain, callback)
         return agid
+
+    def lock(self, agent_id, lockid, desc_domain, selector):
+        key = (lockid, desc_domain, selector)
+        log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in
+                 self.locks[desc_domain], desc_domain, selector)
+        if key in self.locks[desc_domain]:
+            return False
+        self.locks[desc_domain].add(key)
+        return True
 
     def push(self, agent_id, descriptor):
         desc_domain = descriptor.domain
@@ -54,37 +63,27 @@ class LocalBus(Bus):
         return self.store.get_value(desc_domain, selector)
 
 
+    def list_uuids(self, agent_id, desc_domain):
+        log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
+        return self.store.list_uuids(desc_domain)
+
     def find(self, agent_id, desc_domain, selector_regex, limit):
         log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
                   limit)
         return self.store.find(desc_domain, selector_regex, limit)
 
-    def mark_processed(self, desc_domain, selector, agent_name, config_txt):
-        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
-                  agent_name, config_txt)
-        self.store.mark_processed(desc_domain, selector, agent_name,
-                                  config_txt)
-
-    def processed_stats(self, agent_id, desc_domain):
-        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
-        return self.store.processed_stats(desc_domain)
-
-    def list_uuids(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
-        return self.store.list_uuids(desc_domain)
-
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
         return self.store.find_by_uuid(desc_domain, uuid, serialized=False)
 
-    def lock(self, agent_id, lockid, desc_domain, selector):
-        key = (lockid, desc_domain, selector)
-        log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in
-                 self.locks[desc_domain], desc_domain, selector)
-        if key in self.locks[desc_domain]:
-            return False
-        self.locks[desc_domain].add(key)
-        return True
+    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+        log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
+                  agent_id, config_txt)
+        self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
+
+    def processed_stats(self, agent_id, desc_domain):
+        log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        return self.store.processed_stats(desc_domain)
 
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
         log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
