@@ -19,6 +19,9 @@ class DBusMaster(dbus.service.Object):
         dbus.service.Object.__init__(self, bus, objpath)
         self.store = store
         self.clients = {}
+        #: processed[domain] is a set of (lockid, selector) whose processing
+        #: has started (might even be finished). Allows several agents that
+        #: perform the same stateless computation to run in parallel
         self.processed = defaultdict(set)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -33,7 +36,7 @@ class DBusMaster(dbus.service.Object):
     def lock(self, agent_id, lockid, desc_domain, selector):
         objpath = self.clients[agent_id]
         processed = self.processed[desc_domain]
-        key = (lockid, desc_domain, selector)
+        key = (lockid, selector)
         log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
                   key in processed, desc_domain, selector)
         if key in processed:
