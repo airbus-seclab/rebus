@@ -69,10 +69,12 @@ class DiskStorage(Storage):
             elif os.path.isfile(name):
                 basename = name.rsplit('.', 1)[0]
                 if name.endswith('.value'):
+                    # Serialized descriptor value
                     if not os.path.isfile(basename + '.meta'):
                         raise Exception(
                             'Missing associated metadata for %s' % relname)
                 elif name.endswith('.meta'):
+                    # Serialized descriptor metadata
                     if not os.path.isfile(basename + '.value'):
                         raise Exception(
                             'Missing associated value for %s' % relname)
@@ -169,6 +171,9 @@ class DiskStorage(Storage):
         return selector
 
     def get_descriptor(self, domain, selector, serialized=False):
+        """
+        Returns serialized descriptor metadata
+        """
         # TODO remove serialized, always return serialized objects
         selector = self.version_lookup(domain, selector)
         if not selector:
@@ -180,7 +185,9 @@ class DiskStorage(Storage):
         return open(fullpath, "rb").read()
 
     def get_value(self, domain, selector):
-        # TODO remove serialized, always return serialized objects
+        """
+        Returns serialized descriptor value
+        """
         selector = self.version_lookup(domain, selector)
         if not selector:
             return "N."  # serialized None # TODO serialize None in bus
