@@ -3,6 +3,7 @@ import re
 import cPickle
 from collections import defaultdict
 from collections import OrderedDict
+from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 
@@ -282,6 +283,18 @@ class DiskStorage(Storage):
         if selector not in self.processed[domain]:
             return set()
         return self[domain][selector]
+
+    def processed_stats(self, domain):
+        """
+        Returns a list of couples, (agent names, number of processed selectors)
+        and the total amount of selectors in this domain.
+
+        """
+        result = Counter()
+        processed = self.processed[domain]
+        for agentlist in processed.values():
+            result.update([name for name, _ in agentlist])
+        return result.items(), len(processed)
 
     def store_state(self, agent_id, state):
         fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
