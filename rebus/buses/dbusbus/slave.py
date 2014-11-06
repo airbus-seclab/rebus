@@ -43,10 +43,11 @@ class DBus(Bus):
         return self.agent_id
 
     def lock(self, agent_id, lockid, desc_domain, selector):
-        return self.iface.lock(str(agent_id), lockid, desc_domain, selector)
+        return bool(self.iface.lock(str(agent_id), lockid, desc_domain,
+                                    selector))
 
     def push(self, agent_id, descriptor):
-        return self.iface.push(str(agent_id), descriptor.serialize())
+        return bool(self.iface.push(str(agent_id), descriptor.serialize()))
 
     def get(self, agent_id, desc_domain, selector):
         return Descriptor.unserialize(str(
@@ -61,8 +62,9 @@ class DBus(Bus):
                 self.iface.list_uuids(str(agent_id), desc_domain).items()}
 
     def find(self, agent_id, desc_domain, selector_regex, limit):
-        return self.iface.find(str(agent_id), desc_domain, selector_regex,
-                               limit)
+        return [str(i) for i in
+                self.iface.find(str(agent_id), desc_domain, selector_regex,
+                                limit)]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         return [Descriptor.unserialize(str(s), bus=self) for s in

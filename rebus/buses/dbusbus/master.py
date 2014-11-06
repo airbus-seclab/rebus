@@ -28,8 +28,8 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sso', out_signature='')
     def register(self, agent_id, agent_domain, pth):
         self.clients[agent_id] = pth
-        log.info("New client %s (%s) in domain %s", pth, agent_domain,
-                 agent_id)
+        log.info("New client %s (%s) in domain %s", pth, agent_id,
+                 agent_domain)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
@@ -43,13 +43,6 @@ class DBusMaster(dbus.service.Object):
             return False
         processed.add(key)
         return True
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sssu', out_signature='as')
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
-                  limit)
-        return self.store.find(desc_domain, selector_regex, limit)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='b')
@@ -84,33 +77,44 @@ class DBusMaster(dbus.service.Object):
                          in_signature='ss', out_signature='a{ss}')
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
-        return self.store.list_uuids(desc_domain)
+        return self.store.list_uuids(str(desc_domain))
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sssu', out_signature='as')
+    def find(self, agent_id, desc_domain, selector_regex, limit):
+        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
+                  limit)
+        return self.store.find(str(desc_domain), str(selector_regex),
+                               str(limit))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='as')
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
-        return self.store.find_by_uuid(desc_domain, uuid, serialized=True)
+        return self.store.find_by_uuid(str(desc_domain), str(uuid),
+                                       serialized=True)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='')
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
-        self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
+        self.store.mark_processed(str(desc_domain), str(selector),
+                                  str(agent_id), str(config_txt))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a(su)u')
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
-        return self.store.processed_stats(desc_domain)
+        return self.store.processed_stats(str(desc_domain))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssb', out_signature='as')
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
-                                            serialized=True, recurse=recurse))
+                                            serialized=True,
+                                            recurse=bool(recurse)))
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
