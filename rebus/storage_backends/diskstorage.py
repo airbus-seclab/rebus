@@ -22,7 +22,8 @@ class DiskStorage(Storage):
         if not os.path.exists(self.basepath):
             raise IOError('Directory %s does not exist' % self.basepath)
 
-        #: Set of existing paths, all starting and ending with '/'
+        #: Set of existing descriptor storage paths, all starting and ending
+        #: with '/'
         self.existing_paths = set((self.basepath + '/',))
 
         #: self.version_cache['domain']['/selector/'][version] = /selector/%123
@@ -113,7 +114,6 @@ class DiskStorage(Storage):
 
         domain = desc.domain
         selector = desc.selector
-        # Actually register metadata
         self.version_cache[domain][selector.split('%')[0]][desc.version]\
             = selector
         for precursor in desc.precursors:

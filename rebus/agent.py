@@ -9,7 +9,6 @@ import json
 log = logging.getLogger("rebus.agent")
 
 
-
 class AgentRegistry(Registry):
     pass
 
@@ -92,22 +91,36 @@ class Agent(object):
     def agentloop(self):
         self.bus.agentloop(self)
 
-    # These are the main methods that any agent might want to overload
-    def init_agent(self):
-        pass
-
     def declare_link(self, desc1, desc2, linktype, reason):
         """
         Helper function.
         Requests two new /link/ descriptors, then pushes them.
         :param desc1: Descriptor instance
         :param desc2: Descriptor instance
-        :param lintype: word describing the type of the link, that will be part of the selector
+        :param linktype: word describing the type of the link, that will be
+          part of the selector
         :param reason: Text description of the link reason
         """
         link1, link2 = desc1.create_links(desc2, self.name, linktype, reason)
         self.push(link1)
         self.push(link2)
+
+    def get_value(self, descriptor):
+        if hasattr(descriptor, 'value'):
+            return descriptor.value
+        else:
+            # TODO request from storage if locally available - implement when
+            # agent has a reference to maybe existent local storage
+            return self.bus.get_value(self, descriptor.domain,
+                                      descriptor.selector)
+            # possible trade-off: store now-fetched value in descriptor
+
+    # These are the main methods that any agent might want to overload
+    def init_agent(self):
+        """
+        Called to initialize the agent, after it has joined the bus.
+        """
+        pass
 
     def selector_filter(self, selector):
         return True
@@ -121,16 +134,6 @@ class Agent(object):
     def run(self, options):
         self.options = options
         self.bus.agentloop(self)
-
-    def get_value(self, descriptor):
-        if hasattr(descriptor, 'value'):
-            return descriptor.value
-        else:
-            # TODO request from storage if locally available - implement when
-            # agent has a reference to maybe existent local storage
-            return self.bus.get_value(self, descriptor.domain,
-                                      descriptor.selector)
-            # possible trade-off: store now-fetched value in descriptor
 
     def __repr__(self):
         return self.id

@@ -41,7 +41,7 @@ class Storage(object):
         """
         :param domain: domain from which UUID should be enumerated
 
-        Returns a dictionary mapping known UUID to corresponding labels.
+        Return a dictionary mapping known UUIDs to corresponding labels.
         """
         raise NotImplementedError
 
@@ -70,7 +70,7 @@ class Storage(object):
 
     def get_children(self, domain, selector, serialized=False, recurse=True):
         """
-        Returns a set of children descriptors from given selector.
+        Return a set of children descriptors from given selector.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
@@ -89,21 +89,21 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def mark_processed(self, domain, selector, agent, config_txt):
+    def mark_processed(self, domain, selector, agent_id, config_txt):
         """
         Mark given selector as having been processed by given agent whose
         configuration is serialized in config_txt.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param agent: string, agent name
+        :param agent_id: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent
         """
         raise NotImplementedError
 
     def get_processed(self, domain, selector):
         """
-        Returns the list of (agents, config_txt) that have processed this
+        Return the list of (agents, config_txt) that have processed this
         selector.
 
         :param domain: string, domain on which operations are performed

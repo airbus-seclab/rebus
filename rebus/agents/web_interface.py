@@ -26,7 +26,8 @@ class WebInterface(Agent):
         t.start()
 
     def process(self, descriptor, sender_id):
-        self.ioloop.add_callback(self.dstore.new_descriptor, descriptor, sender_id)
+        self.ioloop.add_callback(self.dstore.new_descriptor, descriptor,
+                                 sender_id)
 
     def get_descriptor(self, domain, selector):
         desc = self.bus.get(self, domain, selector)
@@ -225,7 +226,8 @@ class DescriptorStore(object):
 
         descrinfos = []
         for desc in descriptors:
-            printablevalue = desc.value if isinstance(desc.value, unicode) else ''
+            printablevalue = desc.value if isinstance(desc.value, unicode) \
+                else ''
             if len(printablevalue) > 80:
                 printablevalue = (printablevalue[:80] + '...')
 
@@ -429,7 +431,8 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                         contents[h1uuidname].append(
                             (value,
                              self.color(colorthresh, colorclasses, value)))
-            self.finish(self.render_string('descriptor/matrix_view', matrix=contents))
+            self.finish(self.render_string('descriptor/matrix_view',
+                                           matrix=contents))
         else:
             if type(data) not in [unicode, str]:
                 data = str(data)
