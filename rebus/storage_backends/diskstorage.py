@@ -13,14 +13,17 @@ class DiskStorage(Storage):
     """
 
     _name_ = "diskstorage"
+    STORES_INTSTATE = True
     selector_regex = re.compile('^[a-zA-Z0-9~%/_-]*$')
-    domain_regex = re.compile('^[a-zA-Z0-9_-]*$')
+    domain_regex = re.compile('^[a-zA-Z0-9-]*$')
 
     def __init__(self, **kwargs):
         self.basepath = kwargs['path'].rstrip('/')
 
-        if not os.path.exists(self.basepath):
+        if not os.path.isdir(self.basepath):
             raise IOError('Directory %s does not exist' % self.basepath)
+        if not os.path.isdir(self.basepath + '/agent_intstate'):
+            os.makedirs(self.basepath + '/agent_intstate')
 
         #: Set of existing descriptor storage paths, all starting and ending
         #: with '/'
@@ -59,6 +62,10 @@ class DiskStorage(Storage):
 
         :param relpath: starts and ends with a '/', relative to self.basepath
         """
+        if relpath == '/agent_intstate/':
+            # Ignore internal state of agents
+            return
+
         path = self.basepath + relpath
         self.existing_paths.add(path)
 
@@ -268,6 +275,20 @@ class DiskStorage(Storage):
         if selector not in self.processed[domain]:
             return set()
         return self[domain][selector]
+
+    def store_state(self, agent_id, state):
+        fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
+                             '.intstate')
+        with open(fname, 'wb') as fp:
+            fp.write(state)
+
+    def load_state(self, agent_id):
+        fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
+                             '.intstate')
+        if not os.path.isfile(fname):
+            return ""
+        with open(fname, 'rb') as fp:
+            return fp.read()
 
     @staticmethod
     def add_arguments(subparser):

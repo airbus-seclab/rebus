@@ -116,6 +116,21 @@ class DBusMaster(dbus.service.Object):
                                             serialized=True,
                                             recurse=bool(recurse)))
 
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ss', out_signature='')
+    def store_internal_state(self, agent_id, state):
+        log.debug("STORE_INTSTATE: %s", agent_id)
+        if self.store.STORES_INTSTATE:
+            self.store.store_state(str(agent_id), str(state))
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='s', out_signature='s')
+    def load_internal_state(self, agent_id):
+        log.debug("LOAD_INTSTATE: %s", agent_id)
+        if self.store.STORES_INTSTATE:
+            return self.store.load_state(str(agent_id))
+        return ""
+
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, desc_domain, selector):

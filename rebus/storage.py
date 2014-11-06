@@ -10,6 +10,9 @@ class Storage(object):
     _name_ = "Storage"
     _desc_ = "N/A"
 
+    #: Indicates whether the storage backend stores agent's internal state
+    STORES_INTSTATE = False
+
     @staticmethod
     def register(f):
         return StorageRegistry.register_ref(f, key="_name_")
@@ -108,6 +111,24 @@ class Storage(object):
 
         :param domain: string, domain on which operations are performed
         :param selector: string
+        """
+        raise NotImplementedError
+
+    def store_state(self, agent_id, state):
+        """
+        Store serialized agent state.
+
+        :param agent_id: string, agent name
+        :param state: string, serialized internal state of agent
+        """
+        raise NotImplementedError
+
+    def load_state(self, agent_id):
+        """
+        Return serialized agent state.
+
+        :param agent_id: string, agent name
+        :param state: string, serialized internal state of agent
         """
         raise NotImplementedError
 

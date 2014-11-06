@@ -82,6 +82,12 @@ class DBus(Bus):
                 self.iface.get_children(str(agent_id), desc_domain, selector,
                                         recurse)]
 
+    def store_internal_state(self, agent_id, state):
+        self.iface.store_internal_state(agent_id, state)
+
+    def load_internal_state(self, agent_id):
+        return str(self.iface.load_internal_state(agent_id))
+
     def callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)
 

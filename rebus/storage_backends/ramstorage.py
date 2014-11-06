@@ -12,6 +12,7 @@ class RAMStorage(Storage):
     """
 
     _name_ = "ramstorage"
+    STORES_INTSTATE = False
 
     def __init__(self, **kwargs):
         # self.dstore['domain']['/selector/%hash'] is a descriptor

@@ -51,5 +51,19 @@ class Bus(object):
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
         raise NotImplementedError
 
+    def store_internal_state(self, agent_id, state):
+        """
+        Called by agents that need their serialized internal state to be
+        stored.
+        """
+        raise NotImplementedError
+
+    def load_internal_state(self, agent_id):
+        """
+        Called by agents to fetch their serialized internal state in order to
+        restore it.
+        """
+        raise NotImplementedError
+
     def mainloop(self, agent_id):
         raise NotImplementedError

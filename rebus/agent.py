@@ -115,6 +115,22 @@ class Agent(object):
                                       descriptor.selector)
             # possible trade-off: store now-fetched value in descriptor
 
+    def save_internal_state(self):
+        """
+        Send internal state to storage.
+        """
+        state = self.get_internal_state()
+        if state:
+            self.bus.store_internal_state(self.name, state)
+
+    def restore_internal_state(self):
+        """
+        Retrieve internal state from storage.
+        """
+        state = self.bus.load_internal_state(self.name)
+        if state:
+            self.set_internal_state(state)
+
     # These are the main methods that any agent might want to overload
     def init_agent(self):
         """
@@ -134,6 +150,26 @@ class Agent(object):
     def run(self, options):
         self.options = options
         self.bus.agentloop(self)
+
+    def get_internal_state(self):
+        """
+        Should be overridden by agents that have an internal state, which
+        should be persistent stored when an agent is stopped.
+
+        Return a string that contains the internal agent state (ex. serialized
+        data structures)
+        """
+        return
+
+    def set_internal_state(self, state):
+        """
+        Should be overridden by agents that have an internal state, which
+        should be persistently stored when an agent is stopped.
+
+        :param state: string that contains the internal agent state (ex.
+          serialized data structures)
+        """
+        return
 
     def __repr__(self):
         return self.id
