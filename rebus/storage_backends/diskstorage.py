@@ -290,6 +290,10 @@ class DiskStorage(Storage):
         with open(fname, 'rb') as fp:
             return fp.read()
 
+    def exit(self):
+        with open(self.basepath + '/_processed.cfg', 'wb') as fp:
+            cPickle.dump(self.processed, fp)
+
     @staticmethod
     def add_arguments(subparser):
         subparser.add_argument("--path", help="Disk storage path (defaults to\

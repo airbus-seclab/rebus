@@ -17,12 +17,12 @@ class LocalBus(Bus):
         self.callbacks = []
         self.locks = defaultdict(set)
         self.agent_count = 0
-        self.store = RAMStorage()
+        self.store = RAMStorage()  # TODO add support for DiskStorage ?
         self.agents = {}
         self.threads = []
 
-    def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
-        agid = "%s-%i" % (name, self.agent_count)
+    def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
+        agid = "%s-%i" % (agent.name, self.agent_count)
         self.agent_count += 1
         if callback:
             self.callbacks.append((agid, callback))
@@ -62,7 +62,6 @@ class LocalBus(Bus):
         log.info("GET: %s %s:%s", agent_id, desc_domain, selector)
         return self.store.get_value(desc_domain, selector)
 
-
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         return self.store.list_uuids(desc_domain)
@@ -89,6 +88,17 @@ class LocalBus(Bus):
         log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(desc_domain, selector,
                                             recurse, serialized=False))
+
+    def store_internal_state(self, agent_id, state):
+        log.debug("STORE_INTSTATE: %s", agent_id)
+        if self.store.STORES_INTSTATE:
+            self.store.store_state(str(agent_id), str(state))
+
+    def load_internal_state(self, agent_id):
+        log.debug("LOAD_INTSTATE: %s", agent_id)
+        if self.store.STORES_INTSTATE:
+            return self.store.load_state(str(agent_id))
+        return ""
 
     def run_agent(self, agent, args):
         t = threading.Thread(target=agent.run, args=args)

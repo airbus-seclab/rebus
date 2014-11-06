@@ -1,4 +1,6 @@
 import os
+import sys
+import signal
 import dbus
 import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
@@ -20,26 +22,31 @@ class DBus(Bus):
         self.bus = dbus.SessionBus() if busaddr is None else \
             dbus.bus.BusConnection(busaddr)
         self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
 
-    def join(self, name, agent_domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
         self.callback = callback
-        self.objpath = os.path.join("/agent", name)
-        self.agentname = name
+        self.agent = agent
+        self.agentname = agent.name
+        self.objpath = os.path.join("/agent", self.agentname)
         self.obj = dbus.service.Object(self.bus, self.objpath)
         self.well_known_name = dbus.service.BusName("com.airbus.rebus.agent.%s"
-                                                    % name, self.bus)
-        self.agent_id = "%s-%s" % (name, self.bus.get_unique_name())
+                                                    % self.agentname, self.bus)
+        self.agent_id = "%s-%s" % (self.agentname, self.bus.get_unique_name())
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
         self.iface.register(self.agent_id, agent_domain, self.objpath)
 
         log.info("Agent %s registered with id %s on domain %s",
-                 name, self.agent_id, agent_domain)
+                 self.agentname, self.agent_id, agent_domain)
 
         if self.callback:
-            self.bus.add_signal_receiver(self.callback_wrapper,
+            self.bus.add_signal_receiver(self.broadcast_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")
+        self.bus.add_signal_receiver(self.bus_exit_handler,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="bus_exit")
         return self.agent_id
 
     def lock(self, agent_id, lockid, desc_domain, selector):
@@ -88,22 +95,33 @@ class DBus(Bus):
     def load_internal_state(self, agent_id):
         return str(self.iface.load_internal_state(agent_id))
 
-    def callback_wrapper(self, sender_id, desc_domain, selector):
+    def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)
+
+    def bus_exit_handler(self, awaiting_internal_state):
+        if awaiting_internal_state:
+            self.agent.save_internal_state()
+        self.loop.quit()
 
     def run_agent(self, agent, args):
         agent.run(*args)
+        self.iface.unregister(self.agent_id)
 
     def agentloop(self, agent):
         gobject.threads_init()
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
         log.info("Entering agent loop")
-        loop = gobject.MainLoop()
+        self.loop = gobject.MainLoop()
         try:
-            loop.run()
-        except KeyboardInterrupt:
-            loop.quit()
+            self.loop.run()
+        except (KeyboardInterrupt, SystemExit):
+            self.loop.quit()
+
+    @staticmethod
+    def sigterm_handler(signal, frame):
+        log.info("Caught Sigterm, unregistering and exiting.")
+        sys.exit(0)
 
     def busloop(self):
         pass

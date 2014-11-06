@@ -33,13 +33,14 @@ class Agent(object):
         # {key: value} containing relevant parameters that may influence the
         # agent's outputs
         self.config = dict()
-        self.id = self.bus.join(self.name, domain,
+        self.id = self.bus.join(self, domain,
                                 callback=self.on_new_descriptor)
         self.log = AgentLogger(log, dict(agent_id=self.id))
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))
         self.start_time = 0
         self.init_agent()
+        self.restore_internal_state()
 
     def push(self, descriptor):
         if descriptor.processing_time == -1:
@@ -117,7 +118,8 @@ class Agent(object):
 
     def save_internal_state(self):
         """
-        Send internal state to storage.
+        Send internal state to storage. Called at agent shutdown, if persistent
+        storage is in use.
         """
         state = self.get_internal_state()
         if state:
@@ -135,6 +137,9 @@ class Agent(object):
     def init_agent(self):
         """
         Called to initialize the agent, after it has joined the bus.
+
+        The internal state will be restored (set_internal_state) afterwards if
+        relevant.
         """
         pass
 

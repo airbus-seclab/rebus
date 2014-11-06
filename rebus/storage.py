@@ -132,6 +132,13 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def exit(self):
+        """
+        Called when the process is going to exit. Used to persistently store
+        storage internal state.
+        """
+        pass
+
     @staticmethod
     def add_arguments(subparser):
         """

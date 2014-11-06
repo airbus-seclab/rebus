@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
 
+import sys
+import signal
 from collections import defaultdict
 import dbus.service
 import dbus.glib
@@ -19,10 +21,12 @@ class DBusMaster(dbus.service.Object):
         dbus.service.Object.__init__(self, bus, objpath)
         self.store = store
         self.clients = {}
+        self.exiting = False
         #: processed[domain] is a set of (lockid, selector) whose processing
         #: has started (might even be finished). Allows several agents that
         #: perform the same stateless computation to run in parallel
         self.processed = defaultdict(set)
+        signal.signal(signal.SIGTERM, self.sigterm_handler)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sso', out_signature='')
@@ -30,6 +34,19 @@ class DBusMaster(dbus.service.Object):
         self.clients[agent_id] = pth
         log.info("New client %s (%s) in domain %s", pth, agent_id,
                  agent_domain)
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='s', out_signature='')
+    def unregister(self, agent_id):
+        log.info("Agent %s has unregistered", agent_id)
+        del self.clients[agent_id]
+        if self.exiting:
+            if len(self.clients) == 0:
+                log.info("Exiting - no agents are running")
+                self.mainloop.quit()
+            else:
+                log.info("Expecting %u more agents to exit (ex. %s)" %
+                         (len(self.clients), self.clients.keys()[0]))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
@@ -136,6 +153,17 @@ class DBusMaster(dbus.service.Object):
     def new_descriptor(self, sender_id, desc_domain, selector):
         pass
 
+    @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
+                         signature='b')
+    def bus_exit(self, awaiting_internal_state):
+        """
+        Signal sent when the bus is exiting.
+        :param awaiting_internal_state: indicates whether agents must send
+        their internal serialized state for storage.
+        """
+        self.exiting = True
+        return
+
     @classmethod
     def run(cls, store):
         gobject.threads_init()
@@ -146,6 +174,22 @@ class DBusMaster(dbus.service.Object):
         name = dbus.service.BusName("com.airbus.rebus.bus", bus)
         svc = cls(bus, "/bus", store)
 
-        mainloop = gobject.MainLoop()
+        svc.mainloop = gobject.MainLoop()
         log.info("Entering main loop.")
-        mainloop.run()
+        try:
+            svc.mainloop.run()
+        except (KeyboardInterrupt, SystemExit):
+            if len(svc.clients) > 0:
+                log.info("Stopping all agents")
+                # Ask slave agents to shutdown nicely & save internal state
+                log.info("Expecting %u more agents to exit (ex. %s)" %
+                         (len(svc.clients), svc.clients.keys()[0]))
+                svc.bus_exit(store.STORES_INTSTATE)
+                svc.mainloop.run()
+        log.info("Stopping storage...")
+        store.exit()
+
+    @staticmethod
+    def sigterm_handler(signal, frame):
+        log.info("Caught Sigterm, unregistering and exiting.")
+        sys.exit(0)
