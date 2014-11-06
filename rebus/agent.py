@@ -83,8 +83,12 @@ class Agent(object):
                     done = time.time()
                     self.log.info("END   Processing |%f| %r" %
                                   (done-self.start_time, desc))
-        config_txt = json.dumps(self.config, sort_keys=True)
-        self.bus.mark_processed(desc_domain, selector, self.name, config_txt)
+        self.bus.mark_processed(desc_domain, selector, self.name,
+                                self.config_txt)
+
+    @property
+    def config_txt(self):
+        return json.dumps(self.config, sort_keys=True)
 
     def run_in_bus(self, args):
         self.bus.run_agent(self, args)

@@ -1,5 +1,6 @@
 import os
 import re
+import cPickle
 from collections import defaultdict
 from collections import OrderedDict
 from rebus.storage import Storage
@@ -43,7 +44,6 @@ class DiskStorage(Storage):
         #: process this descriptor. Allows stopping and resuming the bus when
         #: not all descriptors have been processed
         self.processed = defaultdict(OrderedDict)
-        # TODO store & restore processed status (incl. order)
 
         #: self.uuids['domain']['uuid'] is the set of selectors that belong to
         #: descriptors having this uuid
@@ -105,10 +105,15 @@ class DiskStorage(Storage):
                                 (fname_hash, desc.domain, fname_selector))
 
                         self.register_meta(desc)
+                elif name.endswith('.cfg') and relpath == '/':
+                    # Bus configuration
+                    if elem == '_processed.cfg':
+                        with open(name, 'rb') as fp:
+                            self.processed = cPickle.load(fp)
                 else:
                     raise Exception(
                         'Invalid file name - %s has an invalid extension '
-                        '(must be .value or .meta)' % relname)
+                        '(must be .value, .meta or .cfg)' % relname)
             else:
                 raise Exception(
                     'Invalid file type - %s is neither a regular file nor a '
@@ -125,7 +130,9 @@ class DiskStorage(Storage):
             = selector
         for precursor in desc.precursors:
             self.edges[domain][precursor].add(selector)
-        self.processed[domain][selector] = set()
+        if not selector in self.processed[domain]:
+            # If it has not been restored from processed.cfg
+            self.processed[domain][selector] = set()
         self.uuids[domain][desc.uuid].add(selector)
         self.labels[domain][desc.uuid] = desc.label
 
@@ -293,6 +300,14 @@ class DiskStorage(Storage):
     def exit(self):
         with open(self.basepath + '/_processed.cfg', 'wb') as fp:
             cPickle.dump(self.processed, fp)
+
+    def list_unprocessed_by_agent(self, agent_name, config_txt):
+        res = []
+        for domain in self.processed.keys():
+            res.extend([(domain, sel) for sel, name_confs in
+                        self.processed[domain].items() if
+                        (agent_name, config_txt) not in name_confs])
+        return res
 
     @staticmethod
     def add_arguments(subparser):

@@ -17,6 +17,7 @@ class DBus(Bus):
     _name_ = "dbus"
     _desc_ = "Use DBus to exchange messages by connecting to REbus master"
 
+    # Bus methods implementations - same order as in bus.py
     def __init__(self, busaddr=None):
         Bus.__init__(self)
         self.bus = dbus.SessionBus() if busaddr is None else \
@@ -34,19 +35,24 @@ class DBus(Bus):
                                                     % self.agentname, self.bus)
         self.agent_id = "%s-%s" % (self.agentname, self.bus.get_unique_name())
 
-        self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
-        self.iface.register(self.agent_id, agent_domain, self.objpath)
-
-        log.info("Agent %s registered with id %s on domain %s",
-                 self.agentname, self.agent_id, agent_domain)
-
         if self.callback:
             self.bus.add_signal_receiver(self.broadcast_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")
+        self.bus.add_signal_receiver(self.targeted_callback_wrapper,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="targeted_descriptor")
         self.bus.add_signal_receiver(self.bus_exit_handler,
                                      dbus_interface="com.airbus.rebus.bus",
                                      signal_name="bus_exit")
+
+        self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
+        self.iface.register(self.agent_id, agent_domain, self.objpath,
+                            self.agent.config_txt)
+
+        log.info("Agent %s registered with id %s on domain %s",
+                 self.agentname, self.agent_id, agent_domain)
+
         return self.agent_id
 
     def lock(self, agent_id, lockid, desc_domain, selector):
@@ -95,8 +101,14 @@ class DBus(Bus):
     def load_internal_state(self, agent_id):
         return str(self.iface.load_internal_state(agent_id))
 
+    # DBus specific functions
     def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)
+
+    def targeted_callback_wrapper(self, sender_id, desc_domain, selector,
+                                  targets):
+        if self.agentname in targets:
+            self.callback(sender_id, desc_domain, selector)
 
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:

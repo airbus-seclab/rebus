@@ -139,6 +139,15 @@ class Storage(object):
         """
         pass
 
+    def list_unprocessed_by_agent(self, agent_id):
+        """
+        Return a list of (domain, selector) that have not been processed by
+        this agent, identified by its name.
+
+        :param agent_id: string, agent name
+        """
+        return []
+
     @staticmethod
     def add_arguments(subparser):
         """

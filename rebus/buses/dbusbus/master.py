@@ -29,11 +29,24 @@ class DBusMaster(dbus.service.Object):
         signal.signal(signal.SIGTERM, self.sigterm_handler)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sso', out_signature='')
-    def register(self, agent_id, agent_domain, pth):
+                         in_signature='ssos', out_signature='')
+    def register(self, agent_id, agent_domain, pth, config_txt):
+        #: indicates whether another instance of the same agent is already
+        #: running
+        agent_name = agent_id.split('-', 1)[0]
+        already_running = any([k.startswith(agent_name+'-') for k in
+                               self.clients.keys()])
         self.clients[agent_id] = pth
         log.info("New client %s (%s) in domain %s", pth, agent_id,
                  agent_domain)
+        # Send not-yet processed descriptors to the agent...
+        if not already_running:
+            # ...unless another instance of the same agent has already been
+            # started, and should be processing those descriptors
+            unprocessed = self.store.list_unprocessed_by_agent(agent_name,
+                                                               config_txt)
+            for dom, sel in unprocessed:
+                self.targeted_descriptor("storage", dom, sel, [agent_name])
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='')
@@ -151,6 +164,27 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, desc_domain, selector):
+        pass
+
+    @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
+                         signature='sssas')
+    def targeted_descriptor(self, sender_id, desc_domain, selector, targets):
+        """
+        Signal sent when a descriptor is sent to some target agents (not
+        broadcast).
+        Useful for:
+
+        * Forcefully replaying a descriptor (debug purposes, or user request)
+        * Feeding descriptors to a new agent. Used when resuming the bus.
+        * Interactive mode - user may choose which selectors get send to each
+          agent
+
+        :param sender_id: sender id
+        :param desc_domain: descriptor domain
+        :param selector: descriptor selector
+        :param targets: list of target agent names. Agents not in this list
+          should ignore this descriptor.
+        """
         pass
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
