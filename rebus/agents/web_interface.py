@@ -391,48 +391,36 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(label))
         if selector.startswith('/matrix/') and not download:
-            contents = OrderedDict()
-            # sort hashes by label
-            hashes = sorted(data[0].keys(), key=lambda x: data[0][x][1])
+            # matrix: ([uuids], [labels], np.array, threshold)
+            # output: [(uuid, label, [(value, color)])]
 
-            # Compute colors thresholds depending on values
-            values = sorted(data[1].values())
-
-            # For merged matrix, compute average distance to determine colors
-            if type(values) is list and values and type(values[0]) is dict:
-                values = [x.values() for x in values]
-                values = sorted(map(numpy.average, values))
+            # Sort uuids, labels and indexes by label
+            output = list()
+            uuids = data[0]
+            labels = data[1]
+            indexes = range(len(uuids))
+            values = data[2]
+            valuesflat = data[2].flat  # 1-D iterator
+            labels, uuids, indexes = zip(*sorted(zip(labels, uuids, indexes)))
 
             colorclasses = ['info', 'success', 'warning', 'danger']
             nbcolors = len(colorclasses)
-            if len(values) > 0:
-                colorthresh = [values[((i+1)*len(values))/nbcolors]
+            if len(valuesflat) > 0:
+                colorthresh = [valuesflat[((i+1)*len(valuesflat))/nbcolors]
                                for i in range((nbcolors-1))]
             else:
                 colorthresh = [0] * (nbcolors-1)
-            for h1 in hashes:
-                h1uuidname = data[0][h1]
-                contents[h1uuidname] = list()
-                for h2 in hashes:
-                    value = data[1].get(frozenset((h1, h2)), "X")
-                    if type(value) is dict:
-                        d = value.values()
-                        avg = numpy.average(d)
-                        sd = numpy.std(d)
-                        if sd < 0.2:
-                            contents[h1uuidname].append(
-                                (avg,
-                                 self.color(colorthresh, colorclasses, avg)))
-                        else:
-                            contents[h1uuidname].append(
-                                (str(int(sd*100))+str(value),
-                                 self.color(colorthresh, colorclasses, avg)))
-                    else:
-                        contents[h1uuidname].append(
-                            (value,
-                             self.color(colorthresh, colorclasses, value)))
+            for h1 in range(len(uuids)):
+                linecontents = list()
+                for h2 in range(len(uuids)):
+                    value = values[h1][h2]
+                    linecontents.append((value, self.color(colorthresh,
+                                                           colorclasses,
+                                                           value)))
+                output.append((uuids[h1], labels[h1], linecontents))
+
             self.finish(self.render_string('descriptor/matrix_view',
-                                           matrix=contents))
+                                           matrix=output))
         else:
             if type(data) not in [unicode, str]:
                 data = str(data)

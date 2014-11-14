@@ -4,15 +4,15 @@
     <thead>
       <tr>
         <th></th>
-        {% for uuidlabel in matrix.keys() %}
-        <th class="rotate-45"><div><span><a href="/analysis/default/{{ escape(uuidlabel[0]) }}">{{ escape(uuidlabel[1]) }}</a></span></div></th>
+        {% for uuid, label, _ in matrix %}
+        <th class="rotate-45"><div><span><a href="/analysis/default/{{ escape(uuid) }}">{{ escape(label) }}</a></span></div></th>
         {% end %}
       </tr>
     </thead>
     <tbody>
-      {% for uuidlabel, values in matrix.items() %}
+      {% for uuid, label, values in matrix %}
       <tr>
-        <th class="row-header"><a href="/analysis/default/{{ escape(uuidlabel[0]) }}">{{ escape(uuidlabel[1]) }}</a></th>
+        <th class="row-header"><a href="/analysis/default/{{ escape(uuid) }}">{{ escape(label) }}</a></th>
         {% for value in values %}
         <td{% if value[1] is not None %} class="{{ escape(str(value[1])) }}"{% end %}>{{ escape(str(value[0])) }}</td>
         {% end %}
