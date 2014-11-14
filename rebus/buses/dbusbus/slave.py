@@ -86,6 +86,10 @@ class DBus(Bus):
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         self.iface.mark_processed(desc_domain, selector, agent_id, config_txt)
 
+    def list_agents(self, agent_id):
+        return {str(k): int(v) for k, v in
+                self.iface.list_agents(agent_id).items()}
+
     def processed_stats(self, agent_id, desc_domain):
         stats, total = self.iface.processed_stats(str(agent_id), desc_domain)
         return [(str(k), int(v)) for k, v in stats], int(total)

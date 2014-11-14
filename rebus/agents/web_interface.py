@@ -289,6 +289,9 @@ class DescriptorStore(object):
     def processed_stats(self, desc_domain):
         return self.agent.processed_stats(desc_domain)
 
+    def list_agents(self):
+        return self.agent.bus.list_agents(self.agent.id)
+
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self, uuid=''):
@@ -454,6 +457,15 @@ class AgentsHandler(tornado.web.RequestHandler):
     def post(self, *args, **kwargs):
         # TODO fetch agents descriptions
         domain = self.get_argument('domain', 'default')
-        stats, total = self.application.dstore.processed_stats(domain)
-        sorted_stats = sorted(stats, key=lambda x: x[1])
-        self.finish(dict(agents_stats=sorted_stats, total=total))
+        processed, total = self.application.dstore.processed_stats(domain)
+        agent_count = {k: [k, v, 0] for k, v in
+                       self.application.dstore.list_agents().items()}
+        for agent, nbprocessed in processed:
+            if agent in agent_count:
+                # agent is still running
+                agent_count[agent][2] = nbprocessed
+
+        stats = list()
+        for agent in sorted(agent_count):
+            stats.append(agent_count[agent])
+        self.finish(dict(agents_stats=stats, total=total))

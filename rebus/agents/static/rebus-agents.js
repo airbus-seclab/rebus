@@ -66,18 +66,22 @@ var updater = {
         var stats = response.agents_stats;
         var total = response.total
         for (var i = 0; i < stats.length; i++) {
-            updater.updateAgent(stats[i][0], stats[i][1], total);
+            updater.updateAgent(stats[i][0], stats[i][1], stats[i][2], total);
         }
     },
 
-    updateAgent: function(name, count, total) {
+    updateAgent: function(name, nbinst, nbprocessed, total) {
+        var width = 100;
+        if (total != 0) {
+            width = nbprocessed*100/total;
+        }
         if (name in known_agents) {
-            html = '<div class="progress"><div class="progress-bar" role="progressbar" aria-valuenow="' + count + '" aria-valuemin="0" aria-valuemax="' + total + '" style="width: ' + count*100/total + '%; min-width: 4em;">' + count + ' / ' + total + '</div></div>';
+            html = '<td>' + name + ' (' + nbinst + ' running)</td><td><div class="progress"><div class="progress-bar" role="progressbar" aria-valuenow="' + nbprocessed + '" aria-valuemin="0" aria-valuemax="' + total + '" style="width: ' + width + '%; min-width: 4em;">' + nbprocessed + ' / ' + total + '</div></div></td>';
             known_agents[name].html(html);
         } else {
-                html = '<tr id="agent-' + name + '"><td>' + name + '</td><td><div class="progress"><div class="progress-bar" role="progressbar" aria-valuenow="' + count + '" aria-valuemin="0" aria-valuemax="' + total + '" style="width: ' + count*100/total + '%; min-width: 4em;">' + count + ' / ' + total + '</div></div></td></tr>';
+                html = '<tr id="agent-' + name + '"><td>' + name + ' (' + nbinst + ' running)</td><td><div class="progress"><div class="progress-bar" role="progressbar" aria-valuenow="' + nbprocessed + '" aria-valuemin="0" aria-valuemax="' + total + '" style="width: ' + width + '%; min-width: 4em;">' + nbprocessed + ' / ' + total + '</div></div></td></tr>';
             $('#inbox').append(html);
-            known_agents[name] = $('#inbox #agent-' + name + ' td div.progress');
+            known_agents[name] = $('#inbox #agent-' + name);
         }
     },
 };

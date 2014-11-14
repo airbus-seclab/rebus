@@ -1,5 +1,5 @@
 import threading
-from collections import defaultdict, namedtuple
+from collections import Counter, defaultdict, namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.storage_backends.ramstorage import RAMStorage
 import logging
@@ -18,6 +18,8 @@ class LocalBus(Bus):
         self.locks = defaultdict(set)
         self.agent_count = 0
         self.store = RAMStorage()  # TODO add support for DiskStorage ?
+        # TODO save internal state at bus exit (only useful with DiskStorage)
+        #: maps agentid (ex. inject-12) to agentdesc
         self.agents = {}
         self.threads = []
 
@@ -79,6 +81,9 @@ class LocalBus(Bus):
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
+
+    def list_agents(self, agent_id):
+        return dict(Counter(i.rsplit('-', 1)[0] for i in self.agents.keys()))
 
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)

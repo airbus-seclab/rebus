@@ -3,7 +3,7 @@
 
 import sys
 import signal
-from collections import defaultdict
+from collections import Counter, defaultdict
 import dbus.service
 import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
@@ -20,6 +20,8 @@ class DBusMaster(dbus.service.Object):
     def __init__(self, bus, objpath, store):
         dbus.service.Object.__init__(self, bus, objpath)
         self.store = store
+        #: maps agentid (ex. inject-:1.234) to object path (ex:
+        #: /agent/inject)
         self.clients = {}
         self.exiting = False
         #: processed[domain] is a set of (lockid, selector) whose processing
@@ -131,6 +133,15 @@ class DBusMaster(dbus.service.Object):
                   agent_id, config_txt)
         self.store.mark_processed(str(desc_domain), str(selector),
                                   str(agent_id), str(config_txt))
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='', out_signature='a{su}')
+    def list_agents(self, agent_id):
+        log.debug("LIST_AGENTS: %s", agent_id)
+        #: maps agent name to number of instances of this agent
+        counts = dict(Counter(objpath.rsplit('/', 1)[1] for objpath in
+                              self.clients.values()))
+        return counts
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a(su)u')

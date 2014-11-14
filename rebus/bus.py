@@ -45,6 +45,13 @@ class Bus(object):
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         raise NotImplementedError
 
+    def list_agents(self, agent_id):
+        """
+        Returns a dictionary mapping agent names to number of currently
+        running instances.
+        """
+        raise NotImplementedError
+
     def processed_stats(self, agent_id, desc_domain):
         raise NotImplementedError
 
