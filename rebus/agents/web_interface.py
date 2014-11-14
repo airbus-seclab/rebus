@@ -400,7 +400,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             labels = data[1]
             indexes = range(len(uuids))
             values = data[2]
-            valuesflat = data[2].flat  # 1-D iterator
+            valuesflat = sorted(data[2].flat)  # 1-D iterator
             labels, uuids, indexes = zip(*sorted(zip(labels, uuids, indexes)))
 
             colorclasses = ['info', 'success', 'warning', 'danger']
@@ -427,8 +427,6 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             self.finish(data)
 
     def color(self, colorthresh, colorclasses, value):
-        if type(value) in [unicode, str]:
-            return
         if value < colorthresh[0]:
             return colorclasses[0]
         for idx, t in reversed(list(enumerate(colorthresh))):
