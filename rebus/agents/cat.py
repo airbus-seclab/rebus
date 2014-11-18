@@ -20,6 +20,8 @@ class Cat(Agent):
                 for s in sels:
                     desc = self.get(options.domain, s)
                     if desc:
+                        sys.stdout.write(desc.selector+":\n")
                         sys.stdout.write(str(desc.value))
+                        sys.stdout.write("\n")
                     else:
                         self.log.warning("selector [%s:%s] not found", options.domain, s)
