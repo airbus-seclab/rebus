@@ -87,15 +87,14 @@ class Descriptor(object):
     def create_links(self, otherdesc, agentname, linktype, reason):
         """
         Creates and returns two /link/ descriptors
-        Selector names for links: /link/agentname/other_UUID/linktype
+        Selector names for links: /link/agentname/linktype
         One link is created in both self's and otherdesc's UUID
         Value: dictionary containing origin selector, destination selector,
         reason for linking and destination descriptor's label
         """
         link1 = Descriptor(
             label=self.label,
-            selector='/link/%s/%s/%s' % (agentname, otherdesc.uuid,
-                                         linktype),
+            selector='/link/%s/%s' % (agentname, linktype),
             value={'selector': self.selector,
                    'otherselector': otherdesc.selector,
                    'otherUUID': otherdesc.uuid,
@@ -109,7 +108,7 @@ class Descriptor(object):
 
         link2 = Descriptor(
             label=otherdesc.label,
-            selector='/link/%s/%s/%s' % (agentname, self.uuid, linktype),
+            selector='/link/%s/%s' % (agentname, linktype),
             value={'selector': otherdesc.selector,
                    'otherselector': self.selector,
                    'otherUUID': self.uuid,

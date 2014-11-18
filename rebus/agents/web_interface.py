@@ -329,7 +329,7 @@ class MonitorHandler(tornado.web.RequestHandler):
 
 class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     """
-    Dispatches new descriptors to web clients.
+    Dispatches descriptors to web clients.
     """
     @tornado.web.asynchronous
     def post(self):
@@ -411,7 +411,6 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
                     value = values[indexes[h1]][indexes[h2]]
                     linecontents.append(value)
                 output.append((uuids[h1], labels[h1], linecontents))
-            print(output)
             self.finish(self.render_string('descriptor/matrix_view',
                                            matrix=output))
         else:
