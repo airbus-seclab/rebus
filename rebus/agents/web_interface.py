@@ -7,8 +7,6 @@ import tornado.template
 import rebus.agents.inject
 from rebus.descriptor import Descriptor
 import re
-from collections import OrderedDict
-import numpy
 
 
 @Agent.register
@@ -47,7 +45,7 @@ class WebInterface(Agent):
         return desc.uuid
 
 
-class CustomLoader(tornado.template.Loader):
+class TemplateLoader(tornado.template.Loader):
     """
     Use parent class Loader to load any template other than descriptors.
 
@@ -72,15 +70,16 @@ class CustomLoader(tornado.template.Loader):
         """
         Register existing static files
         """
-        super(CustomLoader, self).__init__(root_directory, **kwargs)
+        super(TemplateLoader, self).__init__(root_directory, **kwargs)
 
         for fname in os.listdir(os.path.join(root_directory, "descriptor")):
             fullpath = os.path.join(root_directory, "descriptor", fname)
             if not (fname.endswith('.html') and os.path.isfile(fullpath)):
                 continue
-            # filename format: descriptor/desctype/page
+            #: fname format: desctype_page.html
             desc_type, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
-            CustomLoader.register(desc_type, page, open(fullpath, 'rb').read())
+            TemplateLoader.register(desc_type, page, open(fullpath,
+                                                          'rb').read())
 
     @staticmethod
     def register(desc_type, page, templatestr):
@@ -88,10 +87,10 @@ class CustomLoader(tornado.template.Loader):
         Called to register a renderering template for the given page and
         descriptor type.
         """
-        CustomLoader.templates[(desc_type, page)] = templatestr
+        TemplateLoader.templates[(desc_type, page)] = templatestr
 
     def resolve_path(self, name, parent_path=None):
-        name = super(CustomLoader, self).resolve_path(name, parent_path)
+        name = super(TemplateLoader, self).resolve_path(name, parent_path)
         return name
 
     def _create_template(self, name):
@@ -100,15 +99,15 @@ class CustomLoader(tornado.template.Loader):
         """
 
         if not name.startswith('descriptor/'):
-            return super(CustomLoader, self)._create_template(name)
+            return super(TemplateLoader, self)._create_template(name)
 
         desc_type, page = name.rsplit('/', 1)[1].rsplit('_', 1)
-        if (desc_type, page) in CustomLoader.templates:
+        if (desc_type, page) in TemplateLoader.templates:
             # try to load specific template
-            templatestr = CustomLoader.templates[(desc_type, page)]
+            templatestr = TemplateLoader.templates[(desc_type, page)]
         else:
             # use default otherwise
-            templatestr = CustomLoader.templates[('default', page)]
+            templatestr = TemplateLoader.templates[('default', page)]
         template = tornado.template.Template(templatestr, name=name,
                                              loader=self)
         return template
@@ -130,8 +129,8 @@ class Application(tornado.web.Application):
         params = {
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
             'template_loader':
-                CustomLoader(os.path.join(os.path.dirname(__file__),
-                                          'templates'),)
+                TemplateLoader(os.path.join(os.path.dirname(__file__),
+                                            'templates'),)
         }
         self.dstore = dstore
         tornado.web.Application.__init__(self, handlers, **params)
