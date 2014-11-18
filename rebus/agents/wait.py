@@ -4,7 +4,7 @@ from rebus.agent import Agent
 @Agent.register
 class Wait(Agent):
     _name_ = "wait"
-    _desc_ = "Wait for some selectors and ouput their value to stdout"
+    _desc_ = "Wait for some selectors and output their value to stdout"
 
     @classmethod
     def add_arguments(cls, subparser):

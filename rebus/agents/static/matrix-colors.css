@@ -1,0 +1,404 @@
+td[data-value="0.0"] {
+  background-color: #006ba8;
+}
+
+td[data-value="0.01"] {
+  background-color: #006dab;
+}
+
+td[data-value="0.02"] {
+  background-color: #0070af;
+}
+
+td[data-value="0.03"] {
+  background-color: #0072b2;
+}
+
+td[data-value="0.04"] {
+  background-color: #0074b5;
+}
+
+td[data-value="0.05"] {
+  background-color: #0076b9;
+}
+
+td[data-value="0.06"] {
+  background-color: #0078bc;
+}
+
+td[data-value="0.07"] {
+  background-color: #007ac0;
+}
+
+td[data-value="0.08"] {
+  background-color: #007dc3;
+}
+
+td[data-value="0.09"] {
+  background-color: #007fc6;
+}
+
+td[data-value="0.1"] {
+  background-color: #0081ca;
+}
+
+td[data-value="0.11"] {
+  background-color: #0083cd;
+}
+
+td[data-value="0.12"] {
+  background-color: #0085d1;
+}
+
+td[data-value="0.13"] {
+  background-color: #0087d4;
+}
+
+td[data-value="0.14"] {
+  background-color: #008ad7;
+}
+
+td[data-value="0.15"] {
+  background-color: #008cdb;
+}
+
+td[data-value="0.16"] {
+  background-color: #008ede;
+}
+
+td[data-value="0.17"] {
+  background-color: #0090e2;
+}
+
+td[data-value="0.18"] {
+  background-color: #0092e5;
+}
+
+td[data-value="0.19"] {
+  background-color: #0095e8;
+}
+
+td[data-value="0.2"] {
+  background-color: #0097ec;
+}
+
+td[data-value="0.21"] {
+  background-color: #0099ef;
+}
+
+td[data-value="0.22"] {
+  background-color: #009bf3;
+}
+
+td[data-value="0.23"] {
+  background-color: #009df6;
+}
+
+td[data-value="0.24"] {
+  background-color: #009ff9;
+}
+
+td[data-value="0.25"] {
+  background-color: #00a2fd;
+}
+
+td[data-value="0.26"] {
+  background-color: #01a3ff;
+}
+
+td[data-value="0.27"] {
+  background-color: #05a5ff;
+}
+
+td[data-value="0.28"] {
+  background-color: #08a6fe;
+}
+
+td[data-value="0.29"] {
+  background-color: #0ba7ff;
+}
+
+td[data-value="0.3"] {
+  background-color: #0fa8ff;
+}
+
+td[data-value="0.31"] {
+  background-color: #12a9ff;
+}
+
+td[data-value="0.32"] {
+  background-color: #16abff;
+}
+
+td[data-value="0.33"] {
+  background-color: #19acff;
+}
+
+td[data-value="0.34"] {
+  background-color: #1cadff;
+}
+
+td[data-value="0.35"] {
+  background-color: #20aeff;
+}
+
+td[data-value="0.36"] {
+  background-color: #23b0ff;
+}
+
+td[data-value="0.37"] {
+  background-color: #27b1ff;
+}
+
+td[data-value="0.38"] {
+  background-color: #2ab2ff;
+}
+
+td[data-value="0.39"] {
+  background-color: #2db3ff;
+}
+
+td[data-value="0.4"] {
+  background-color: #31b4ff;
+}
+
+td[data-value="0.41"] {
+  background-color: #34b6ff;
+}
+
+td[data-value="0.42"] {
+  background-color: #38b7fe;
+}
+
+td[data-value="0.43"] {
+  background-color: #3bb8ff;
+}
+
+td[data-value="0.44"] {
+  background-color: #3eb9ff;
+}
+
+td[data-value="0.45"] {
+  background-color: #42bbfe;
+}
+
+td[data-value="0.46"] {
+  background-color: #45bcff;
+}
+
+td[data-value="0.47"] {
+  background-color: #49bdff;
+}
+
+td[data-value="0.48"] {
+  background-color: #4cbefe;
+}
+
+td[data-value="0.49"] {
+  background-color: #4fbfff;
+}
+
+td[data-value="0.5"] {
+  background-color: #53c1ff;
+}
+
+td[data-value="0.51"] {
+  background-color: #56c2fe;
+}
+
+td[data-value="0.52"] {
+  background-color: #5ac3ff;
+}
+
+td[data-value="0.53"] {
+  background-color: #5dc4ff;
+}
+
+td[data-value="0.54"] {
+  background-color: #60c6fe;
+}
+
+td[data-value="0.55"] {
+  background-color: #64c7ff;
+}
+
+td[data-value="0.56"] {
+  background-color: #67c8ff;
+}
+
+td[data-value="0.57"] {
+  background-color: #6bc9ff;
+}
+
+td[data-value="0.58"] {
+  background-color: #6ecaff;
+}
+
+td[data-value="0.59"] {
+  background-color: #71ccff;
+}
+
+td[data-value="0.6"] {
+  background-color: #75cdff;
+}
+
+td[data-value="0.61"] {
+  background-color: #78ceff;
+}
+
+td[data-value="0.62"] {
+  background-color: #7ccfff;
+}
+
+td[data-value="0.63"] {
+  background-color: #7fd1ff;
+}
+
+td[data-value="0.64"] {
+  background-color: #82d2ff;
+}
+
+td[data-value="0.65"] {
+  background-color: #86d3ff;
+}
+
+td[data-value="0.66"] {
+  background-color: #89d4ff;
+}
+
+td[data-value="0.67"] {
+  background-color: #8dd5ff;
+}
+
+td[data-value="0.68"] {
+  background-color: #90d7ff;
+}
+
+td[data-value="0.69"] {
+  background-color: #93d8ff;
+}
+
+td[data-value="0.7"] {
+  background-color: #97d9ff;
+}
+
+td[data-value="0.71"] {
+  background-color: #9adafe;
+}
+
+td[data-value="0.72"] {
+  background-color: #9edcff;
+}
+
+td[data-value="0.73"] {
+  background-color: #a1ddff;
+}
+
+td[data-value="0.74"] {
+  background-color: #a4defe;
+}
+
+td[data-value="0.75"] {
+  background-color: #a8dfff;
+}
+
+td[data-value="0.76"] {
+  background-color: #abe1ff;
+}
+
+td[data-value="0.77"] {
+  background-color: #afe2ff;
+}
+
+td[data-value="0.78"] {
+  background-color: #b2e3ff;
+}
+
+td[data-value="0.79"] {
+  background-color: #b5e4ff;
+}
+
+td[data-value="0.8"] {
+  background-color: #b9e5ff;
+}
+
+td[data-value="0.81"] {
+  background-color: #bce7ff;
+}
+
+td[data-value="0.82"] {
+  background-color: #c0e8ff;
+}
+
+td[data-value="0.83"] {
+  background-color: #c3e9ff;
+}
+
+td[data-value="0.84"] {
+  background-color: #c6eaff;
+}
+
+td[data-value="0.85"] {
+  background-color: #caecff;
+}
+
+td[data-value="0.86"] {
+  background-color: #cdedff;
+}
+
+td[data-value="0.87"] {
+  background-color: #d1eeff;
+}
+
+td[data-value="0.88"] {
+  background-color: #d4efff;
+}
+
+td[data-value="0.89"] {
+  background-color: #d7f0ff;
+}
+
+td[data-value="0.9"] {
+  background-color: #dbf2ff;
+}
+
+td[data-value="0.91"] {
+  background-color: #def3ff;
+}
+
+td[data-value="0.92"] {
+  background-color: #e2f4ff;
+}
+
+td[data-value="0.93"] {
+  background-color: #e5f5ff;
+}
+
+td[data-value="0.94"] {
+  background-color: #e8f7ff;
+}
+
+td[data-value="0.95"] {
+  background-color: #ecf8ff;
+}
+
+td[data-value="0.96"] {
+  background-color: #eff9ff;
+}
+
+td[data-value="0.97"] {
+  background-color: #f3faff;
+}
+
+td[data-value="0.98"] {
+  background-color: #f6fbff;
+}
+
+td[data-value="0.99"] {
+  background-color: #f9fdff;
+}
+
+td[data-value="1.0"] {
+  background-color: #fdfeff;
+}
+

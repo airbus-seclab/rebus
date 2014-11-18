@@ -288,7 +288,6 @@ class DiskStorage(Storage):
         """
         Returns a list of couples, (agent names, number of processed selectors)
         and the total amount of selectors in this domain.
-
         """
         result = Counter()
         processed = self.processed[domain]

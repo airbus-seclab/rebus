@@ -403,38 +403,21 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             labels = data[1]
             indexes = range(len(uuids))
             values = data[2]
-            valuesflat = sorted(data[2].flat)  # 1-D iterator
             labels, uuids, indexes = zip(*sorted(zip(labels, uuids, indexes)))
 
-            colorclasses = ['info', 'success', 'warning', 'danger']
-            nbcolors = len(colorclasses)
-            if len(valuesflat) > 0:
-                colorthresh = [valuesflat[((i+1)*len(valuesflat))/nbcolors]
-                               for i in range((nbcolors-1))]
-            else:
-                colorthresh = [0] * (nbcolors-1)
             for h1 in range(len(uuids)):
                 linecontents = list()
                 for h2 in range(len(uuids)):
-                    value = values[h1][h2]
-                    linecontents.append((value, self.color(colorthresh,
-                                                           colorclasses,
-                                                           value)))
+                    value = values[indexes[h1]][indexes[h2]]
+                    linecontents.append(value)
                 output.append((uuids[h1], labels[h1], linecontents))
-
+            print(output)
             self.finish(self.render_string('descriptor/matrix_view',
                                            matrix=output))
         else:
             if type(data) not in [unicode, str]:
                 data = str(data)
             self.finish(data)
-
-    def color(self, colorthresh, colorclasses, value):
-        if value < colorthresh[0]:
-            return colorclasses[0]
-        for idx, t in reversed(list(enumerate(colorthresh))):
-            if value >= t:
-                return colorclasses[idx+1]
 
 
 class InjectHandler(tornado.web.RequestHandler):

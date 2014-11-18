@@ -1,6 +1,7 @@
 {% include ../header.html %}
+<link property="stylesheet" rel="stylesheet" href="{{ static_url("matrix-colors.css") }}" type="text/css"/>
 <div class="container-fluid">
-  <table class="table-nonfluid table table-striped table-condensed table-header-rotated">
+  <table class="table-nonfluid table table-condensed table-header-rotated">
     <thead>
       <tr>
         <th></th>
@@ -14,7 +15,7 @@
       <tr>
         <th class="row-header"><a href="/analysis/default/{{ escape(uuid) }}">{{ escape(label) }}</a></th>
         {% for value in values %}
-        <td{% if value[1] is not None %} class="{{ escape(str(value[1])) }}"{% end %}>{{ escape(str(value[0])) }}</td>
+        <td data-value="{{ escape(str(value)) }}">{{ escape(str(value)) }}</td>
         {% end %}
       </tr>
       {% end %}
