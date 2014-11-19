@@ -137,3 +137,15 @@ class RAMStorage(Storage):
         for agentlist in processed.values():
             result.update([name for name, _ in agentlist])
         return result.items(), len(processed)
+
+    def list_unprocessed_by_agent(self, agent_name, config_txt):
+        res = []
+        for domain in self.dstore.keys():
+            selectors = set(self.dstore[domain].keys())
+            processed_selectors = set([sel for sel, name_confs in
+                                       self.processed[domain].items() if
+                                       (agent_name, config_txt) not in
+                                       name_confs])
+            unprocessed_sels = selectors - processed_selectors
+            res.extend([(domain, sel) for sel in unprocessed_sels])
+        return res

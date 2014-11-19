@@ -131,7 +131,7 @@ class DiskStorage(Storage):
             = selector
         for precursor in desc.precursors:
             self.edges[domain][precursor].add(selector)
-        if not selector in self.processed[domain]:
+        if selector not in self.processed[domain]:
             # If it has not been restored from processed.cfg
             self.processed[domain][selector] = set()
         self.uuids[domain][desc.uuid].add(selector)
@@ -315,10 +315,11 @@ class DiskStorage(Storage):
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
         res = []
-        for domain in self.processed.keys():
-            res.extend([(domain, sel) for sel, name_confs in
-                        self.processed[domain].items() if
-                        (agent_name, config_txt) not in name_confs])
+        for domain in self.version_cache.keys():
+            selectors = set.union(*self.uuids[domain].values())
+            processed_selectors = set(self.version_cache[domain].keys())
+            unprocessed_sels = selectors - processed_selectors
+            res.extend([(domain, sel) for sel in unprocessed_sels])
         return res
 
     @staticmethod
