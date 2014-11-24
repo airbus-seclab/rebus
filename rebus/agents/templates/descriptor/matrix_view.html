@@ -15,7 +15,7 @@
       <tr>
         <th class="row-header"><a href="/analysis/default/{{ escape(uuid) }}">{{ escape(label) }}</a></th>
         {% for value in values %}
-        <td data-value="{{ escape(str(value)) }}">{{ escape(str(value)) }}</td>
+        <td data-value="{{ escape(str(round(value, 2))) }}">{{ escape(str(value)) }}</td>
         {% end %}
       </tr>
       {% end %}
