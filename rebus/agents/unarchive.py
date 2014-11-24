@@ -8,7 +8,6 @@ from rebus.agents.inject import guess_selector
 from StringIO import StringIO
 
 
-
 @Agent.register
 class Unarchive(Agent):
     _name_ = "unarchive"
@@ -27,14 +26,14 @@ class Unarchive(Agent):
         #: List of (unarchived file name, unarchived file contents)
         unarchived = []
 
-        def do_untar(archive, mode, archive_label=descriptor.label, unarchived=unarchived):
+        def do_untar(archive, mode, archive_label=descriptor.label,
+                     unarchived=unarchived):
             tar = tarfile.open(fileobj=StringIO(archive), mode=mode)
             for finfo in tar.getmembers():
                 if finfo.isfile() and finfo.size > 0:
                     fname = os.path.basename(finfo.name)
                     unarchived.append((archive_label + ":" + fname,
                                        tar.extractfile(finfo).read()))
-
 
         # Compressed files
         if "/compressed/bzip2" in selector:

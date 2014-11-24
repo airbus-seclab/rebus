@@ -12,8 +12,8 @@ class Ls(Agent):
         subparser.add_argument("--limit", nargs='?', type=int, default=0,
                                help="Max number of selectors to return")
         subparser.add_argument("selectors", nargs="+",
-                               help="Regex to match selectors,\
-                                     results will be displayed on stdout")
+                               help="Regex to match selectors, "
+                               "results will be displayed on stdout")
 
     def run(self, options):
         for s in options.selectors:

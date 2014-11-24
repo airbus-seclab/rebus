@@ -5,14 +5,16 @@ import re
 @Agent.register
 class Return(Agent):
     _name_ = "return"
-    _desc_ = "Print descriptors whose selector match a regex"
+    _desc_ = "Output any past or future descriptor whose selector matches "\
+        "provided regex to stdout"
 
     @classmethod
     def add_arguments(cls, subparser):
-        subparser.add_argument("selectors", nargs="+",
-                               help="Dump selector values on stdout. Selectors can be regexes")
-        subparser.add_argument("--raw", action="store_true",
-                               help="Raw output")
+        subparser.add_argument(
+            "selectors", nargs="+", 
+            help="Dump selector values on stdout. Selectors can be regexes")
+        subparser.add_argument(
+            "--raw", action="store_true", help="Raw output")
 
     def selector_filter(self, selector):
         for selregex in self.options.selectors:
@@ -25,5 +27,5 @@ class Return(Agent):
             print "---------------------------"
             print "selector = %s" % descriptor.selector
             print "label = %s" % descriptor.label
-            print "UUIS = %s" % descriptor.uuid
+            print "UUID = %s" % descriptor.uuid
         print descriptor.value

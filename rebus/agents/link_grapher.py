@@ -1,4 +1,3 @@
-import sys
 import time
 from itertools import chain
 from rebus.agent import Agent
@@ -17,33 +16,32 @@ class LinkGrapher(Agent):
     def add_arguments(cls, subparser):
         subparser.add_argument("--limit", nargs='?', type=int, default=0,
                                help="Max number of selectors to return")
-        subparser.add_argument("selectors", nargs="*", default = ["/link/.*"],
+        subparser.add_argument("selectors", nargs="*", default=["/link/.*"],
                                help="Regex to match /link/ selectors,\
                                      results will be displayed on stdout")
 
     def run(self, options):
 
         start = time.time()
-        
+
         def ensure_link(x):
             if x.startswith("/link/"):
                 return x
             if x.startswith("/"):
                 return "/link"+x
             return "/link/"+x
-        
-        sels = chain(*[map(str,self.find(self.domain, ensure_link(s), options.limit)) 
-                       for s in options.selectors])
 
+        sels = chain(*[map(str, self.find(self.domain, ensure_link(s),
+                                          options.limit))
+                       for s in options.selectors])
 
         class Component(object):
             def __init__(self, linktype):
                 self.linktype = linktype
                 self.nodes = set()
+
             def add(self, v):
                 self.nodes.add(v)
-
-
 
         links = {}
         labels = {}
@@ -54,27 +52,27 @@ class LinkGrapher(Agent):
                 yield fmt % i
                 i += 1
 
-
         for s in sels:
             link = self.get(self.domain, s)
-            uu1,uu2 = link.uuid, link.value["otherUUID"]
+            uu1, uu2 = link.uuid, link.value["otherUUID"]
             linktype = link.value["linktype"]
             labels[uu1] = link.label
             labels[uu2] = link.value["otherlabel"]
 
-            component = links.get((uu1,linktype)) or links.get((uu2,linktype))
+            component = links.get((uu1, linktype)) or links.get((uu2,
+                                                                 linktype))
             if not component:
                 component = Component(linktype)
             component.add(uu1)
             component.add(uu2)
-            links[uu1,linktype] = links[uu2,linktype] = component
-        
+            links[uu1, linktype] = links[uu2, linktype] = component
+
         ltname = nodenamer()
 
-        dot = [ 'graph "links" {' ]
+        dot = ['graph "links" {']
 
-        for n,l in labels.iteritems():
-            dot.append('\t"%s" [ label="%s", fontsize=10, fillcolor="#dddddd", style=filled, shape=note, href="/analysis/%s/%s"];' % (n,l,self.domain,n))
+        for n, l in labels.iteritems():
+            dot.append('\t"%s" [ label="%s", fontsize=10, fillcolor="#dddddd", style=filled, shape=note, href="/analysis/%s/%s"];' % (n, l, self.domain, n))
 
         dot.append("")
 
@@ -89,7 +87,7 @@ class LinkGrapher(Agent):
         dot.append("}")
         done = time.time()
 
-        desc = Descriptor(label="linkgraph", 
+        desc = Descriptor(label="linkgraph",
                           selector="/graph/dot/linkgraph",
                           value="\n".join(dot),
                           domain=self.domain,

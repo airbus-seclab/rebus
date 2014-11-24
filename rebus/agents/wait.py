@@ -4,7 +4,8 @@ from rebus.agent import Agent
 @Agent.register
 class Wait(Agent):
     _name_ = "wait"
-    _desc_ = "Wait for some selectors and output their value to stdout"
+    _desc_ = "Output any past or future descriptor whose selector starts "\
+        "with provided string to stdout. Display first 500 characters only."
 
     @classmethod
     def add_arguments(cls, subparser):

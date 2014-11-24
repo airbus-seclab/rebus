@@ -12,7 +12,7 @@ import re
 @Agent.register
 class WebInterface(Agent):
     _name_ = "web_interface"
-    _desc_ = "Dump all descriptors exchanged on the bus to a web interface"
+    _desc_ = "Display all descriptors exchanged on the bus in a web interface"
 
     def init_agent(self):
         self.dstore = DescriptorStore(self)
