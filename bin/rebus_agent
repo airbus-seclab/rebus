@@ -42,7 +42,7 @@ def main():
                         help="Increase verbosity")
     parser.add_argument("--module", "-m", action="append", default=[])
 
-    options, remain = parser.parse_known_args(sys.argv[1:])
+    global_options, remain = parser.parse_known_args(sys.argv[1:])
 
     # subparser options
     # optional subparsers are only supported in python3
@@ -74,12 +74,14 @@ def main():
 
     logging.getLogger().setLevel(max(1, 30-10*options.verbose))
 
-    bus_class = BusRegistry.get(options.bus)
-    bus = bus_class(busaddr=options.busaddr)
+    bus_class = BusRegistry.get(global_options.bus)
+    bus = bus_class(busaddr=global_options.busaddr)
     for stage in stages:
         for agent_name, arguments in stage:
+            arguments.bus = global_options.bus
+            arguments.module = global_options.module
             agent_class = AgentRegistry.get(agent_name)
-            agent = agent_class(bus=bus, domain=options.domain)
+            agent = agent_class(bus=bus, domain=global_options.domain)
             agent.run_in_bus((arguments,))
         bus.busloop()
 
