@@ -123,7 +123,7 @@ class Application(tornado.web.Application):
             (r"/analysis(|/.*)", AnalysisHandler),
             (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
-            (r"/get(.*)", DescriptorGetHandler),
+            (r"/get([^\?]*)\??.*", DescriptorGetHandler),
             (r"/agents", AgentsHandler),
         ]
         params = {
