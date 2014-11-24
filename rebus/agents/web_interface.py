@@ -443,7 +443,7 @@ class AgentsHandler(tornado.web.RequestHandler):
                        self.application.dstore.list_agents().items()}
         for agent, nbprocessed in processed:
             if agent in agent_count:
-                # agent is still running
+                # agent is still registered
                 agent_count[agent][2] = nbprocessed
 
         stats = list()
