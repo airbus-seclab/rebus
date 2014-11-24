@@ -10,12 +10,14 @@ _color_scheme = color.ProxCS(lmin=1)
 @Agent.register
 class LinkGrapher(Agent):
     _name_ = "link_grapher"
-    _desc_ = "Create a dot graph from links between analysis"
+    _desc_ = "Create a dot graph from links. Should be run after links have "\
+             "been identified."
 
     @classmethod
     def add_arguments(cls, subparser):
         subparser.add_argument("--limit", nargs='?', type=int, default=0,
-                               help="Max number of selectors to return")
+                               help="Max number of descriptors to fetch from "
+                               "storage")
         subparser.add_argument("selectors", nargs="*", default=["/link/.*"],
                                help="Regex to match /link/ selectors,\
                                      results will be displayed on stdout")
