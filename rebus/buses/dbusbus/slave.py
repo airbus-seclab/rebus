@@ -39,9 +39,9 @@ class DBus(Bus):
             self.bus.add_signal_receiver(self.broadcast_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")
-        self.bus.add_signal_receiver(self.targeted_callback_wrapper,
-                                     dbus_interface="com.airbus.rebus.bus",
-                                     signal_name="targeted_descriptor")
+            self.bus.add_signal_receiver(self.targeted_callback_wrapper,
+                                         dbus_interface="com.airbus.rebus.bus",
+                                         signal_name="targeted_descriptor")
         self.bus.add_signal_receiver(self.bus_exit_handler,
                                      dbus_interface="com.airbus.rebus.bus",
                                      signal_name="bus_exit")
