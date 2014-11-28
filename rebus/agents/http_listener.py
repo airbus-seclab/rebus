@@ -1,5 +1,6 @@
 from rebus.agent import Agent
 import threading
+import time
 import tornado.ioloop
 import tornado.web
 import tornado.template
@@ -23,9 +24,11 @@ class HTTPListener(Agent):
     def selector_filter(self, selector):
         return False
 
-    def inject(self, selector, domain, label, value):
+    def inject(self, selector, domain, label, value, start_time):
+        done = time.time()
         desc = Descriptor(label, selector, value, domain,
-                          agent=self._name_ + '_inject')
+                          agent=self._name_ + '_inject',
+                          processing_time=(done-start_time))
         self.push(desc)
 
 
@@ -46,10 +49,12 @@ class InjectHandler(tornado.web.RequestHandler):
         If selector is /auto, guess the selector type.
         domain is optional - defaults to 'default'
         """
+        start_time = time.time()
         label = self.get_argument('label')
         domain = self.get_argument('domain', 'default')
         value = self.request.body
         if selector == '/auto':
             selector = rebus.agents.inject.guess_selector(buf=value)
-        self.application.agent.inject(selector, domain, label, value)
+        self.application.agent.inject(selector, domain, label, value,
+                                      start_time)
         self.finish()
