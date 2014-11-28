@@ -144,7 +144,7 @@ class RAMStorage(Storage):
             selectors = set(self.dstore[domain].keys())
             processed_selectors = set([sel for sel, name_confs in
                                        self.processed[domain].items() if
-                                       (agent_name, config_txt) not in
+                                       (agent_name, config_txt) in
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
             res.extend([(domain, sel) for sel in unprocessed_sels])
