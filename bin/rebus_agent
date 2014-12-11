@@ -42,8 +42,6 @@ def main():
                         help="Increase verbosity")
     parser.add_argument("--module", "-m", action="append", default=[])
 
-    global_options, remain = parser.parse_known_args(sys.argv[1:])
-
     # subparser options
     # optional subparsers are only supported in python3
     # http://bugs.python.org/issue9253
@@ -51,6 +49,8 @@ def main():
     for agent in AgentRegistry.itervalues():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
         agent.add_arguments(p)
+
+    global_options, remain = parser.parse_known_args(sys.argv[1:])
 
     remain.append("--")
     #: list of lists of (agent name, options namespace)
