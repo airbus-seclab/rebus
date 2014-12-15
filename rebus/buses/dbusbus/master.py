@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
-
-import sys
+import os
 import signal
 from collections import Counter, defaultdict
 import dbus.service
@@ -9,7 +8,6 @@ import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
 from rebus.descriptor import Descriptor
 import gobject
-
 import logging
 
 
@@ -235,6 +233,6 @@ class DBusMaster(dbus.service.Object):
         store.exit()
 
     @staticmethod
-    def sigterm_handler(signal, frame):
-        log.info("Caught Sigterm, unregistering and exiting.")
-        sys.exit(0)
+    def sigterm_handler(sig, frame):
+        log.info("Caught Sigterm, exiting.")
+        os._exit(1)
