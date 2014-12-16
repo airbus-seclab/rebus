@@ -10,8 +10,6 @@ import argparse
 
 
 def main():
-    import sys
-
     logging.basicConfig()
     rebus.agents.import_all()
     rebus.buses.import_all()
@@ -34,8 +32,8 @@ def main():
     parser.add_argument("--bus", choices=buslist.keys(), default="localbus",
                         help="choose bus")
     parser.add_argument("--busaddr", help="Address of the bus")
-    parser.add_argument("--list-agents", action=ListAgents,
-                        help="list available agents", nargs=0)
+    parser.add_argument("--list-agents", action="store_true",
+                        help="list available agents")
     parser.add_argument("--domain", "-d", default=DEFAULT_DOMAIN,
                         help="Work in DOMAIN")
     parser.add_argument("--verbose", "-v", action="count", default=0,
@@ -43,10 +41,9 @@ def main():
     parser.add_argument("--module", "-m", action="append", default=[])
     parser.add_argument(
         "agents", nargs=argparse.REMAINDER, help="available agents: %s. Use -h"
-       u" after agent name to see agent's options."
+        " after agent name to see agent's options."
         % ', '.join(AgentRegistry.iterkeys()))
     global_options = parser.parse_args()
-
 
     # subparser (agents) options
     # optional subparser options are only supported in python3
@@ -58,6 +55,10 @@ def main():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
         agent.add_arguments(p)
 
+    if global_options.list_agents:
+        for agent in AgentRegistry.itervalues():
+            print("{0._name_: <20}: {0._desc_}".format(agent))
+        return
 
     remain = global_options.agents
     remain.append("--")
@@ -93,11 +94,6 @@ def main():
             agent.run_in_bus((arguments,))
         bus.busloop()
 
-
-class ListAgents(argparse.Action):
-    def __call__(self, parser, namespace, values=None, option_string=None):
-        for agent in AgentRegistry.itervalues():
-            print "{0._name_: <20}: {0._desc_}".format(agent)
 
 if __name__ == "__main__":
     main()
