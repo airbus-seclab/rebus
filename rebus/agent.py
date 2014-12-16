@@ -157,6 +157,9 @@ class Agent(object):
         pass
 
     def run(self, options):
+        """
+        Agent-specific options
+        """
         self.options = options
         self.bus.agentloop(self)
 

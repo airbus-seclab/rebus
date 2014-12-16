@@ -29,7 +29,7 @@ def main():
         if hasattr(mod, "import_all"):
             mod.import_all()
 
-    # main options
+    # bus options
     parser = argparse.ArgumentParser()
     parser.add_argument("--bus", choices=buslist.keys(), default="localbus",
                         help="choose bus")
@@ -41,17 +41,25 @@ def main():
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Increase verbosity")
     parser.add_argument("--module", "-m", action="append", default=[])
+    parser.add_argument(
+        "agents", nargs=argparse.REMAINDER, help="available agents: %s. Use -h"
+       u" after agent name to see agent's options."
+        % ', '.join(AgentRegistry.iterkeys()))
+    global_options = parser.parse_args()
 
-    # subparser options
-    # optional subparsers are only supported in python3
+
+    # subparser (agents) options
+    # optional subparser options are only supported in python3
     # http://bugs.python.org/issue9253
+    # so, we use another parser for agents' options
+    parser = argparse.ArgumentParser()
     agent_parser = parser.add_subparsers(dest="agent_name", help="Agents")
     for agent in AgentRegistry.itervalues():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
         agent.add_arguments(p)
 
-    global_options, remain = parser.parse_known_args(sys.argv[1:])
 
+    remain = global_options.agents
     remain.append("--")
     #: list of lists of (agent name, options namespace)
     stages = list()
@@ -72,7 +80,7 @@ def main():
             currentstage.append((options.agent_name, options))
             options.agent_name = None
 
-    logging.getLogger().setLevel(max(1, 30-10*options.verbose))
+    logging.getLogger().setLevel(max(1, 30-10*global_options.verbose))
 
     bus_class = BusRegistry.get(global_options.bus)
     bus = bus_class(busaddr=global_options.busaddr)

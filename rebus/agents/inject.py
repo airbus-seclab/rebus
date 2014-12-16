@@ -75,6 +75,6 @@ class Inject(Agent):
             selector = options.selector if options.selector else \
                 guess_selector(buf=data)
             done = time.time()
-            desc = Descriptor(label, selector, data, options.domain,
+            desc = Descriptor(label, selector, data, self.domain,
                               agent=self._name_, processing_time=(done-start))
             self.push(desc)
