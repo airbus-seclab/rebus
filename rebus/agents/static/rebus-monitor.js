@@ -87,17 +87,18 @@ var updater = {
 
     newDescriptors: function(response) {
         if (!response.descrinfos) return;
-        var descrinfos = response.descrinfos;
+        var descrinfos = response.descrinfos.slice(Math.max(0, response.descrinfos.length - 200));
         updater.cursor = descrinfos[descrinfos.length - 1].hash;
         for (var i = 0; i < descrinfos.length; i++) {
             updater.showDescriptor(descrinfos[i]);
         }
+        $('#inbox').children().slice(200).detach();
     },
 
     showDescriptor: function(descriptor) {
         var node = $(descriptor.html);
         node.hide();
-        $("#inbox").append(node);
+        $("#inbox").prepend(node);
         node.fadeIn();
     },
 };
