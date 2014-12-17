@@ -1,17 +1,201 @@
+=====
+REbus
+=====
+
+REbus facilitates the coupling of existing tools that perform specific tasks,
+where one's output will be used as the input of others.
+
+A few task examples:
+
+* compute file hashes (md5, sha1)
+* apply file identification tools (libmagic, peid, antivirus)
+* extract files from archives
+* extract printable strings from files
+* nmap scans
+* fetch network service banners
+* fingerprint an SSL service to detect weak ciphersuites or configuration
+
+
+Quick start
+===========
+
 Dependencies:
+
+* python2.7
+* mercurial (to interact with this repository only)
+* setuptools
 * python2-tornado >= 3.0 (debian squeeze packages v2.3)
-* python-dbus
-* python-gobject
+* dbus
+* python2-dbus
+* python2-gobjects
+* dbus-glib
+
+To install these dependencies on Arch Linux:
+
+.. sourcecode:: bash
+
+  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject python2-gobject2 dbus-glib python2-tornado  python2-pip
+  pip2 install python-magic==0.4.6
+
+
+To install these dependencies on Debian Wheezy:
+
+.. sourcecode:: bash
+
+  $ aptitude install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-magic=0.4.6 python-tornado python-pip
+  $ pip install python-magic==0.4.6
+  # tornado is too old in wheezy repositories
+  $ pip install tornado
+
+Quick installation & test:
+
+
+.. sourcecode:: bash
+
+  $ hg clone https://bitbucket.org/iwseclabs/rebus
+  $ cd rebus
+  $ python2 ./setup.py install
+
+  # list available agents
+  $ rebus_agent --list-agents
+
+  # If DBus is not already running on your machine, or on a headless machine.
+  # Then run all commands in separate screen tabs.
+  $ dbus-launch screen
+  # run the bus master in terminal 1
+  $ rebus_master_dbus
+
+  # run a few agents, run each command in separate terminals
+  $ rebus_agent --bus dbus web_interface
+  $ rebus_agent --bus dbus unarchive
+
+  # open a web browser on http://localhost:8080/
+  $ firefox http://localhost:8080/
+
+
+Components overview
+===================
+
+* Descriptors_ are REbus messages, conveyed to and from agents
+* Agents wrap external tools, process and generate descriptors
+* the `Communication Bus`_ lets agents communicate
+* the Storage_ circulates and stores descriptors
+
+Descriptors
+-----------
+Descriptors store agents' outputs and inputs as Python objects.
+
+Descriptors have several properties:
+
+* **selector** describes data type (≃ MIME type), contains unique identifier,
+  e.g. ``/signature/md5/%6e1d5169661a50(...)f989129a583f92b9dee``
+* **label** human name the descriptor relates to
+* **uuid** group descriptors related to the same analysed object
+* **value** descriptor value
+* **precursors** list of parents' selectors
+* **agent name** agent that produced this descriptor
+* **domain** separates analyses
+* **version** integer version if descriptor is updated
+* **processing time** time taken to compute this descriptor
+
+Descriptors may perform several actions:
+
+* spawn new descriptor in the same UUID zone
+* spawn new version of the same descriptor
+* create link (linktype) descriptor
+* serialization
+
+Communication Bus
+-----------------
+The Bus API performs the following duties:
+
+* allows agents to push Descriptors_
+* broadcasts new Descriptors_' selectors to every agent (1st stage descriptor
+  filtering by agents)
+* allows agents to filter new descriptors based on their metadata and value
+  (2nd stage filtering)
+* keeps track of which agents have processed each descriptor
+* allows several instances of one agent may run simultaneously
+* conveys requests through the storage API
+
+Two communication buses have been implemented:
+
+* **LocalBus**: combine *n* agents to create a new composite command-line tool
+* **DBusBus**: more interactive use, web interface, multi-process
+
+LocalBus
+''''''''
+This bus implementation runs Agents as several threads in a single process.
+
+The bus exits once every agent has finished carrying out its duties (ex.
+injecting files, processing descriptors).
+
+DBusBus
+'''''''
+This bus implementation runs Agents as separate processes.
+
+The bus exits when the *bus master* process gets stopped by the user.
+
+Agents may be run remotely, by connecting to a remote DBus.
+
+This bus allows using the web interface.
+
+
+Storage
+-------
+The storage API provides the following services to agents:
+
+* find descriptor by selector regex
+* find descriptor by uuid
+* load/store agent internal state (bus resuming)
+* mark descriptor as processed, list unprocessed descriptors
+
+Two storage backends have currently been implemented:
+
+* RAMStorage: stored data is forgotten when the bus exits
+* Diskstorage: stores data as files. The bus may be stopped and resumed later
+
+Provided agents
+---------------
+
+A few agents are provided with REbus. Their purpose is to assist using the bus,
+not to perform any data analysis.
+
+* **inject** inject local files in the bus
+* **httplistener** inject Descriptors from HTTP POST requests
+* **ls** list descriptors
+* **unarchive** recursively extract archives, inject contained files
+* **return** output descriptors to stdout if selector matches regexp
+* **link_finder** find link between descriptors, e.g.\ same file type
+* **link_grapher** create graphs from links between descriptors
+* **dotrenderer** rendering dot to svg
+* **web_interface** web interface
+
 
 Building the documentation
 ==========================
 
-$ cd rebus/doc
+This documentation is generated automatically, based only (for now) on source
+code comments.
+
+.. sourcecode:: bash
+
+  $ cd rebus/doc
 
 Make sure sphinx-apidoc2 and sphinx-build2 are installed on your system.
-Override the SPHINXBUILD and SPHINXAPIDOC if necessary.
+Override the SPHINXBUILD and SPHINXAPIDOC if the executables are named
+differently.
 
-$ make generate
+.. sourcecode:: bash
+
+  $ make generate
+
 This will overwrite .rst files in source/.
 
-$ make singlehtml
+.. sourcecode:: bash
+
+  $ make singlehtml
+
+TODO contact
+TODO licence
+TODO rebus_demo_agents
