@@ -34,21 +34,27 @@ To install these dependencies on Arch Linux:
 
 .. sourcecode:: bash
 
-  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject python2-gobject2 dbus-glib python2-tornado  python2-pip
-  pip2 install python-magic==0.4.6
+  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject python2-gobject2 dbus-glib python2-tornado python2-pip
+  $ pip2 install python-magic==0.4.6
 
 
 To install these dependencies on Debian Wheezy:
 
 .. sourcecode:: bash
 
-  $ aptitude install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-magic=0.4.6 python-tornado python-pip
+  $ aptitude install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-pip
   $ pip install python-magic==0.4.6
   # tornado is too old in wheezy repositories
   $ pip install tornado
 
-Quick installation & test:
+To install these dependencies on Ubuntu 14.10 (utopic) :
 
+.. sourcecode:: bash
+
+  $ apt-get install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-pip python-tornado
+  $ pip install python-magic==0.4.6
+
+Quick installation & test:
 
 .. sourcecode:: bash
 
