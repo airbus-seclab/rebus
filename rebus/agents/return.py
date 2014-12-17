@@ -15,6 +15,8 @@ class Return(Agent):
             help="Dump selector values on stdout. Selectors can be regexes")
         subparser.add_argument(
             "--raw", action="store_true", help="Raw output")
+        subparser.add_argument(
+            "--short", action="store_true", help="Short output")
 
     def selector_filter(self, selector):
         for selregex in self.options.selectors:
@@ -23,9 +25,13 @@ class Return(Agent):
         return False
     
     def process(self, descriptor, sender_id):
-        if not self.options.raw:
+        if self.options.raw:
+            print descriptor.value
+        elif self.options.short:
+            print "%s = %s" % (descriptor.label, descriptor.value)
+        else:
             print "---------------------------"
             print "selector = %s" % descriptor.selector
             print "label = %s" % descriptor.label
             print "UUID = %s" % descriptor.uuid
-        print descriptor.value
+            print descriptor.value
