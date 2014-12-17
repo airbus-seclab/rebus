@@ -24,6 +24,7 @@ class WebInterface(Agent):
         t.start()
 
     def process(self, descriptor, sender_id):
+        # tornado version must be >= 3.0
         self.ioloop.add_callback(self.dstore.new_descriptor, descriptor,
                                  sender_id)
 
