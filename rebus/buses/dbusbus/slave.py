@@ -42,9 +42,6 @@ class DBus(Bus):
             self.bus.add_signal_receiver(self.targeted_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="targeted_descriptor")
-        self.bus.add_signal_receiver(self.bus_exit_handler,
-                                     dbus_interface="com.airbus.rebus.bus",
-                                     signal_name="bus_exit")
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
         self.iface.register(self.agent_id, agent_domain, self.objpath,
@@ -124,6 +121,9 @@ class DBus(Bus):
         self.iface.unregister(self.agent_id)
 
     def agentloop(self, agent):
+        self.bus.add_signal_receiver(self.bus_exit_handler,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="bus_exit")
         gobject.threads_init()
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
