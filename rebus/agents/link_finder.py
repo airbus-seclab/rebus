@@ -25,7 +25,7 @@ class LinkFinder(Agent):
         key = (pth, val)
         if key in self.memories:
             related = self.memories[key]
-            self.log.debug("%r related to %r" % (sel, related))
+            self.log.debug("%r related to %r", sel, related)
             for r in related:
                 rel_sel = pth+r
                 rel_desc = self.get(self.domain, rel_sel)

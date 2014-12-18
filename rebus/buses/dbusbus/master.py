@@ -58,8 +58,8 @@ class DBusMaster(dbus.service.Object):
                 log.info("Exiting - no agents are running")
                 self.mainloop.quit()
             else:
-                log.info("Expecting %u more agents to exit (ex. %s)" %
-                         (len(self.clients), self.clients.keys()[0]))
+                log.info("Expecting %u more agents to exit (ex. %s)",
+                         len(self.clients), self.clients.keys()[0])
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
@@ -225,8 +225,8 @@ class DBusMaster(dbus.service.Object):
             if len(svc.clients) > 0:
                 log.info("Stopping all agents")
                 # Ask slave agents to shutdown nicely & save internal state
-                log.info("Expecting %u more agents to exit (ex. %s)" %
-                         (len(svc.clients), svc.clients.keys()[0]))
+                log.info("Expecting %u more agents to exit (ex. %s)",
+                         len(svc.clients), svc.clients.keys()[0])
                 svc.bus_exit(store.STORES_INTSTATE)
                 svc.mainloop.run()
         log.info("Stopping storage...")

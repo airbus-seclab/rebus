@@ -77,12 +77,12 @@ class Agent(object):
                 # if self.name in desc.agents:
                 #     return  # already processed
                 if self.descriptor_filter(desc):
-                    self.log.info("START Processing %r" % desc)
+                    self.log.info("START Processing %r", desc)
                     self.start_time = time.time()
                     self.process(desc, sender_id)
                     done = time.time()
-                    self.log.info("END   Processing |%f| %r" %
-                                  (done-self.start_time, desc))
+                    self.log.info("END   Processing |%f| %r",
+                                  done-self.start_time, desc)
         self.bus.mark_processed(desc_domain, selector, self.name,
                                 self.config_txt)
 

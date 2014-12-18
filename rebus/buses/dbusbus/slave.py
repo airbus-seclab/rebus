@@ -36,6 +36,8 @@ class DBus(Bus):
         self.agent_id = "%s-%s" % (self.agentname, self.bus.get_unique_name())
 
         if self.callback:
+            # Always true when called from Agent - even if agent does not
+            # overload process()
             self.bus.add_signal_receiver(self.broadcast_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="new_descriptor")

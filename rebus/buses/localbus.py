@@ -33,7 +33,7 @@ class LocalBus(Bus):
 
     def lock(self, agent_id, lockid, desc_domain, selector):
         key = (lockid, desc_domain, selector)
-        log.info("LOCK:%s %s => %r %s:%s ", lockid, agent_id, key in
+        log.info("LOCK:%s %s => %r %s:%s", lockid, agent_id, key in
                  self.locks[desc_domain], desc_domain, selector)
         if key in self.locks[desc_domain]:
             return False
