@@ -16,7 +16,7 @@ def main():
                                      none is specified.')
     parser.add_argument('-f', '--logfile', help="Destination log file")
     parser.add_argument('-v', '--verbose',
-                        help="Verbosity, 0 is lowest, 50 highest",
+                        help="Verbosity, 0 is most verbose, 50 least",
                         type=int, default=10, metavar="LEVEL")
     subparsers = parser.add_subparsers(help='Storage backends', dest='storage')
     for backend, cls in StorageRegistry.iteritems():
