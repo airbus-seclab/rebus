@@ -72,9 +72,8 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def busloop(self):
+    def run_agents(self):
         """
-        Called by bus runner after agents have been requested to run in the
-        bus.
+        Runs all agents that have been added to the bus previously.
         """
         raise NotImplementedError

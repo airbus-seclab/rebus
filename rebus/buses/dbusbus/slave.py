@@ -6,6 +6,7 @@ import dbus.glib
 from dbus.mainloop.glib import DBusGMainLoop
 import dbus.service
 import gobject
+from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
 import logging
@@ -24,6 +25,12 @@ class DBus(Bus):
             dbus.bus.BusConnection(busaddr)
         self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
         signal.signal(signal.SIGTERM, self.sigterm_handler)
+        #: Contains agent instance. This Bus implementation accepts only one
+        #: agent. Agent must be run using separate DBus() (bus slave)
+        #: instances.
+        self.agent = None
+        self.callback = None
+        self.loop = None
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
         self.callback = callback
@@ -44,6 +51,9 @@ class DBus(Bus):
             self.bus.add_signal_receiver(self.targeted_callback_wrapper,
                                          dbus_interface="com.airbus.rebus.bus",
                                          signal_name="targeted_descriptor")
+        self.bus.add_signal_receiver(self.bus_exit_handler,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="bus_exit")
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
         self.iface.register(self.agent_id, agent_domain, self.objpath,
@@ -104,6 +114,24 @@ class DBus(Bus):
     def load_internal_state(self, agent_id):
         return str(self.iface.load_internal_state(agent_id))
 
+    def run_agents(self):
+        self.agent.run()
+        if self.agent.__class__.process == Agent.process:
+            # the process() method has not been overridden - agent is not
+            # interested in processing descriptors
+            self.iface.unregister(self.agent_id)
+            return
+        gobject.threads_init()
+        dbus.glib.init_threads()
+        DBusGMainLoop(set_as_default=True)
+        log.info("Entering agent loop")
+        self.loop = gobject.MainLoop()
+        try:
+            self.loop.run()
+        except (KeyboardInterrupt, SystemExit):
+            self.loop.quit()
+        self.iface.unregister(self.agent_id)
+
     # DBus specific functions
     def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
         self.callback(sender_id, desc_domain, selector)
@@ -116,30 +144,10 @@ class DBus(Bus):
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:
             self.agent.save_internal_state()
-        self.loop.quit()
-
-    def run_agent(self, agent, args):
-        agent.run(*args)
-        self.iface.unregister(self.agent_id)
-
-    def agentloop(self, agent):
-        self.bus.add_signal_receiver(self.bus_exit_handler,
-                                     dbus_interface="com.airbus.rebus.bus",
-                                     signal_name="bus_exit")
-        gobject.threads_init()
-        dbus.glib.init_threads()
-        DBusGMainLoop(set_as_default=True)
-        log.info("Entering agent loop")
-        self.loop = gobject.MainLoop()
-        try:
-            self.loop.run()
-        except (KeyboardInterrupt, SystemExit):
+        if self.loop:
             self.loop.quit()
 
     @staticmethod
-    def sigterm_handler(signal, frame):
+    def sigterm_handler(sig, frame):
         log.info("Caught Sigterm, unregistering and exiting.")
         sys.exit(0)
-
-    def busloop(self):
-        pass

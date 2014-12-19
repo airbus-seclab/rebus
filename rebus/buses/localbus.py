@@ -16,10 +16,13 @@ class LocalBus(Bus):
         Bus.__init__(self)
         self.callbacks = []
         self.locks = defaultdict(set)
+        #: Next available agent id. Never decreases.
         self.agent_count = 0
         self.store = RAMStorage()  # TODO add support for DiskStorage ?
         # TODO save internal state at bus exit (only useful with DiskStorage)
         #: maps agentid (ex. inject-12) to agentdesc
+        self.agent_descs = {}
+        #: maps agentid to agent instance
         self.agents = {}
         self.threads = []
 
@@ -27,8 +30,11 @@ class LocalBus(Bus):
         agid = "%s-%i" % (agent.name, self.agent_count)
         self.agent_count += 1
         if callback:
+            # Always true when called from Agent - even if agent does not
+            # overload process()
             self.callbacks.append((agid, callback))
-        self.agents[agid] = agent_desc(agid, agent_domain, callback)
+        self.agent_descs[agid] = agent_desc(agid, agent_domain, callback)
+        self.agents[agid] = agent
         return agid
 
     def lock(self, agent_id, lockid, desc_domain, selector):
@@ -49,7 +55,7 @@ class LocalBus(Bus):
                 try:
                     log.debug("Calling %s callback", agid)
                     cb(agent_id.id, desc_domain, selector)
-                except Exception, e:
+                except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e)
         else:
             log.info("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
@@ -83,7 +89,8 @@ class LocalBus(Bus):
         self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
 
     def list_agents(self, agent_id):
-        return dict(Counter(i.rsplit('-', 1)[0] for i in self.agents.keys()))
+        return dict(Counter(i.rsplit('-', 1)[0]
+                            for i in self.agent_descs.keys()))
 
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
@@ -105,15 +112,11 @@ class LocalBus(Bus):
             return self.store.load_state(str(agent_id))
         return ""
 
-    def run_agent(self, agent, args):
-        t = threading.Thread(target=agent.run, args=args)
-        t.daemon = True
-        t.start()
-        self.threads.append(t)
-
-    def agentloop(self, agent):
-        pass
-
-    def busloop(self):
+    def run_agents(self):
+        for agent in self.agents.values():
+            t = threading.Thread(target=agent.run)
+            t.daemon = True
+            t.start()
+            self.threads.append(t)
         for t in self.threads:
             t.join()

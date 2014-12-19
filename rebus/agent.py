@@ -26,12 +26,14 @@ class Agent(object):
     def register(f):
         return AgentRegistry.register_ref(f, key="_name_")
 
-    def __init__(self, bus, name=None, domain='default'):
+    def __init__(self, bus, options, name=None, domain='default'):
         self.name = name if name else self._name_
         self.domain = domain
         self.bus = bus
-        # {key: value} containing relevant parameters that may influence the
-        # agent's outputs
+        #: Namespace containing passed options
+        self.options = options
+        #: {key: value} containing relevant parameters that may influence the
+        #: agent's outputs
         self.config = dict()
         self.id = self.bus.join(self, domain,
                                 callback=self.on_new_descriptor)
@@ -90,12 +92,6 @@ class Agent(object):
     def config_txt(self):
         return json.dumps(self.config, sort_keys=True)
 
-    def run_in_bus(self, args):
-        self.bus.run_agent(self, args)
-
-    def agentloop(self):
-        self.bus.agentloop(self)
-
     def declare_link(self, desc1, desc2, linktype, reason):
         """
         Helper function.
@@ -115,7 +111,7 @@ class Agent(object):
             return descriptor.value
         else:
             # TODO request from storage if locally available - implement when
-            # agent has a reference to maybe existent local storage
+            # agent has a reference to possibly existent local storage
             return self.bus.get_value(self, descriptor.domain,
                                       descriptor.selector)
             # possible trade-off: store now-fetched value in descriptor
@@ -156,12 +152,11 @@ class Agent(object):
     def process(self, descriptor, sender_id):
         pass
 
-    def run(self, options):
+    def run(self):
         """
-        Agent-specific options
+        Overriden by agents that do not consume descriptors.
         """
-        self.options = options
-        self.bus.agentloop(self)
+        pass
 
     def get_internal_state(self):
         """

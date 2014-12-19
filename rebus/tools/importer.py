@@ -17,7 +17,7 @@ def importer_for(path, prefix):
             loader = importer.find_module(absname)
             try:
                 submod = loader.load_module(absname)
-            except ImportError, e:
+            except ImportError as e:
                 if stop_on_error:
                     raise
                 log.warning("Cannot load REbus plugin [%s]. Root cause: %s",

@@ -22,7 +22,7 @@ class LinkGrapher(Agent):
                                help="Regex to match /link/ selectors,\
                                      results will be displayed on stdout")
 
-    def run(self, options):
+    def run(self):
 
         start = time.time()
 
@@ -34,8 +34,8 @@ class LinkGrapher(Agent):
             return "/link/"+x
 
         sels = chain(*[map(str, self.find(self.domain, ensure_link(s),
-                                          options.limit))
-                       for s in options.selectors])
+                                          self.options.limit))
+                       for s in self.options.selectors])
 
         class Component(object):
             def __init__(self, linktype):

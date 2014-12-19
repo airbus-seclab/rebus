@@ -3,15 +3,14 @@
 import hashlib
 from collections import defaultdict
 from rebus.agent import Agent
-from rebus.descriptor import Descriptor
+
 
 @Agent.register
 class LinkFinder(Agent):
     _name_ = "link_finder"
     _desc_ = "Find messages that are related and notify about it"
 
-    def __init__(self, bus, name=None, domain='default'):
-        Agent.__init__(self, bus, name=name, domain=domain)
+    def init_agent(self):
         self.memories = defaultdict(list)
 
     def process(self, descriptor, sender_id):

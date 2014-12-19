@@ -67,12 +67,13 @@ class Inject(Agent):
         subparser.add_argument("--label", "-l",
                                help="Use LABEL instead of file name")
 
-    def run(self, options):
-        for f in options.files:
+    def run(self):
+        for f in self.options.files:
             start = time.time()
-            label = options.label if options.label else os.path.basename(f)
+            label = self.options.label if self.options.label else \
+                os.path.basename(f)
             data = open(f).read()
-            selector = options.selector if options.selector else \
+            selector = self.options.selector if self.options.selector else \
                 guess_selector(buf=data)
             done = time.time()
             desc = Descriptor(label, selector, data, self.domain,
