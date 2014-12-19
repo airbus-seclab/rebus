@@ -134,12 +134,12 @@ class DBus(Bus):
 
     # DBus specific functions
     def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
-        self.callback(sender_id, desc_domain, selector)
+        self.callback(str(sender_id), str(desc_domain), str(selector))
 
     def targeted_callback_wrapper(self, sender_id, desc_domain, selector,
                                   targets):
         if self.agentname in targets:
-            self.callback(sender_id, desc_domain, selector)
+            self.callback(str(sender_id), str(desc_domain), str(selector))
 
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:
