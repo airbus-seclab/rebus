@@ -10,9 +10,19 @@ import time
 
 def guess_selector(fname=None, buf=None):
     if fname is not None:
-        guess = magic.from_file(fname)
+        try:
+            guess = magic.from_file(fname)
+        except AttributeError:
+            ms = magic.open(magic.MAGIC_NONE)
+            ms.load()
+            guess = ms.file(fname)
     elif buf is not None:
-        guess = magic.from_buffer(buf)
+        try:
+            guess = magic.from_buffer(buf)
+        except AttributeError:
+            ms = magic.open(magic.MAGIC_NONE)
+            ms.load()
+            guess = ms.buffer(buf)
     else:
         raise Exception("Either fname or buffer must be set when calling "
                         "guess_selector.")
