@@ -5,8 +5,8 @@ $(document).ready(function() {
     if (navelem.length == 0) {
       if (pathelems[1] == "analysis") {
         title = "File analysis";
-      } else if (pathelems[1].startsWith("get%2F")) {
-        title = pathelems[1].split('%2F')[1] + " view";
+      } else if (pathelems[1] == "get") {
+        title = pathelems[2] + " view";
       }
       $('ul.nav').prepend('<li class="active"><a href="' + location.href + '">' + title + '</a></li>')
     }
