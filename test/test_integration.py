@@ -1,0 +1,179 @@
+import argparse
+import pytest
+import signal
+import subprocess
+import psutil
+import threading
+import time
+
+from rebus.agent import Agent, AgentRegistry
+from rebus.bus import BusRegistry, DEFAULT_DOMAIN
+import rebus.agents
+import rebus.buses
+
+rebus.agents.import_all()
+rebus.buses.import_all()
+
+
+# This file implements integration testing - injects a file to the bus, checks
+# that it has properly been received by agents & storage, that no agent has
+# crashed...
+
+# TODO tests (cf bta/test/test_miners): all agents are registered / instantiate
+# without crashing
+
+# TODO add argument parsing tests - check that help is displayed
+
+
+@pytest.fixture(scope='function', params=['localbus', 'dbus'])
+def bus(request):
+    """
+    Returns a function that returns a bus instance.
+    """
+    if request.param == 'dbus':
+        check_master_not_running()
+        # launch rebus master
+        process = subprocess.Popen('rebus_master_dbus', stderr=subprocess.PIPE)
+        # wait for master bus to be ready - TODO look into & fix race
+        time.sleep(0.5)
+        output = ""
+        # output = process.stderr.read(1)
+
+        def fin():
+            process.send_signal(signal.SIGINT)
+            process.wait()
+            assert process.returncode == 0, output + process.stderr.read()
+
+        request.addfinalizer(fin)
+        return_bus = rebus.bus.BusRegistry.get(request.param)
+    elif request.param == 'localbus':
+        # always return the same bus instance
+        instance = BusRegistry.get(request.param)()
+
+        def return_bus():
+            return instance
+    return (request.param, return_bus)
+
+
+def check_master_not_running():
+    # 'rebus_master_dbus' is too long - gets truncated
+    running = any(['rebus_master' in p.name() for p in psutil.process_iter()])
+    assert running is False, "rebus_master_dbus is already running"
+
+
+def parse_arguments(agent_class, args):
+    """
+    Returns a namespace containing parsed arguments for the requested agent.
+
+    :param args: list of arguments
+    """
+    parser = argparse.ArgumentParser()
+    agent_class.add_arguments(parser)
+    options, _ = parser.parse_known_args(args)
+    return options
+
+
+@pytest.fixture(scope='function')
+def agent_test(bus):
+    """
+    Returns an instance of a test agent, registered to the bus and running in
+    another thread.
+    """
+    @Agent.register
+    class TestAgent(Agent):
+        _name_ = "testagent"
+        _desc_ = "Accepts any input. Records received selectors, descriptors"
+
+        received_selectors = []
+        processed_descriptors = []
+
+        def selector_filter(self, selector):
+            self.received_selectors.append(selector)
+            return True
+
+        def process(self, desc, sender_id):
+            self.processed_descriptors.append((desc, sender_id))
+
+    namespace = parse_arguments(TestAgent, [])
+    agent = TestAgent(bus=bus[1](), domain='default', options=namespace)
+    return agent
+
+
+@pytest.fixture(scope='function')
+def agent_inject(bus, request):
+    busname, return_bus = bus
+    if busname == 'localbus':
+        bus_instance = return_bus()
+        agent_class = AgentRegistry.get('inject')
+        namespace = parse_arguments(agent_class, ['/bin/ls'])
+        agent = agent_class(bus=bus_instance, domain='default',
+                            options=namespace)
+        return agent
+    elif busname == 'dbus':
+        # Running two DBUS agents in the same process does not work yet -
+        # callbacks cannot be removed (?)
+        returncode = subprocess.call(('rebus_agent', '--bus', busname,
+                                      'inject', '/bin/ls'))
+        assert returncode == 0
+        return
+
+
+@pytest.fixture(scope='function')
+def agent_set(bus):
+    """
+    Run predefined sets of agents on the bus. Check that they did not crash at
+    the end.
+    """
+    # TODO
+    pass
+
+
+def test_master():
+    """
+    Run, then stop rebus_master_dbus
+    """
+    check_master_not_running()
+
+    process = subprocess.Popen('rebus_master_dbus', stderr=subprocess.PIPE,
+                               bufsize=0)
+    # wait for master bus to be ready
+    # TODO look into race condition. Another SIGINT handler?
+    time.sleep(0.3)
+    output = process.stderr.read(1)
+    process.send_signal(signal.SIGINT)
+    process.wait()
+    assert process.returncode == 0, output + process.stderr.read()
+
+
+def test_inject(agent_set, agent_test, agent_inject):
+    """
+    * Inject a file to the bus
+    * Check that is can be fetched from the bus interface
+    * Check that it has been received by the test agent TODO
+    * Make sure no agent has thrown any exception
+    """
+    bus_instance = agent_test.bus
+    t = threading.Thread(target=bus_instance.run_agents)
+    t.daemon = True
+    t.start()
+
+    # TODO cleanly make sure all agents from agentset have finished processing
+    time.sleep(1)
+
+    injected_value = open('/bin/ls', 'rb').read()
+    # Fetch using the bus interface, check value
+    selector = bus_instance.find(agent_test.id, DEFAULT_DOMAIN,
+                                 '/binary/elf', 10)
+    assert len(selector) == 1
+    descriptor = bus_instance.get(agent_test.id, DEFAULT_DOMAIN,
+                                  selector[0])
+    assert descriptor.value == injected_value
+    uuids = bus_instance.list_uuids("testid", DEFAULT_DOMAIN)
+    assert descriptor.uuid in uuids
+
+    # Check that it has been received by TestAgent
+    received = agent_test.received_selectors
+    processed = agent_test.processed_descriptors
+    assert len(received) == len(processed) == 1
+    assert received == selector
+    assert processed[0][0].value == injected_value
