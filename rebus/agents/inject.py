@@ -3,26 +3,16 @@
 import os
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
-import magic
+from rebus.tools import magic_wrap
 import struct
 import time
 
 
 def guess_selector(fname=None, buf=None):
     if fname is not None:
-        try:
-            guess = magic.from_file(fname)
-        except AttributeError:
-            ms = magic.open(magic.MAGIC_NONE)
-            ms.load()
-            guess = ms.file(fname)
+        guess = magic_wrap.from_file(fname)
     elif buf is not None:
-        try:
-            guess = magic.from_buffer(buf)
-        except AttributeError:
-            ms = magic.open(magic.MAGIC_NONE)
-            ms.load()
-            guess = ms.buffer(buf)
+        guess = magic_wrap.from_buffer(buf)
     else:
         raise Exception("Either fname or buffer must be set when calling "
                         "guess_selector.")
