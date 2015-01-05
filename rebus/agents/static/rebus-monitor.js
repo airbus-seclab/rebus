@@ -99,6 +99,6 @@ var updater = {
         var node = $(descriptor.html);
         node.hide();
         $("#inbox").prepend(node);
-        node.fadeIn();
+        node.show();
     },
 };
