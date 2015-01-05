@@ -97,8 +97,6 @@ var updater = {
 
     showDescriptor: function(descriptor) {
         var node = $(descriptor.html);
-        node.hide();
         $("#inbox").prepend(node);
-        node.show();
     },
 };
