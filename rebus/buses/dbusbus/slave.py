@@ -116,9 +116,9 @@ class DBus(Bus):
 
     def run_agents(self):
         self.agent.run()
-        if self.agent.__class__.process == Agent.process:
-            # the process() method has not been overridden - agent is not
-            # interested in processing descriptors
+        if self.agent.__class__.run != Agent.run:
+            # the run() method has been overridden - agent will run on his own
+            # then quit
             self.iface.unregister(self.agent_id)
             return
         gobject.threads_init()
