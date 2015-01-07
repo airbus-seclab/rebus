@@ -42,6 +42,16 @@ class Bus(object):
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         raise NotImplementedError
 
+    def find_by_value(self, agent_id, desc_domain, selector_prefix,
+                      value_regex):
+        """
+        Returns a list of matching descriptors:
+        * desc.domain == desc_domain
+        * desc.selector.startswith(selector_prefix)
+        * re.match(value_regex, desc.value)
+        """
+        raise NotImplementedError
+
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         raise NotImplementedError
 

@@ -162,12 +162,20 @@ def test_inject(agent_set, agent_test, agent_inject):
 
     injected_value = open('/bin/ls', 'rb').read()
     # Fetch using the bus interface, check value
+    # Find by selector regexp
     selector = bus_instance.find(agent_test.id, DEFAULT_DOMAIN,
                                  '/binary/elf', 10)
     assert len(selector) == 1
+    # Get descriptor
     descriptor = bus_instance.get(agent_test.id, DEFAULT_DOMAIN,
                                   selector[0])
     assert descriptor.value == injected_value
+    # Find by value regexp
+    selectors_byvalue = bus_instance.find_by_value(agent_test.id,
+                                                   DEFAULT_DOMAIN, '/binary',
+                                                   injected_value[0:4])
+    # Check UUID exists
+    assert selectors_byvalue[0].value == descriptor.value
     uuids = bus_instance.list_uuids("testid", DEFAULT_DOMAIN)
     assert descriptor.uuid in uuids
 
@@ -177,3 +185,4 @@ def test_inject(agent_set, agent_test, agent_inject):
     assert len(received) == len(processed) == 1
     assert received == selector
     assert processed[0][0].value == injected_value
+

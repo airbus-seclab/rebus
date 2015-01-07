@@ -92,6 +92,12 @@ class DBus(Bus):
         return [Descriptor.unserialize(str(s), bus=self) for s in
                 self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
 
+    def find_by_value(self, agent_id, desc_domain, selector_prefix,
+                      value_regex):
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.iface.find_by_value(str(agent_id), desc_domain,
+                                         selector_prefix, value_regex)]
+
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         self.iface.mark_processed(desc_domain, selector, agent_id, config_txt)
 

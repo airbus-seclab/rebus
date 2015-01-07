@@ -40,6 +40,16 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def find_by_value(self, domain, selector_prefix, value_regex,
+                      serialized=False):
+        """
+        Returns a list of matching descriptors:
+        * desc.domain == desc_domain
+        * desc.selector.startswith(selector_prefix)
+        * re.match(value_regex, desc.value)
+        """
+        raise NotImplementedError
+
     def list_uuids(self, domain):
         """
         :param domain: domain from which UUID should be enumerated

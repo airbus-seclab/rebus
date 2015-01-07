@@ -125,6 +125,15 @@ class DBusMaster(dbus.service.Object):
                                        serialized=True)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ssss', out_signature='as')
+    def find_by_value(self, agent_id, desc_domain, selector_prefix,
+                      value_regex):
+        log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
+                  selector_prefix, value_regex)
+        return self.store.find_by_value(str(desc_domain), str(selector_prefix),
+                                        str(value_regex), serialized=True)
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='')
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,

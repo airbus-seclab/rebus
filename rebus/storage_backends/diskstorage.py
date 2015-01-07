@@ -157,6 +157,26 @@ class DiskStorage(Storage):
                 result.append(desc)
         return result
 
+    def find_by_value(self, domain, selector_prefix, value_regex,
+                      serialized=False):
+        result = []
+        # File paths to explore
+        pathprefix = self.basepath + '/' + domain + selector_prefix
+        paths = [path for path in self.existing_paths if
+                 path.startswith(pathprefix)]
+        for path in paths:
+            # open and run re.match() on every file matching *.value
+            for name in os.listdir(path):
+                if os.path.isfile(path + name) and name.endswith('.value'):
+                    contents = open(path + name, 'rb').read()
+                    if re.match(value_regex, contents):
+                        selector = path[len(self.basepath)+len(domain)+1:] +\
+                            name.split('.')[0]
+                        if serialized:
+                            desc = self.get_descriptor(domain, selector)
+                            result.append(desc)
+        return result
+
     def list_uuids(self, domain):
         result = dict()
         for uuid in self.uuids[domain].keys():

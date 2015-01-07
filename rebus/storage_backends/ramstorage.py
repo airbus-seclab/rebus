@@ -58,6 +58,18 @@ class RAMStorage(Storage):
                     result.append(desc)
         return result
 
+    def find_by_value(self, domain, selector_prefix, value_regex,
+                      serialized=False):
+        result = []
+        for selector, desc in self.dstore[domain].iteritems():
+            if desc.selector.startswith(selector_prefix) and \
+                    re.match(value_regex, desc.value):
+                if serialized:
+                    result.append(self.serialized_store[domain][selector])
+                else:
+                    result.append(desc)
+        return result
+
     def list_uuids(self, domain):
         result = dict()
         for desc in self.dstore[domain].values():
