@@ -13,6 +13,8 @@ class HTTPListener(Agent):
     _name_ = "httplistener"
     _desc_ = "Push any descriptor that gets POSTed to the bus"
 
+    postprocessors = dict()
+
     def init_agent(self):
         self.gui = Application(self)
         self.gui.listen(8081)
@@ -24,12 +26,32 @@ class HTTPListener(Agent):
     def selector_filter(self, selector):
         return False
 
-    def inject(self, selector, domain, label, value, start_time):
-        done = time.time()
-        desc = Descriptor(label, selector, value, domain,
-                          agent=self._name_ + '_inject',
-                          processing_time=(done-start_time))
+    def inject(self, desc):
         self.push(desc)
+
+    @staticmethod
+    def registerPostProcessor(selector_prefix):
+        """
+        :param selector_prefix: selector prefix for which postprocessing should
+            be performed
+
+        Registers a method which will be called for selectors that match
+        provided prefix.
+
+        Only one postprocessing method will be called.
+
+        The registered callback method must have the following prototype:
+        callback(agent, selector, domain, label, value, start_time)
+
+        This method may return either None, or a Descriptor object.
+
+        The callback method will be run in the same process as the HTTPListener
+        agent.
+        """
+        def func_wrapper(f):
+            HTTPListener.postprocessors[selector_prefix] = f
+            return f
+        return func_wrapper
 
 
 class Application(tornado.web.Application):
@@ -55,6 +77,18 @@ class InjectHandler(tornado.web.RequestHandler):
         value = self.request.body
         if selector == '/auto':
             selector = rebus.agents.inject.guess_selector(buf=value)
-        self.application.agent.inject(selector, domain, label, value,
-                                      start_time)
+        postprocessor = None
+        for (prefix, function) in HTTPListener.postprocessors.items():
+            if selector.startswith(prefix):
+                postprocessor = function
+        if postprocessor is not None:
+            desc = postprocessor(self.application.agent, selector, domain,
+                                 label, value, start_time)
+        else:
+            done = time.time()
+            desc = Descriptor(label, selector, value, domain,
+                              agent=self.application.agent._name_ + '_inject',
+                              processing_time=(done-start_time))
+        if desc is not None:
+            self.application.agent.inject(desc)
         self.finish()
