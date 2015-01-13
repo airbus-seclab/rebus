@@ -34,7 +34,7 @@ To install these dependencies on Arch Linux:
 
 .. sourcecode:: bash
 
-  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject python2-gobject2 dbus-glib python2-tornado python2-pip
+  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject dbus-glib python2-tornado python2-pip
   $ pip2 install python-magic==0.4.6
 
 
