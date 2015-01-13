@@ -174,3 +174,12 @@ class Descriptor(object):
         if len(v) > 30:
             v = "[%i][%s...]" % (len(v), v[:22])
         return "%s:%s(%s)=%s" % (self.domain, self.selector, self.label, v)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __hash__(self):
+        """
+        self.hash is never changed
+        """
+        return hash(self.hash)

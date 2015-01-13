@@ -1,10 +1,11 @@
 import argparse
+import psutil
 import pytest
 import signal
 import subprocess
-import psutil
 import threading
 import time
+import uuid
 
 from rebus.agent import Agent, AgentRegistry
 from rebus.bus import BusRegistry, DEFAULT_DOMAIN
@@ -149,7 +150,7 @@ def test_inject(agent_set, agent_test, agent_inject):
     """
     * Inject a file to the bus
     * Check that is can be fetched from the bus interface
-    * Check that it has been received by the test agent TODO
+    * Check that it has been received by the test agent
     * Make sure no agent has thrown any exception
     """
     bus_instance = agent_test.bus
@@ -163,13 +164,20 @@ def test_inject(agent_set, agent_test, agent_inject):
     injected_value = open('/bin/ls', 'rb').read()
     # Fetch using the bus interface, check value
     # Find by selector regexp
-    selector = bus_instance.find(agent_test.id, DEFAULT_DOMAIN,
-                                 '/binary/elf', 10)
-    assert len(selector) == 1
+    selectors = bus_instance.find(agent_test.id, DEFAULT_DOMAIN,
+                                  '/binary/elf', 10)
+    assert len(selectors) > 0
     # Get descriptor
     descriptor = bus_instance.get(agent_test.id, DEFAULT_DOMAIN,
-                                  selector[0])
+                                  selectors[0])
     assert descriptor.value == injected_value
+    assert descriptor.domain == 'default'
+    assert descriptor.agent == 'inject'
+    assert descriptor.label == 'ls'
+    assert descriptor.precursors == []
+    assert descriptor.selector.startswith('/binary/elf/%')
+    assert uuid.UUID(descriptor.uuid) is not None
+    assert descriptor.version == 0
     # Find by value regexp
     selectors_byvalue = bus_instance.find_by_value(agent_test.id,
                                                    DEFAULT_DOMAIN, '/binary',
@@ -182,7 +190,5 @@ def test_inject(agent_set, agent_test, agent_inject):
     # Check that it has been received by TestAgent
     received = agent_test.received_selectors
     processed = agent_test.processed_descriptors
-    assert len(received) == len(processed) == 1
-    assert received == selector
-    assert processed[0][0].value == injected_value
-
+    assert received == selectors
+    assert processed[0][0] == descriptor
