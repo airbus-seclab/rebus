@@ -37,7 +37,7 @@ $(function () {
                   updater.uuid].join('/'));
               updater.poll();
             } else {
-              window.location.replace(['/analysis', 'default',
+              window.location.assign(['/analysis', 'default',
                   data.result.uuid].join('/'));
             }
         },

@@ -19,6 +19,10 @@ var updater = {
     domain: 'default',
     filenametext: null,
 
+    reset: function() {
+        updater.stopPolling();
+    },
+
     stopPolling: function() {
         if (updater.currentAjaxQuery) {
             updater.currentAjaxQuery.abort();
