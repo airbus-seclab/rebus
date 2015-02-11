@@ -27,4 +27,4 @@ class Wait(Agent):
         print repr(descriptor.value[:500])
 
     def run(self):
-        self.wait_for += self.options.selectors
+        self.wait_for += self.config['selectors']

@@ -19,9 +19,9 @@ class Search(Agent):
                                "value has to match (from its beginning)")
 
     def run(self):
-        matches = self.bus.find_by_value(self, self.options.domain,
-                                         self.options.selector_prefix[0],
-                                         self.options.value_regex[0])
+        matches = self.bus.find_by_value(self, self.config['domain'],
+                                         self.config['selector_prefix'][0],
+                                         self.config['value_regex'][0])
         if len(matches) == 0:
             sys.stdout.write('No match found.\n')
         for match in matches:

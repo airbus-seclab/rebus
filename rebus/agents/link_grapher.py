@@ -34,8 +34,8 @@ class LinkGrapher(Agent):
             return "/link/"+x
 
         sels = chain(*[map(str, self.find(self.domain, ensure_link(s),
-                                          self.options.limit))
-                       for s in self.options.selectors])
+                                          self.config['limit']))
+                       for s in self.config['selectors']])
 
         class Component(object):
             def __init__(self, linktype):

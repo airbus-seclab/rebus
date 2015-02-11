@@ -69,13 +69,13 @@ class Inject(Agent):
                                help="Use LABEL instead of file name")
 
     def run(self):
-        for f in self.options.files:
+        for f in self.config['files']:
             start = time.time()
-            label = self.options.label if self.options.label else \
+            label = self.config['label'] if self.config['label'] else \
                 os.path.basename(f)
             data = open(f).read()
-            selector = self.options.selector if self.options.selector else \
-                guess_selector(buf=data)
+            selector = self.config['selector'] if self.config['selector'] \
+                else guess_selector(buf=data)
             done = time.time()
             desc = Descriptor(label, selector, data, self.domain,
                               agent=self._name_, processing_time=(done-start))

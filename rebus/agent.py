@@ -23,6 +23,10 @@ class Agent(object):
     #: may be changed on master bus' order.
     #: default mode as 1st element.
     _operationmodes_ = ('automatic', 'interactive')
+    #: tuple of names of options that influence output values. If not
+    #: overridden, every option except 'operationmode' will be considered as
+    #: influencing the output.
+    _output_altering_options_ = None
 
     @staticmethod
     def register(f):
@@ -32,14 +36,18 @@ class Agent(object):
         self.name = name if name else self._name_
         self.domain = domain
         self.bus = bus
-        #: Namespace containing passed options
-        self.options = options
-        # Chosen operation mode
-        if len(self._operationmodes_) == 1:
-            self.options.operationmode = self._operationmodes_[0]
         #: {key: value} containing relevant parameters that may influence the
         #: agent's outputs
-        self.config = dict()
+        self.config = vars(options)
+        # Chosen operation mode
+        if len(self._operationmodes_) == 1:
+            self.config['operationmode'] = self._operationmodes_[0]
+        if self._output_altering_options_ is None:
+            self.config['output_altering_options'] = self.config.keys()
+            self.config['output_altering_options'].remove('operationmode')
+        else:
+            self.config['output_altering_options'] = \
+                self._output_altering_options_
         self.id = self.bus.join(self, domain,
                                 callback=self.on_new_descriptor)
         self.log = AgentLogger(log, dict(agent_id=self.id))
@@ -89,7 +97,7 @@ class Agent(object):
             # processing has already been started by another instance of
             # the same agent
             return
-        if self.options.operationmode == 'interactive':
+        if self.config['operationmode'] == 'interactive':
             self.bus.mark_processable(desc_domain, selector, self.name,
                                       self.config_txt)
             return

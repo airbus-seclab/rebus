@@ -3,6 +3,7 @@ import re
 from collections import defaultdict
 from collections import OrderedDict
 from collections import Counter
+from rebus.tools.config import get_output_altering_options
 
 
 @Storage.register
@@ -140,14 +141,16 @@ class RAMStorage(Storage):
         return True
 
     def mark_processed(self, domain, selector, agent_name, config_txt):
-        self.processed[domain][selector].add((agent_name, config_txt))
+        filtered_conf = get_output_altering_options(config_txt)
+        self.processed[domain][selector].add((agent_name, filtered_conf))
         # Remove from processable
         if selector in self.processable[domain]:
             self.processable[domain][selector].discard((agent_name,
-                                                        config_txt))
+                                                        filtered_conf))
 
     def mark_processable(self, domain, selector, agent_name, config_txt):
-        self.processable[domain][selector].add((agent_name, config_txt))
+        filtered_conf = get_output_altering_options(config_txt)
+        self.processable[domain][selector].add((agent_name, filtered_conf))
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]
@@ -168,12 +171,13 @@ class RAMStorage(Storage):
         return result.items(), len(processed)
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
+        filtered_conf = get_output_altering_options(config_txt)
         res = []
         for domain in self.dstore.keys():
             selectors = set(self.dstore[domain].keys())
             processed_selectors = set([sel for sel, name_confs in
                                        self.processed[domain].items() if
-                                       (agent_name, config_txt) in
+                                       (agent_name, filtered_conf) in
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
             res.extend([(domain, sel) for sel in unprocessed_sels])

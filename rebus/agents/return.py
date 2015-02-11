@@ -20,15 +20,15 @@ class Return(Agent):
             "--short", action="store_true", help="Short output")
 
     def selector_filter(self, selector):
-        for selregex in self.options.selectors:
+        for selregex in self.config['selectors']:
             if re.search(selregex, selector):
                 return True
         return False
     
     def process(self, descriptor, sender_id):
-        if self.options.raw:
+        if self.config['raw']:
             print descriptor.value
-        elif self.options.short:
+        elif self.config['short']:
             print "%s = %s" % (descriptor.label, descriptor.value)
         else:
             print "---------------------------"
