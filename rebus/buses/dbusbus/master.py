@@ -43,8 +43,8 @@ class DBusMaster(dbus.service.Object):
         self.clients[agent_id] = pth
         self.agentnames[agent_id] = agent_name
         self.config_txts[agent_id] = config_txt
-        log.info("New client %s (%s) in domain %s", pth, agent_id,
-                 agent_domain)
+        log.info("New client %s (%s) in domain %s with config %s", pth,
+                 agent_id, agent_domain, config_txt)
         # Send not-yet processed descriptors to the agent...
         if not already_running:
             # ...unless another instance of the same agent has already been
@@ -142,7 +142,7 @@ class DBusMaster(dbus.service.Object):
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
-    def mark_processed(self, desc_domain, selector, agent_id):
+    def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
         config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
@@ -152,7 +152,7 @@ class DBusMaster(dbus.service.Object):
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
-    def mark_processable(self, desc_domain, selector, agent_id):
+    def mark_processable(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
         config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
@@ -203,6 +203,8 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssas', out_signature='')
     def request_processing(self, agent_id, desc_domain, selector, targets):
+        log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
+                  desc_domain, selector, targets)
         self.targeted_descriptor(agent_id, desc_domain, selector, targets,
                                  True)
 

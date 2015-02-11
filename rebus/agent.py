@@ -88,11 +88,11 @@ class Agent(object):
                        desc_domain, selector)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
             # this agent only processes descriptors whose domain is self.domain
-            self.bus.mark_processed(desc_domain, selector, self.id)
+            self.bus.mark_processed(self.id, desc_domain, selector)
             return
         if not self.selector_filter(selector):
             # not interested in this
-            self.bus.mark_processed(desc_domain, selector, self.id)
+            self.bus.mark_processed(self.id, desc_domain, selector)
             return
         lockid = self.name + get_output_altering_options(self.config_txt)
         if user_request:
@@ -102,7 +102,7 @@ class Agent(object):
             # the same agent
             return
         if self.config['operationmode'] == 'interactive' and not user_request:
-            self.bus.mark_processable(desc_domain, selector, self.id)
+            self.bus.mark_processable(self.id, desc_domain, selector)
             return
         desc = self.get(desc_domain, selector)
         if desc is None:
@@ -120,7 +120,7 @@ class Agent(object):
             done = time.time()
             self.log.info("END   Processing |%f| %r",
                           done-self.start_time, desc)
-        self.bus.mark_processed(desc_domain, selector, self.id)
+        self.bus.mark_processed(self.id, desc_domain, selector)
 
     @property
     def config_txt(self):

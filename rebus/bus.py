@@ -52,10 +52,10 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def mark_processed(self, desc_domain, selector, agent_id):
+    def mark_processed(self, agent_id, desc_domain, selector):
         raise NotImplementedError
 
-    def mark_processable(self, desc_domain, selector, agent_id):
+    def mark_processable(self, agent_id, desc_domain, selector):
         """
         Called by agents that are running in interactive mode, when selector
         passes their selector_filter
@@ -89,13 +89,12 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def request_processing(self, agent_id, desc_domain, selector,
-                           targets):
+    def request_processing(self, agent_id, desc_domain, selector, targets):
         """
         Request that described descriptor (domain, selector) be processed by
         agents whose name is in targets.
 
-        :param sender_id: sender id
+        :param agent_id: id of the requesting agent
         :param desc_domain: descriptor domain
         :param selector: descriptor selector
         :param targets: list of target agent names.

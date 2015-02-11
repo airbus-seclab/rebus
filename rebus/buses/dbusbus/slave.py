@@ -98,11 +98,11 @@ class DBus(Bus):
                 self.iface.find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
 
-    def mark_processed(self, desc_domain, selector, agent_id):
-        self.iface.mark_processed(desc_domain, selector, agent_id)
+    def mark_processed(self, agent_id, desc_domain, selector):
+        self.iface.mark_processed(agent_id, desc_domain, selector)
 
-    def mark_processable(self, desc_domain, selector, agent_id):
-        self.iface.mark_processable(desc_domain, selector, agent_id)
+    def mark_processable(self, agent_id, desc_domain, selector):
+        self.iface.mark_processable(agent_id, desc_domain, selector)
 
     def list_agents(self, agent_id):
         return {str(k): int(v) for k, v in

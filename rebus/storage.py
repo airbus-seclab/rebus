@@ -151,7 +151,7 @@ class Storage(object):
         Return the set of (agents, config_txt) running in interactive mode
         that could process this selector.
 
-        :param domain: string, domain on which operations are performed
+        :param domain: string, domain this selector belongs to
         :param selector: string
         """
         raise NotImplementedError

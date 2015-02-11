@@ -93,7 +93,7 @@ class LocalBus(Bus):
         return self.store.find_by_value(desc_domain, selector_prefix,
                                         value_regex, serialized=False)
 
-    def mark_processed(self, desc_domain, selector, agent_id):
+    def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
         config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
@@ -101,7 +101,7 @@ class LocalBus(Bus):
         self.store.mark_processed(desc_domain, selector, agent_name,
                                   config_txt)
 
-    def mark_processable(self, desc_domain, selector, agent_id):
+    def mark_processable(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
         config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
@@ -110,6 +110,7 @@ class LocalBus(Bus):
                                     config_txt)
 
     def list_agents(self, agent_id):
+        log.debug("LIST_AGENTS: %s", agent_id)
         return dict(Counter(i.rsplit('-', 1)[0]
                             for i in self.agent_descs.keys()))
 
@@ -137,6 +138,8 @@ class LocalBus(Bus):
 
     def request_processing(self, agent_id, desc_domain, selector,
                            targets):
+        log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
+                  desc_domain, selector, targets)
         for agid, cb in self.callbacks:
             if self.agents[agid].name in targets:
                 try:
