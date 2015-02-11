@@ -1,5 +1,5 @@
-from rebus.descriptor import Descriptor
 from rebus.tools.registry import Registry
+from rebus.tools.config import get_output_altering_options
 from rebus.bus import DEFAULT_DOMAIN
 import logging
 import time
@@ -92,7 +92,8 @@ class Agent(object):
             self.bus.mark_processed(desc_domain, selector, self.id,
                                     self.config_txt)
             return
-        if not self.lock(self.name, desc_domain, selector):
+        lockid = self.name + get_output_altering_options(self.config_txt)
+        if not self.lock(lockid, desc_domain, selector):
             # processing has already been started by another instance of
             # the same agent
             return
