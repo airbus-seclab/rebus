@@ -27,6 +27,10 @@ class DBusMaster(dbus.service.Object):
         #: perform the same stateless computation to run in parallel
         self.processed = defaultdict(set)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
+        #: maps agentids to their names
+        self.agentnames = {}
+        #: maps agentids to their serialized configuration
+        self.config_txts = {}
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssos', out_signature='')
@@ -37,6 +41,8 @@ class DBusMaster(dbus.service.Object):
         already_running = any([k.startswith(agent_name+'-') for k in
                                self.clients.keys()])
         self.clients[agent_id] = pth
+        self.agentnames[agent_id] = agent_name
+        self.config_txts[agent_id] = config_txt
         log.info("New client %s (%s) in domain %s", pth, agent_id,
                  agent_domain)
         # Send not-yet processed descriptors to the agent...
@@ -134,20 +140,24 @@ class DBusMaster(dbus.service.Object):
                                         str(value_regex), serialized=True)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ssss', out_signature='')
-    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+                         in_signature='sss', out_signature='')
+    def mark_processed(self, desc_domain, selector, agent_id):
+        agent_name = self.agentnames[agent_id]
+        config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processed(str(desc_domain), str(selector),
-                                  str(agent_id), str(config_txt))
+                                  agent_name, str(config_txt))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ssss', out_signature='')
-    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
+                         in_signature='sss', out_signature='')
+    def mark_processable(self, desc_domain, selector, agent_id):
+        agent_name = self.agentnames[agent_id]
+        config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processable(str(desc_domain), str(selector),
-                                    str(agent_id), str(config_txt))
+                                    agent_name, str(config_txt))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='', out_signature='a{su}')
@@ -175,16 +185,18 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='')
     def store_internal_state(self, agent_id, state):
-        log.debug("STORE_INTSTATE: %s", agent_id)
+        agent_name = self.agentnames[str(agent_id)]
+        log.debug("STORE_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
-            self.store.store_state(str(agent_id), str(state))
+            self.store.store_state(agent_name, str(state))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='s')
     def load_internal_state(self, agent_id):
-        log.debug("LOAD_INTSTATE: %s", agent_id)
+        agent_name = self.agentnames[str(agent_id)]
+        log.debug("LOAD_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
-            return self.store.load_state(str(agent_id))
+            return self.store.load_state(agent_name)
         return ""
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',

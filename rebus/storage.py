@@ -112,26 +112,26 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def mark_processed(self, domain, selector, agent_id, config_txt):
+    def mark_processed(self, domain, selector, agent_name, config_txt):
         """
         Mark given selector as having been processed by given agent whose
         configuration is serialized in config_txt.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param agent_id: string, agent name
+        :param agent_name: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent
         """
         raise NotImplementedError
 
-    def mark_processable(self, domain, selector, agent_id, config_txt):
+    def mark_processable(self, domain, selector, agent_name, config_txt):
         """
         Mark given selector as processable by given agent running in
         interactive mode whose configuration is serialized in config_txt.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param agent_id: string, agent name
+        :param agent_name: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent
         """
         raise NotImplementedError
@@ -156,20 +156,20 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def store_state(self, agent_id, state):
+    def store_state(self, agent_name, state):
         """
         Store serialized agent state.
 
-        :param agent_id: string, agent name
+        :param agent_name: string, agent name
         :param state: string, serialized internal state of agent
         """
         raise NotImplementedError
 
-    def load_state(self, agent_id):
+    def load_state(self, agent_name):
         """
         Return serialized agent state.
 
-        :param agent_id: string, agent name
+        :param agent_name: string, agent name
         :param state: string, serialized internal state of agent
         """
         raise NotImplementedError
@@ -181,12 +181,12 @@ class Storage(object):
         """
         pass
 
-    def list_unprocessed_by_agent(self, agent_id, config_txt):
+    def list_unprocessed_by_agent(self, agent_name, config_txt):
         """
         Return a list of (domain, selector) that have not been processed by
         this agent, identified by its name.
 
-        :param agent_id: string, agent name
+        :param agent_name: string, agent name
         :param config_txt: string, agent name, serialized agent configuration
         """
         return []

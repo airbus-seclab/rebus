@@ -306,18 +306,18 @@ class DiskStorage(Storage):
         self.processed[domain][selector] = set()
         return True
 
-    def mark_processed(self, domain, selector, agent, config_txt):
+    def mark_processed(self, domain, selector, agent_name, config_txt):
         filtered_conf = get_output_altering_options(config_txt)
-        self.processed[domain][selector].add((agent, filtered_conf))
+        self.processed[domain][selector].add((agent_name, filtered_conf))
         # Remove from processable
         if selector in self.processable[domain]:
-            self.processable[domain][selector].discard((agent, filtered_conf))
+            self.processable[domain][selector].discard((agent_name, filtered_conf))
 
-    def mark_processable(self, domain, selector, agent, config_txt):
+    def mark_processable(self, domain, selector, agent_name, config_txt):
         filtered_conf = get_output_altering_options(config_txt)
         if selector not in self.processable[domain]:
             self.processable[domain][selector] = set()
-        self.processable[domain][selector].add((agent, filtered_conf))
+        self.processable[domain][selector].add((agent_name, filtered_conf))
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]

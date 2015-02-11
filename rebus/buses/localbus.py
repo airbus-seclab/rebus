@@ -25,6 +25,8 @@ class LocalBus(Bus):
         #: maps agentid to agent instance
         self.agents = {}
         self.threads = []
+        #: maps agentids to their serialized configuration
+        self.config_txts = {}
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (agent.name, self.agent_count)
@@ -33,6 +35,7 @@ class LocalBus(Bus):
             # Always true when called from Agent - even if agent does not
             # overload process()
             self.callbacks.append((agid, callback))
+        self.config_txts[agid] = agent.config_txt
         self.agent_descs[agid] = agent_desc(agid, agent_domain, callback)
         self.agents[agid] = agent
         return agid
@@ -54,7 +57,7 @@ class LocalBus(Bus):
             for agid, cb in self.callbacks:
                 try:
                     log.debug("Calling %s callback", agid)
-                    cb(agent_id.id, desc_domain, selector)
+                    cb(agent_id, desc_domain, selector)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e)
         else:
@@ -90,15 +93,20 @@ class LocalBus(Bus):
         return self.store.find_by_value(desc_domain, selector_prefix,
                                         value_regex, serialized=False)
 
-    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+    def mark_processed(self, desc_domain, selector, agent_id):
+        agent_name = self.agents[agent_id].name
+        config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
-        self.store.mark_processed(desc_domain, selector, agent_id, config_txt)
+        self.store.mark_processed(desc_domain, selector, agent_name,
+                                  config_txt)
 
-    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
+    def mark_processable(self, desc_domain, selector, agent_id):
+        agent_name = self.agents[agent_id].name
+        config_txt = self.config_txts[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
-        self.store.mark_processable(desc_domain, selector, agent_id,
+        self.store.mark_processable(desc_domain, selector, agent_name,
                                     config_txt)
 
     def list_agents(self, agent_id):
@@ -117,12 +125,14 @@ class LocalBus(Bus):
     def store_internal_state(self, agent_id, state):
         log.debug("STORE_INTSTATE: %s", agent_id)
         if self.store.STORES_INTSTATE:
-            self.store.store_state(str(agent_id), str(state))
+            agent_name = self.agents[agent_id].name
+            self.store.store_state(agent_name, str(state))
 
     def load_internal_state(self, agent_id):
         log.debug("LOAD_INTSTATE: %s", agent_id)
         if self.store.STORES_INTSTATE:
-            return self.store.load_state(str(agent_id))
+            agent_name = self.agents[agent_id].name
+            return self.store.load_state(agent_name)
         return ""
 
     def run_agents(self):

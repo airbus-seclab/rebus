@@ -52,10 +52,10 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
+    def mark_processed(self, desc_domain, selector, agent_id):
         raise NotImplementedError
 
-    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
+    def mark_processable(self, desc_domain, selector, agent_id):
         """
         Called by agents that are running in interactive mode, when selector
         passes their selector_filter

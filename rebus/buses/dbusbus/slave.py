@@ -35,12 +35,12 @@ class DBus(Bus):
     def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
         self.callback = callback
         self.agent = agent
-        self.agentname = agent.name
-        self.objpath = os.path.join("/agent", self.agentname)
+        self.objpath = os.path.join("/agent", self.agent.name)
         self.obj = dbus.service.Object(self.bus, self.objpath)
         self.well_known_name = dbus.service.BusName("com.airbus.rebus.agent.%s"
-                                                    % self.agentname, self.bus)
-        self.agent_id = "%s-%s" % (self.agentname, self.bus.get_unique_name())
+                                                    % self.agent.name,
+                                                    self.bus)
+        self.agent_id = "%s-%s" % (self.agent.name, self.bus.get_unique_name())
 
         if self.callback:
             # Always true when called from Agent - even if agent does not
@@ -60,7 +60,7 @@ class DBus(Bus):
                             self.agent.config_txt)
 
         log.info("Agent %s registered with id %s on domain %s",
-                 self.agentname, self.agent_id, agent_domain)
+                 self.agent.name, self.agent_id, agent_domain)
 
         return self.agent_id
 
@@ -98,12 +98,11 @@ class DBus(Bus):
                 self.iface.find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
 
-    def mark_processed(self, desc_domain, selector, agent_id, config_txt):
-        self.iface.mark_processed(desc_domain, selector, agent_id, config_txt)
+    def mark_processed(self, desc_domain, selector, agent_id):
+        self.iface.mark_processed(desc_domain, selector, agent_id)
 
-    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
-        self.iface.mark_processable(desc_domain, selector, agent_id,
-                                    config_txt)
+    def mark_processable(self, desc_domain, selector, agent_id):
+        self.iface.mark_processable(desc_domain, selector, agent_id)
 
     def list_agents(self, agent_id):
         return {str(k): int(v) for k, v in
@@ -148,7 +147,7 @@ class DBus(Bus):
 
     def targeted_callback_wrapper(self, sender_id, desc_domain, selector,
                                   targets):
-        if self.agentname in targets:
+        if self.agent.name in targets:
             self.callback(str(sender_id), str(desc_domain), str(selector))
 
     def bus_exit_handler(self, awaiting_internal_state):

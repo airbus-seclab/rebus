@@ -48,8 +48,7 @@ class Agent(object):
         else:
             self.config['output_altering_options'] = \
                 self._output_altering_options_
-        self.id = self.bus.join(self, domain,
-                                callback=self.on_new_descriptor)
+        self.id = self.bus.join(self, domain, callback=self.on_new_descriptor)
         self.log = AgentLogger(log, dict(agent_id=self.id))
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))
@@ -60,37 +59,37 @@ class Agent(object):
     def push(self, descriptor):
         if descriptor.processing_time == -1:
             descriptor.processing_time = time.time() - self.start_time
-        result = self.bus.push(self, descriptor)
+        result = self.bus.push(self.id, descriptor)
         self.log.debug("pushed {0}, already present: {1}".format(descriptor,
                                                                  not result))
         return result
 
     def get(self, desc_domain, selector):
-        return self.bus.get(self, desc_domain, selector)
+        return self.bus.get(self.id, desc_domain, selector)
 
     def find(self, domain, selector_regex, limit):
-        return self.bus.find(self, domain, selector_regex, limit)
+        return self.bus.find(self.id, domain, selector_regex, limit)
 
     def list_uuids(self, desc_domain):
-        return self.bus.list_uuids(self, desc_domain)
+        return self.bus.list_uuids(self.id, desc_domain)
 
     def processed_stats(self, desc_domain):
-        return self.bus.processed_stats(self, desc_domain)
+        return self.bus.processed_stats(self.id, desc_domain)
 
     def lock(self, lockid, desc_domain, selector):
-        return self.bus.lock(self, lockid, desc_domain, selector)
+        return self.bus.lock(self.id, lockid, desc_domain, selector)
 
     def on_new_descriptor(self, sender_id, desc_domain, selector):
         self.log.debug("Received from %s descriptor [%s:%s]", sender_id,
                        desc_domain, selector)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
             # this agent only processes descriptors whose domain is self.domain
-            self.bus.mark_processed(desc_domain, selector, self.name,
+            self.bus.mark_processed(desc_domain, selector, self.id,
                                     self.config_txt)
             return
         if not self.selector_filter(selector):
             # not interested in this
-            self.bus.mark_processed(desc_domain, selector, self.name,
+            self.bus.mark_processed(desc_domain, selector, self.id,
                                     self.config_txt)
             return
         if not self.lock(self.name, desc_domain, selector):
@@ -98,7 +97,7 @@ class Agent(object):
             # the same agent
             return
         if self.config['operationmode'] == 'interactive':
-            self.bus.mark_processable(desc_domain, selector, self.name,
+            self.bus.mark_processable(desc_domain, selector, self.id,
                                       self.config_txt)
             return
         desc = self.get(desc_domain, selector)
@@ -112,7 +111,7 @@ class Agent(object):
             done = time.time()
             self.log.info("END   Processing |%f| %r",
                           done-self.start_time, desc)
-        self.bus.mark_processed(desc_domain, selector, self.name,
+        self.bus.mark_processed(desc_domain, selector, self.id,
                                 self.config_txt)
 
     @property
@@ -139,7 +138,7 @@ class Agent(object):
         else:
             # TODO request from storage if locally available - implement when
             # agent has a reference to possibly existent local storage
-            return self.bus.get_value(self, descriptor.domain,
+            return self.bus.get_value(self.id, descriptor.domain,
                                       descriptor.selector)
             # possible trade-off: store now-fetched value in descriptor
 
@@ -150,13 +149,13 @@ class Agent(object):
         """
         state = self.get_internal_state()
         if state:
-            self.bus.store_internal_state(self.name, state)
+            self.bus.store_internal_state(self.id, state)
 
     def restore_internal_state(self):
         """
         Retrieve internal state from storage.
         """
-        state = self.bus.load_internal_state(self.name)
+        state = self.bus.load_internal_state(self.id)
         if state:
             self.set_internal_state(state)
 
