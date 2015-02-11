@@ -19,7 +19,6 @@ class RequestProcessing(Agent):
             help="names of agents that should honor this processing request")
 
     def run(self):
-        print "args:", self.config
-        self.bus.request_processing(self.id, self.config['domain'],
-                                    self.config['selector'],
-                                    self.config['targets'])
+        self.request_processing(self.config['domain'],
+                                self.config['selector'],
+                                self.config['targets'])

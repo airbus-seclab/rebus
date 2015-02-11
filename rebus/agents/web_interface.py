@@ -134,6 +134,7 @@ class Application(tornado.web.Application):
                                             'templates'),)
         }
         self.dstore = dstore
+        self.agent = self.dstore.agent
         tornado.web.Application.__init__(self, handlers, **params)
 
 
@@ -274,24 +275,6 @@ class DescriptorStore(object):
             if len(self.cache) > self.cache_size:
                 self.cache = self.cache[-self.cache_size:]
 
-    def inject(self, filename, buf):
-        return self.agent.inject(filename, buf)
-
-    def get_by_selector(self, domain, s):
-        return self.agent.get_descriptor(domain, s)
-
-    def find(self, domain, sel_regex, limit):
-        return self.agent.find(domain, sel_regex, limit)
-
-    def list_uuids(self, desc_domain):
-        return self.agent.list_uuids(desc_domain)
-
-    def processed_stats(self, desc_domain):
-        return self.agent.processed_stats(desc_domain)
-
-    def list_agents(self):
-        return self.agent.bus.list_agents(self.agent.id)
-
 
 class AnalysisHandler(tornado.web.RequestHandler):
     def get(self, uuid=''):
@@ -310,14 +293,14 @@ class AnalysisHandler(tornado.web.RequestHandler):
 
 class UUIDHandler(tornado.web.RequestHandler):
     def get(self, domain):
-        uuid_label = self.application.dstore.list_uuids(domain)
+        uuid_label = self.application.agent.list_uuids(domain)
         self.render('uuid.html', domain=domain,
                     selectors=sorted(uuid_label.items(), key=lambda x: x[1]))
 
 
 class SelectorsHandler(tornado.web.RequestHandler):
     def get(self):
-        sels = self.application.dstore.find(
+        sels = self.application.agent.find(
             self.get_argument('domain', 'default'), '/.*', limit=100)
         self.render('selectors.html', selectors=sorted(sels))
 
@@ -382,7 +365,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     def get(self, selector='', *args, **kwargs):
         download = (self.get_argument('download', '0') == '1')
         domain = self.get_argument('domain', 'default')
-        desc = self.application.dstore.get_by_selector(domain, selector)
+        desc = self.application.agent.get_descriptor(domain, selector)
         if desc is None:
             self.send_error(status_code=404)
             return
@@ -425,7 +408,7 @@ class InjectHandler(tornado.web.RequestHandler):
     """
     def post(self, *args, **kwargs):
         f = self.request.files['file'][0]
-        uuid = self.application.dstore.inject(f['filename'], f['body'])
+        uuid = self.application.agent.inject(f['filename'], f['body'])
         self.finish(dict(uuid=uuid))
 
 
@@ -439,9 +422,9 @@ class AgentsHandler(tornado.web.RequestHandler):
     def post(self, *args, **kwargs):
         # TODO fetch agents descriptions
         domain = self.get_argument('domain', 'default')
-        processed, total = self.application.dstore.processed_stats(domain)
+        processed, total = self.application.agent.processed_stats(domain)
         agent_count = {k: [k, v, 0] for k, v in
-                       self.application.dstore.list_agents().items()}
+                       self.application.agent.list_agents().items()}
         for agent, nbprocessed in processed:
             if agent in agent_count:
                 # agent is still registered

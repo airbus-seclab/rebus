@@ -73,6 +73,9 @@ class Agent(object):
     def list_uuids(self, desc_domain):
         return self.bus.list_uuids(self.id, desc_domain)
 
+    def list_agents(self):
+        return self.bus.list_agents(self.id)
+
     def processed_stats(self, desc_domain):
         return self.bus.processed_stats(self.id, desc_domain)
 
