@@ -1,8 +1,8 @@
-import threading
 from collections import Counter, defaultdict, namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.storage_backends.ramstorage import RAMStorage
 import logging
+import threading
 
 log = logging.getLogger("rebus.localbus")
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain", "callback"))
@@ -59,7 +59,7 @@ class LocalBus(Bus):
                     log.debug("Calling %s callback", agid)
                     cb(agent_id, desc_domain, selector, False)
                 except Exception as e:
-                    log.error("ERROR agent [%s]: %s", agid, e)
+                    log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
         else:
             log.info("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
                      selector)
@@ -144,7 +144,7 @@ class LocalBus(Bus):
                               "processing", agid)
                     cb(agent_id, desc_domain, selector, True)
                 except Exception as e:
-                    log.error("ERROR agent [%s]: %s", agid, e)
+                    log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 
     def run_agents(self):
         for agent in self.agents.values():
