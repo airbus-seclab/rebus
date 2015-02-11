@@ -57,7 +57,7 @@ class LocalBus(Bus):
             for agid, cb in self.callbacks:
                 try:
                     log.debug("Calling %s callback", agid)
-                    cb(agent_id, desc_domain, selector)
+                    cb(agent_id, desc_domain, selector, False)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e)
         else:
@@ -134,6 +134,17 @@ class LocalBus(Bus):
             agent_name = self.agents[agent_id].name
             return self.store.load_state(agent_name)
         return ""
+
+    def request_processing(self, agent_id, desc_domain, selector,
+                           targets):
+        for agid, cb in self.callbacks:
+            if self.agents[agid].name in targets:
+                try:
+                    log.debug("Calling %s callback for user-requested "
+                              "processing", agid)
+                    cb(agent_id, desc_domain, selector, True)
+                except Exception as e:
+                    log.error("ERROR agent [%s]: %s", agid, e)
 
     def run_agents(self):
         for agent in self.agents.values():

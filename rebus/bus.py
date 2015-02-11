@@ -89,6 +89,22 @@ class Bus(object):
         """
         raise NotImplementedError
 
+    def request_processing(self, agent_id, desc_domain, selector,
+                           targets):
+        """
+        Request that described descriptor (domain, selector) be processed by
+        agents whose name is in targets.
+
+        :param sender_id: sender id
+        :param desc_domain: descriptor domain
+        :param selector: descriptor selector
+        :param targets: list of target agent names.
+
+        TODO if needed, add support for config_txt - target only agents whose
+        configuration is provided?
+        """
+        raise NotImplementedError
+
     def run_agents(self):
         """
         Runs all agents that have been added to the bus previously.

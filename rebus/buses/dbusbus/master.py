@@ -52,7 +52,8 @@ class DBusMaster(dbus.service.Object):
             unprocessed = self.store.list_unprocessed_by_agent(agent_name,
                                                                config_txt)
             for dom, sel in unprocessed:
-                self.targeted_descriptor("storage", dom, sel, [agent_name])
+                self.targeted_descriptor("storage", dom, sel, [agent_name],
+                                         False)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='')
@@ -199,14 +200,21 @@ class DBusMaster(dbus.service.Object):
             return self.store.load_state(agent_name)
         return ""
 
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sssas', out_signature='')
+    def request_processing(self, agent_id, desc_domain, selector, targets):
+        self.targeted_descriptor(agent_id, desc_domain, selector, targets,
+                                 True)
+
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
     def new_descriptor(self, sender_id, desc_domain, selector):
         pass
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
-                         signature='sssas')
-    def targeted_descriptor(self, sender_id, desc_domain, selector, targets):
+                         signature='sssasb')
+    def targeted_descriptor(self, sender_id, desc_domain, selector, targets,
+                            user_request):
         """
         Signal sent when a descriptor is sent to some target agents (not
         broadcast).
@@ -222,6 +230,8 @@ class DBusMaster(dbus.service.Object):
         :param selector: descriptor selector
         :param targets: list of target agent names. Agents not in this list
           should ignore this descriptor.
+        :param user_request: True if this is a user request targeting agents
+          running in interactive mode.
         """
         pass
 

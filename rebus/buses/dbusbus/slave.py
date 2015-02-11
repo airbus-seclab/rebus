@@ -123,6 +123,9 @@ class DBus(Bus):
     def load_internal_state(self, agent_id):
         return str(self.iface.load_internal_state(agent_id))
 
+    def request_processing(self, agent_id, desc_domain, selector, targets):
+        self.iface.request_processing(agent_id, desc_domain, selector, targets)
+
     def run_agents(self):
         self.agent.run()
         if self.agent.__class__.run != Agent.run:
@@ -143,12 +146,14 @@ class DBus(Bus):
 
     # DBus specific functions
     def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
-        self.callback(str(sender_id), str(desc_domain), str(selector))
+        self.callback(str(sender_id), str(desc_domain), str(selector),
+                      bool(False))
 
     def targeted_callback_wrapper(self, sender_id, desc_domain, selector,
-                                  targets):
+                                  targets, user_request):
         if self.agent.name in targets:
-            self.callback(str(sender_id), str(desc_domain), str(selector))
+            self.callback(str(sender_id), str(desc_domain), str(selector),
+                          bool(user_request))
 
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:

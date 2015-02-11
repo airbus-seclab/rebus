@@ -79,29 +79,34 @@ class Agent(object):
     def lock(self, lockid, desc_domain, selector):
         return self.bus.lock(self.id, lockid, desc_domain, selector)
 
-    def on_new_descriptor(self, sender_id, desc_domain, selector):
+    def on_new_descriptor(self, sender_id, desc_domain, selector,
+                          user_request=False):
         self.log.debug("Received from %s descriptor [%s:%s]", sender_id,
                        desc_domain, selector)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
             # this agent only processes descriptors whose domain is self.domain
-            self.bus.mark_processed(desc_domain, selector, self.id,
-                                    self.config_txt)
+            self.bus.mark_processed(desc_domain, selector, self.id)
             return
         if not self.selector_filter(selector):
             # not interested in this
-            self.bus.mark_processed(desc_domain, selector, self.id,
-                                    self.config_txt)
+            self.bus.mark_processed(desc_domain, selector, self.id)
             return
         lockid = self.name + get_output_altering_options(self.config_txt)
+        if user_request:
+            lockid += "-interactive"
         if not self.lock(lockid, desc_domain, selector):
             # processing has already been started by another instance of
             # the same agent
             return
-        if self.config['operationmode'] == 'interactive':
-            self.bus.mark_processable(desc_domain, selector, self.id,
-                                      self.config_txt)
+        if self.config['operationmode'] == 'interactive' and not user_request:
+            self.bus.mark_processable(desc_domain, selector, self.id)
             return
         desc = self.get(desc_domain, selector)
+        if desc is None:
+            log.warning("Descriptor %s:%s sent by %s does not exist "
+                        "(user request: %s)", desc_domain, selector, sender_id,
+                        user_request)
+            return
         # TODO detect infinite loops ?
         # if self.name in desc.agents:
         #     return  # already processed
@@ -112,8 +117,7 @@ class Agent(object):
             done = time.time()
             self.log.info("END   Processing |%f| %r",
                           done-self.start_time, desc)
-        self.bus.mark_processed(desc_domain, selector, self.id,
-                                self.config_txt)
+        self.bus.mark_processed(desc_domain, selector, self.id)
 
     @property
     def config_txt(self):
