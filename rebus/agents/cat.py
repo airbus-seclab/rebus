@@ -6,6 +6,7 @@ from rebus.agent import Agent
 class Cat(Agent):
     _name_ = "cat"
     _desc_ = "Dump a selector's value from the bus to stdout"
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

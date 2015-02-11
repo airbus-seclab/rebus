@@ -7,6 +7,7 @@ class Return(Agent):
     _name_ = "return"
     _desc_ = "Output any past or future descriptor whose selector matches "\
         "provided regex to stdout"
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

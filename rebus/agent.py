@@ -19,6 +19,10 @@ class AgentLogger(logging.LoggerAdapter):
 class Agent(object):
     _name_ = "Agent"
     _desc_ = "N/A"
+    #: Supported operation modes. Actual operation mode is chosen at launch;
+    #: may be changed on master bus' order.
+    #: default mode as 1st element.
+    _operationmodes_ = ('automatic', 'interactive')
 
     @staticmethod
     def register(f):
@@ -30,6 +34,9 @@ class Agent(object):
         self.bus = bus
         #: Namespace containing passed options
         self.options = options
+        # Chosen operation mode
+        if len(self._operationmodes_) == 1:
+            self.options.operationmode = self._operationmodes_[0]
         #: {key: value} containing relevant parameters that may influence the
         #: agent's outputs
         self.config = dict()
@@ -180,5 +187,16 @@ class Agent(object):
         return self.id
 
     @classmethod
+    def add_agent_arguments(cls, subparser):
+        if len(cls._operationmodes_) > 1:
+            subparser.add_argument('--mode', default=cls._operationmodes_[0],
+                                   dest='operationmode',
+                                   choices=cls._operationmodes_)
+        cls.add_arguments(subparser)
+
+    @classmethod
     def add_arguments(cls, subparser):
+        """
+        Overridden by agents that have configuration parameters
+        """
         pass

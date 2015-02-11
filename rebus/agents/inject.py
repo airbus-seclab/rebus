@@ -57,6 +57,7 @@ def guess_selector(fname=None, buf=None):
 class Inject(Agent):
     _name_ = "inject"
     _desc_ = "Inject files into the bus"
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

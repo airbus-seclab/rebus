@@ -6,6 +6,7 @@ class Wait(Agent):
     _name_ = "wait"
     _desc_ = "Output any past or future descriptor whose selector starts "\
         "with provided string to stdout. Display first 500 characters only."
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

@@ -69,7 +69,7 @@ def parse_arguments(agent_class, args):
     :param args: list of arguments
     """
     parser = argparse.ArgumentParser()
-    agent_class.add_arguments(parser)
+    agent_class.add_agent_arguments(parser)
     options, _ = parser.parse_known_args(args)
     return options
 

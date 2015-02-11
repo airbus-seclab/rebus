@@ -12,6 +12,7 @@ from StringIO import StringIO
 class Unarchive(Agent):
     _name_ = "unarchive"
     _desc_ = "Extract archives and uncompress files"
+    _operationmodes_ = ('automatic', 'interactive')
 
     def selector_filter(self, selector):
         return selector.startswith("/archive/") or\

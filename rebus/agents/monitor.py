@@ -5,6 +5,7 @@ from rebus.agent import Agent
 class Monitor(Agent):
     _name_ = "monitor"
     _desc_ = "Dump all descriptors exchanged on the bus"
+    _operationmodes_ = ('automatic', )
 
     def process(self, descriptor, sender_id):
         print "=" * 60

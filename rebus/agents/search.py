@@ -7,6 +7,7 @@ class Search(Agent):
     _name_ = "search"
     _desc_ = "Output a list of selectors for descriptors that match provided"\
              "domain, selector prefix and value regex"
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

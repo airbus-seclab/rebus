@@ -6,6 +6,7 @@ from rebus.agent import Agent
 class Ls(Agent):
     _name_ = "ls"
     _desc_ = "List selector's children to stdout"
+    _operationmodes_ = ('automatic', )
 
     @classmethod
     def add_arguments(cls, subparser):

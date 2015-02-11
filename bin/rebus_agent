@@ -53,7 +53,7 @@ def main():
     agent_parser = parser.add_subparsers(dest="agent_name", help="Agents")
     for agent in AgentRegistry.itervalues():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
-        agent.add_arguments(p)
+        agent.add_agent_arguments(p)
 
     if global_options.list_agents:
         for agent in AgentRegistry.itervalues():
