@@ -4,8 +4,6 @@ from rebus.bus import DEFAULT_DOMAIN
 import logging
 import time
 import json
-
-
 log = logging.getLogger("rebus.agent")
 
 

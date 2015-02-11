@@ -15,33 +15,34 @@ class RAMStorage(Storage):
     STORES_INTSTATE = False
 
     def __init__(self, **kwargs):
-        # self.dstore['domain']['/selector/%hash'] is a descriptor
+        #: self.dstore['domain']['/selector/%hash'] is a descriptor
         self.dstore = defaultdict(OrderedDict)
-        # self.serialized_store['domain']['/selector/%hash'] is a serialized
-        # descriptor
+
+        #: self.serialized_store['domain']['/selector/%hash'] is a serialized
+        #: descriptor
         self.serialized_store = defaultdict(dict)
 
-        # self.version_cache['domain']['/selector/'][42] = /selector/%1234
-        # where 1234 is the hash of this selector's version 42
+        #: self.version_cache['domain']['/selector/'][42] = /selector/%1234
+        #: where 1234 is the hash of this selector's version 42
         self.version_cache = defaultdict(lambda: defaultdict(dict))
 
-        # self.edges['domain']['selectorA'] is a set of selectors of
-        # descriptors that were spawned from selectorA.
+        #: self.edges['domain']['selectorA'] is a set of selectors of
+        #: descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
-        # self.processed['domain']['/selector/%hash'] is a set of (agent names,
-        # configuration text) that have finished processing, or declined to
-        # process this descriptor. Allows stopping and resuming the bus when
-        # not all descriptors have been processed
-        self.processed = defaultdict(lambda: defaultdict(set))
+        #: self.processed['domain']['/selector/%hash'] is a set of (agent name,
+        #: configuration text) that have finished processing, or declined to
+        #: process this descriptor.
+        #: Order is kept for find requests & co-maintainability of
+        #: {RAM,Disk}storage implementations.
+        self.processed = defaultdict(OrderedDict)
 
     def find(self, domain, selector_regex, limit):
         regex = re.compile(selector_regex)
-        store = self.dstore[domain]
+        sel_list = reversed(self.processed[domain].keys())
         res = []
 
-        # FIXME : be more efficient ?
-        for k in reversed(store.keys()):
+        for k in sel_list:
             if regex.match(k):
                 res.append(k)
                 if limit != 0 and len(res) >= limit:
@@ -130,13 +131,14 @@ class RAMStorage(Storage):
             = selector
         for precursor in descriptor.precursors:
             self.edges[domain][precursor].add(selector)
+        self.processed[domain][selector] = set()
         return True
 
     def mark_processed(self, domain, selector, agent, config_txt):
         self.processed[domain][selector].add((agent, config_txt))
 
     def get_processed(self, domain, selector):
-        return self[domain][selector]
+        return self.processed[domain][selector]
 
     def processed_stats(self, domain):
         """

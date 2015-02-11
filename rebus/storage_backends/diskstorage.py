@@ -43,7 +43,9 @@ class DiskStorage(Storage):
         #: self.processed['domain']['/selector/%hash'] is a set of (agent name,
         #: configuration text) that have finished processing, or declined to
         #: process this descriptor. Allows stopping and resuming the bus when
-        #: not all descriptors have been processed
+        #: not all descriptors have been processed.
+        #: Order is kept for find requests & co-maintainability of
+        #: {RAM,Disk}storage implementations.
         self.processed = defaultdict(OrderedDict)
 
         #: self.uuids['domain']['uuid'] is the set of selectors that belong to
@@ -139,7 +141,7 @@ class DiskStorage(Storage):
 
     def find(self, domain, selector_regex, limit):
         regex = re.compile(selector_regex)
-        sel_list = self.processed[domain].keys()
+        sel_list = reversed(self.processed[domain].keys())
         res = []
 
         for k in sel_list:
@@ -274,8 +276,9 @@ class DiskStorage(Storage):
         """
         serialized_descriptor is not used by this backend.
         """
-
-        fname = self.mkdirs(descriptor.domain, descriptor.selector)
+        selector = descriptor.selector
+        domain = descriptor.domain
+        fname = self.mkdirs(domain, selector)
         if os.path.isfile(fname + '.meta'):
             # File already exists
             return False
@@ -292,17 +295,15 @@ class DiskStorage(Storage):
         # Write value
         with open(fname + '.value', 'wb') as fp:
             fp.write(serialized_value)
+
+        self.processed[domain][selector] = set()
         return True
 
     def mark_processed(self, domain, selector, agent, config_txt):
-        if selector not in self.processed[domain]:
-            self.processed[domain] = set()
         self.processed[domain][selector].add((agent, config_txt))
 
     def get_processed(self, domain, selector):
-        if selector not in self.processed[domain]:
-            return set()
-        return self[domain][selector]
+        return self.processed[domain][selector]
 
     def processed_stats(self, domain):
         """

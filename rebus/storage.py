@@ -22,7 +22,7 @@ class Storage(object):
 
     def find(self, domain, selector_regex, limit):
         """
-        Return array of selectors according to search constraints :
+        Return list of selectors according to search constraints :
 
         * domain
         * selector regular expression
@@ -31,12 +31,17 @@ class Storage(object):
         :param domain: string, domain on which operations are performed
         :param selector_regex: string, regex
         :param limit: int, max number of selectors to return. Unlimited if 0.
+
+        Only selectors of *limit* most recently added descriptors will be
+        returned, from most recent to oldest.
         """
         raise NotImplementedError
 
     def find_by_uuid(self, domain, uuid, serialized=False):
         """
-        Return a list of descriptors whose uuid match given parameter
+        Return a list of descriptors whose uuid match given parameter.
+
+        Unspecified list order - may vary depending on the backend.
         """
         raise NotImplementedError
 
@@ -44,9 +49,12 @@ class Storage(object):
                       serialized=False):
         """
         Returns a list of matching descriptors:
+
         * desc.domain == desc_domain
         * desc.selector.startswith(selector_prefix)
         * re.match(value_regex, desc.value)
+
+        Unspecified list order - may vary depending on the backend.
         """
         raise NotImplementedError
 
@@ -55,6 +63,8 @@ class Storage(object):
         :param domain: domain from which UUID should be enumerated
 
         Return a dictionary mapping known UUIDs to corresponding labels.
+
+        Unspecified list order - may vary depending on the backend.
         """
         raise NotImplementedError
 
@@ -116,7 +126,7 @@ class Storage(object):
 
     def get_processed(self, domain, selector):
         """
-        Return the list of (agents, config_txt) that have processed this
+        Return the set of (agents, config_txt) that have processed this
         selector.
 
         :param domain: string, domain on which operations are performed
