@@ -76,20 +76,34 @@ class Agent(object):
         self.log.debug("Received from %s descriptor [%s:%s]", sender_id,
                        desc_domain, selector)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
+            # this agent only processes descriptors whose domain is self.domain
+            self.bus.mark_processed(desc_domain, selector, self.name,
+                                    self.config_txt)
             return
-        if self.selector_filter(selector):
-            if self.lock(self.name, desc_domain, selector):
-                desc = self.get(desc_domain, selector)
-                # TODO detect infinite loops ?
-                # if self.name in desc.agents:
-                #     return  # already processed
-                if self.descriptor_filter(desc):
-                    self.log.info("START Processing %r", desc)
-                    self.start_time = time.time()
-                    self.process(desc, sender_id)
-                    done = time.time()
-                    self.log.info("END   Processing |%f| %r",
-                                  done-self.start_time, desc)
+        if not self.selector_filter(selector):
+            # not interested in this
+            self.bus.mark_processed(desc_domain, selector, self.name,
+                                    self.config_txt)
+            return
+        if not self.lock(self.name, desc_domain, selector):
+            # processing has already been started by another instance of
+            # the same agent
+            return
+        if self.options.operationmode == 'interactive':
+            self.bus.mark_processable(desc_domain, selector, self.name,
+                                      self.config_txt)
+            return
+        desc = self.get(desc_domain, selector)
+        # TODO detect infinite loops ?
+        # if self.name in desc.agents:
+        #     return  # already processed
+        if self.descriptor_filter(desc):
+            self.log.info("START Processing %r", desc)
+            self.start_time = time.time()
+            self.process(desc, sender_id)
+            done = time.time()
+            self.log.info("END   Processing |%f| %r",
+                          done-self.start_time, desc)
         self.bus.mark_processed(desc_domain, selector, self.name,
                                 self.config_txt)
 
