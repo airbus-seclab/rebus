@@ -142,6 +142,14 @@ class DBusMaster(dbus.service.Object):
                                   str(agent_id), str(config_txt))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='ssss', out_signature='')
+    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
+        log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
+                  agent_id, config_txt)
+        self.store.mark_processable(str(desc_domain), str(selector),
+                                    str(agent_id), str(config_txt))
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='', out_signature='a{su}')
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)

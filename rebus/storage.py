@@ -124,10 +124,32 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def mark_processable(self, domain, selector, agent_id, config_txt):
+        """
+        Mark given selector as processable by given agent running in
+        interactive mode whose configuration is serialized in config_txt.
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        :param agent_id: string, agent name
+        :param config_txt: string, JSON-serialized configuration of agent
+        """
+        raise NotImplementedError
+
     def get_processed(self, domain, selector):
         """
         Return the set of (agents, config_txt) that have processed this
         selector.
+
+        :param domain: string, domain on which operations are performed
+        :param selector: string
+        """
+        raise NotImplementedError
+
+    def get_processable(self, domain, selector):
+        """
+        Return the set of (agents, config_txt) running in interactive mode
+        that could process this selector.
 
         :param domain: string, domain on which operations are performed
         :param selector: string

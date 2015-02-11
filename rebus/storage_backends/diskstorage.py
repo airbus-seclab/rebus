@@ -48,6 +48,12 @@ class DiskStorage(Storage):
         #: {RAM,Disk}storage implementations.
         self.processed = defaultdict(OrderedDict)
 
+        #: self.processable['domain']['/selector/%hash'] is a set of (agent
+        #: name, configuration text) that are running in interactive mode, and
+        #: are able to process this descriptor.
+        #: This attribute is not saved to disk.
+        self.processable = defaultdict(lambda: defaultdict(set))
+
         #: self.uuids['domain']['uuid'] is the set of selectors that belong to
         #: descriptors having this uuid
         self.uuids = defaultdict(lambda: defaultdict(set))
@@ -301,9 +307,20 @@ class DiskStorage(Storage):
 
     def mark_processed(self, domain, selector, agent, config_txt):
         self.processed[domain][selector].add((agent, config_txt))
+        # Remove from processable
+        if selector in self.processable[domain]:
+            self.processable[domain][selector].discard((agent, config_txt))
+
+    def mark_processable(self, domain, selector, agent, config_txt):
+        if selector not in self.processable[domain]:
+            self.processable[domain][selector] = set()
+        self.processable[domain][selector].add((agent, config_txt))
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]
+
+    def get_processable(self, domain, selector):
+        return self.processable[domain][selector]
 
     def processed_stats(self, domain):
         """

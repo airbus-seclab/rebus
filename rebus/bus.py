@@ -55,6 +55,13 @@ class Bus(object):
     def mark_processed(self, desc_domain, selector, agent_id, config_txt):
         raise NotImplementedError
 
+    def mark_processable(self, desc_domain, selector, agent_id, config_txt):
+        """
+        Called by agents that are running in interactive mode, when selector
+        passes their selector_filter
+        """
+        raise NotImplementedError
+
     def list_agents(self, agent_id):
         """
         Returns a dictionary mapping agent names to number of currently

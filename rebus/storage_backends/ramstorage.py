@@ -37,6 +37,11 @@ class RAMStorage(Storage):
         #: {RAM,Disk}storage implementations.
         self.processed = defaultdict(OrderedDict)
 
+        #: self.processable['domain']['/selector/%hash'] is a set of (agent
+        #: name, configuration text) that are running in interactive mode, and
+        #: are able to process this descriptor.
+        self.processable = defaultdict(lambda: defaultdict(set))
+
     def find(self, domain, selector_regex, limit):
         regex = re.compile(selector_regex)
         sel_list = reversed(self.processed[domain].keys())
@@ -134,11 +139,21 @@ class RAMStorage(Storage):
         self.processed[domain][selector] = set()
         return True
 
-    def mark_processed(self, domain, selector, agent, config_txt):
-        self.processed[domain][selector].add((agent, config_txt))
+    def mark_processed(self, domain, selector, agent_name, config_txt):
+        self.processed[domain][selector].add((agent_name, config_txt))
+        # Remove from processable
+        if selector in self.processable[domain]:
+            self.processable[domain][selector].discard((agent_name,
+                                                        config_txt))
+
+    def mark_processable(self, domain, selector, agent_name, config_txt):
+        self.processable[domain][selector].add((agent_name, config_txt))
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]
+
+    def get_processable(self, domain, selector):
+        return self.processable[domain][selector]
 
     def processed_stats(self, domain):
         """
