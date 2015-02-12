@@ -108,7 +108,7 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sss', out_signature='s')
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_value(str(desc_domain), str(selector))
+        return self.store.get_value(str(desc_domain), str(selector), True)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a{ss}')

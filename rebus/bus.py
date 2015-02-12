@@ -31,6 +31,9 @@ class Bus(object):
         raise NotImplementedError
 
     def get_value(self, agent_id, desc_domain, selector):
+        """
+        Returns a descriptor's value.
+        """
         raise NotImplementedError
 
     def list_uuids(self, agent_id, desc_domain):

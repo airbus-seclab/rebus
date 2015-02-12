@@ -177,7 +177,8 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = open(path + name, 'rb').read()
+                    contents = Descriptor.unserialize_value(
+                        open(path + name, 'rb').read())
                     if re.match(value_regex, contents):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
                             name.split('.')[0]
@@ -228,18 +229,22 @@ class DiskStorage(Storage):
             return "N."  # serialized None # TODO serialize in bus
         return open(fullpath, "rb").read()
 
-    def get_value(self, domain, selector):
+    def get_value(self, domain, selector, serialized):
         """
         Returns serialized descriptor value
         """
+        none_value = "N." if serialized else None
         selector = self.version_lookup(domain, selector)
         if not selector:
-            return "N."  # serialized None # TODO serialize None in bus
+            return none_value  # serialized None # TODO serialize None in bus
 
         fullpath = self.pathFromSelector(domain, selector) + ".value"
         if not os.path.isfile(fullpath):
-            return "N."  # serialized None # TODO serialize in bus
-        return open(fullpath, "rb").read()
+            return none_value  # serialized None # TODO serialize in bus
+        if serialized:
+            return open(fullpath, "rb").read()
+        else:
+            return Descriptor.unserialize_value(open(fullpath, "rb").read())
 
     def get_children(self, domain, selector, serialized=False, recurse=True):
         """

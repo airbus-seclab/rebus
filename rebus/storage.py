@@ -81,13 +81,14 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def get_value(self, domain, selector):
+    def get_value(self, domain, selector, serialized):
         """
         Get a selector's value.
         /sel/ector/%hash
 
         :param domain: string, domain on which operations are performed
         :param selector: string
+        :param serialized: return serialized value if True
         """
         raise NotImplementedError
 
