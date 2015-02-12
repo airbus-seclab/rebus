@@ -7,6 +7,7 @@ import tornado.template
 import rebus.agents.inject
 from rebus.descriptor import Descriptor
 import re
+import json
 
 
 @Agent.register
@@ -126,6 +127,8 @@ class Application(tornado.web.Application):
             (r"/poll_descriptors", DescriptorUpdatesHandler),
             (r"/get([^\?]*)\??.*", DescriptorGetHandler),
             (r"/agents", AgentsHandler),
+            (r"/processing/list_processors", ProcessingListHandler),
+            (r"/processing/request", ProcessingRequestsHandler),
         ]
         params = {
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
@@ -410,6 +413,38 @@ class InjectHandler(tornado.web.RequestHandler):
         f = self.request.files['file'][0]
         uuid = self.application.agent.inject(f['filename'], f['body'])
         self.finish(dict(uuid=uuid))
+
+
+class ProcessingListHandler(tornado.web.RequestHandler):
+    """
+    Lists (agents, config) that could process this descriptor
+    """
+    def post(self, *args, **kwargs):
+        domain = self.get_argument('domain')
+        selector = self.get_argument('selector')
+        agents = self.application.agent.get_processable(str(domain),
+                                                        str(selector))
+        agents = [(name, ', '.join(
+            ["%s=%s" % (k, v) for (k, v) in json.loads(config_txt).items()]
+                )) for (name, config_txt) in agents]
+        self.finish(self.render_string('request_processing_popover.html',
+                                       agents=agents))
+
+
+class ProcessingRequestsHandler(tornado.web.RequestHandler):
+    """
+    Requests processing of this descriptor by listed agents
+    """
+    def post(self, *args, **kwargs):
+        params = json.loads(self.request.body)
+        if not all([i in params for i in ('domain', 'selector', 'targets')]):
+            self.send_error(400)
+        if not all([isinstance(i, unicode) for i in params['targets']]):
+            self.send_error(400)
+        self.application.agent.request_processing(str(params['domain']),
+                                                  str(params['selector']),
+                                                  list(params['targets']))
+        self.finish()
 
 
 class AgentsHandler(tornado.web.RequestHandler):

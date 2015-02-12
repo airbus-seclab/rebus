@@ -175,3 +175,37 @@ var updater = {
     },
 };
 
+$(document).on('click', function(event) {
+    var target = $(event.target);
+    if (target.hasClass('glyphicon-cog')) {
+        p = target.parent();
+        pp = p.parent();
+        params = {'domain': unescape(pp.attr('data-domain')), 'selector': unescape(pp.attr('data-selector'))};
+        $.ajax({
+            url: '/processing/list_processors',
+            type: 'POST',
+            dataType: 'text',
+                data: params,
+                success: function(response) {
+                    p.popover('destroy');
+                    p.popover({
+                        content: response,
+                        html: true,
+                        trigger: 'focus'});
+                    p.popover('show');
+                }
+        });
+    }
+    if (target.hasClass('request-process-link')) {
+        pp = target.closest('.container-key');
+        params = {'domain': unescape(pp.attr('data-domain')), 'selector': unescape(pp.attr('data-selector')), 'targets': [target.text()]};
+        $.ajax({
+            url: '/processing/request',
+            type: 'POST',
+            dataType: 'text',
+            data: JSON.stringify(params)
+        });
+    }
+});
+
+

@@ -104,6 +104,10 @@ class DBus(Bus):
     def mark_processable(self, agent_id, desc_domain, selector):
         self.iface.mark_processable(agent_id, desc_domain, selector)
 
+    def get_processable(self, agent_id, desc_domain, selector):
+        return [(str(agent_name), str(config_txt)) for (agent_name, config_txt)
+                in self.iface.get_processable(agent_id, desc_domain, selector)]
+
     def list_agents(self, agent_id):
         return {str(k): int(v) for k, v in
                 self.iface.list_agents(agent_id).items()}

@@ -150,6 +150,12 @@ class Agent(object):
                                       descriptor.selector)
             # possible trade-off: store now-fetched value in descriptor
 
+    def get_processable(self, domain, selector):
+        return self.bus.get_processable(self.id, domain, selector)
+
+    def request_processing(self, domain, selector, targets):
+        return self.bus.request_processing(self.id, domain, selector, targets)
+
     def save_internal_state(self):
         """
         Send internal state to storage. Called at agent shutdown, if persistent

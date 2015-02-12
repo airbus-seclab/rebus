@@ -161,6 +161,12 @@ class DBusMaster(dbus.service.Object):
                                     agent_name, str(config_txt))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sss', out_signature='aas')
+    def get_processable(self, agent_id, desc_domain, selector):
+        log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
+        return self.store.get_processable(str(desc_domain), str(selector))
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='', out_signature='a{su}')
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)

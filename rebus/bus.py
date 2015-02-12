@@ -62,6 +62,16 @@ class Bus(object):
         """
         raise NotImplementedError
 
+    def get_processable(self, agent_id, desc_domain, selector):
+        """
+        Returns a list of (agent, config_txt) running in interactive mode that
+        could process this selector.
+
+        :param domain: string, domain this selectors belongs to
+        :param selector: string
+        """
+        raise NotImplementedError
+
     def list_agents(self, agent_id):
         """
         Returns a dictionary mapping agent names to number of currently

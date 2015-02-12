@@ -1,4 +1,4 @@
 <tr class="descriptor" id="m{{ escape(descriptor['hash']) }}">
-  <td class='container-key'><a href="/get{{ descriptor['fullselector'].replace('%', '%25') }}?domain={{url_escape(descriptor['domain'])}}">{{ escape(descriptor['selector']) }}</a></td>
-  <td><a href="/get{{ descriptor['fullselector'].replace('%', '%25') }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt"> </span></a> <a href='#' class="glyphicon glyphicon-link linkicon"></a>matrix {{ descriptor['label'] }}</td>
+  <td class="container-key" data-domain="{{url_escape(descriptor['domain'])}}" data-selector="{{url_escape(descriptor['fullselector'])}}"><a href="/get{{ descriptor['fullselector'].replace('%', '%25') }}?domain={{url_escape(descriptor['domain'])}}">{{ escape(descriptor['selector']) }}</a> <a href='javascript://'><span class="glyphicon glyphicon-cog"></span></a></td>
+  <td><a href="/get{{ descriptor['fullselector'].replace('%', '%25') }}?download=1&domain={{url_escape(descriptor['domain'])}}"><span class="glyphicon glyphicon-download-alt"> </span></a> <a href='javascript://' class="glyphicon glyphicon-link linkicon"></a>matrix {{ descriptor['label'] }}</td>
 </tr>

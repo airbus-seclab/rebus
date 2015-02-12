@@ -109,6 +109,10 @@ class LocalBus(Bus):
         self.store.mark_processable(desc_domain, selector, agent_name,
                                     config_txt)
 
+    def get_processable(self, agent_id, desc_domain, selector):
+        log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
+        return self.store.get_processable(desc_domain, selector)
+
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)
         return dict(Counter(i.rsplit('-', 1)[0]
