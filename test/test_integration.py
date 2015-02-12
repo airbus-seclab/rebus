@@ -6,6 +6,8 @@ import subprocess
 import threading
 import time
 import uuid
+import tempfile
+import shutil
 
 from rebus.agent import Agent, AgentRegistry
 from rebus.bus import BusRegistry, DEFAULT_DOMAIN
@@ -26,15 +28,38 @@ rebus.buses.import_all()
 # TODO add argument parsing tests - check that help is displayed
 
 
+@pytest.fixture(scope='function', params=['diskstorage', 'ramstorage'])
+def storage(request):
+    """
+    Returns a string that describes the storage type, and a list containing
+    arguments for the storage backend.
+    Perform setup & teardown for storage.
+    """
+    # py.test-provided fixture "tmpdir" does not guarantee an empty temp
+    # directory, which get re-used when test is run again - rolling our own...
+    args = []
+    if request.param == 'diskstorage':
+        tmpdir = tempfile.mkdtemp('rebus-test-%s' % request.param)
+        args = ['diskstorage', '--path', tmpdir]
+
+        def fin():
+            shutil.rmtree(tmpdir)
+        request.addfinalizer(fin)
+
+    return (request.param, args)
+
+
 @pytest.fixture(scope='function', params=['localbus', 'dbus'])
-def bus(request):
+def bus(request, storage):
     """
-    Returns a function that returns a bus instance.
+    Returns fixture parameters and a function that returns a bus instance.
     """
+    storagetype, storageparams = storage
     if request.param == 'dbus':
         check_master_not_running()
         # launch rebus master
-        process = subprocess.Popen('rebus_master_dbus', stderr=subprocess.PIPE)
+        process = subprocess.Popen(['rebus_master_dbus']+storageparams,
+                                   stderr=subprocess.PIPE)
         # wait for master bus to be ready - TODO look into & fix race
         time.sleep(0.5)
         output = ""
@@ -49,11 +74,13 @@ def bus(request):
         return_bus = rebus.bus.BusRegistry.get(request.param)
     elif request.param == 'localbus':
         # always return the same bus instance
+        if storagetype == 'diskstorage':
+            pytest.skip("diskstorage is not supported by localbus")
         instance = BusRegistry.get(request.param)()
 
         def return_bus():
             return instance
-    return (request.param, return_bus)
+    return (request.param, storagetype, return_bus)
 
 
 def check_master_not_running():
@@ -80,9 +107,11 @@ def agent_test(bus):
     Returns an instance of a test agent, registered to the bus and running in
     another thread.
     """
+    bustype, storagetype, returnbus = bus
+
     @Agent.register
     class TestAgent(Agent):
-        _name_ = "testagent"
+        _name_ = "testagent_%s_%s" % (bustype, storagetype)
         _desc_ = "Accepts any input. Records received selectors, descriptors"
 
         received_selectors = []
@@ -96,24 +125,24 @@ def agent_test(bus):
             self.processed_descriptors.append((desc, sender_id))
 
     namespace = parse_arguments(TestAgent, [])
-    agent = TestAgent(bus=bus[1](), domain='default', options=namespace)
+    agent = TestAgent(bus=returnbus(), domain='default', options=namespace)
     return agent
 
 
 @pytest.fixture(scope='function')
 def agent_inject(bus, request):
-    busname, return_bus = bus
-    if busname == 'localbus':
-        bus_instance = return_bus()
+    bustype, storagetype, returnbus = bus
+    if bustype == 'localbus':
+        bus_instance = returnbus()
         agent_class = AgentRegistry.get('inject')
         namespace = parse_arguments(agent_class, ['/bin/ls'])
         agent = agent_class(bus=bus_instance, domain='default',
                             options=namespace)
         return agent
-    elif busname == 'dbus':
+    elif bustype == 'dbus':
         # Running two DBUS agents in the same process does not work yet -
-        # callbacks cannot be removed (?)
-        returncode = subprocess.call(('rebus_agent', '--bus', busname,
+        # dbus signal handler related problem
+        returncode = subprocess.call(('rebus_agent', '--bus', bustype,
                                       'inject', '/bin/ls'))
         assert returncode == 0
         return
@@ -179,11 +208,11 @@ def test_inject(agent_set, agent_test, agent_inject):
     assert uuid.UUID(descriptor.uuid) is not None
     assert descriptor.version == 0
     # Find by value regexp
-    selectors_byvalue = bus_instance.find_by_value(agent_test.id,
-                                                   DEFAULT_DOMAIN, '/binary',
-                                                   injected_value[0:4])
+    descriptors_byvalue = bus_instance.find_by_value(agent_test.id,
+                                                     DEFAULT_DOMAIN, '/binary',
+                                                     injected_value[0:4])
     # Check UUID exists
-    assert selectors_byvalue[0].value == descriptor.value
+    assert descriptors_byvalue[0].value == descriptor.value
     uuids = bus_instance.list_uuids("testid", DEFAULT_DOMAIN)
     assert descriptor.uuid in uuids
 

@@ -146,6 +146,17 @@ class DBus(Bus):
             self.loop.run()
         except (KeyboardInterrupt, SystemExit):
             self.loop.quit()
+        # Clean up signals - useful for tests, where one process runs several
+        # agents successively
+        self.bus.remove_signal_receiver(self.broadcast_callback_wrapper,
+                                        dbus_interface="com.airbus.rebus.bus",
+                                        signal_name="new_descriptor")
+        self.bus.remove_signal_receiver(self.targeted_callback_wrapper,
+                                        dbus_interface="com.airbus.rebus.bus",
+                                        signal_name="targeted_descriptor")
+        self.bus.remove_signal_receiver(self.bus_exit_handler,
+                                        dbus_interface="com.airbus.rebus.bus",
+                                        signal_name="bus_exit")
         self.iface.unregister(self.agent_id)
 
     # DBus specific functions
