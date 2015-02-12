@@ -207,14 +207,23 @@ def test_inject(agent_set, agent_test, agent_inject):
     assert descriptor.selector.startswith('/binary/elf/%')
     assert uuid.UUID(descriptor.uuid) is not None
     assert descriptor.version == 0
+    # Get descriptor by version
+    descriptor_version = bus_instance.get(agent_test.id, DEFAULT_DOMAIN,
+                                          selectors[0].split('%')[0]+'~-1')
+    assert descriptor == descriptor_version
+
     # Find by value regexp
     descriptors_byvalue = bus_instance.find_by_value(agent_test.id,
                                                      DEFAULT_DOMAIN, '/binary',
                                                      injected_value[0:4])
-    # Check UUID exists
+    # Check UUID exists & can be found
     assert descriptors_byvalue[0].value == descriptor.value
     uuids = bus_instance.list_uuids("testid", DEFAULT_DOMAIN)
     assert descriptor.uuid in uuids
+
+    descriptors_uuid = bus_instance.find_by_uuid(agent_test.id, DEFAULT_DOMAIN,
+                                                 descriptor.uuid)
+    assert descriptors_uuid[0] == descriptor
 
     # Check that it has been received by TestAgent
     received = agent_test.received_selectors
