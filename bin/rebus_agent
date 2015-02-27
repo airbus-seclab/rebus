@@ -5,7 +5,7 @@ import rebus.agents
 import rebus.buses
 from rebus.agent import AgentRegistry
 from rebus.bus import BusRegistry, DEFAULT_DOMAIN
-import logging
+import logging.handlers
 import argparse
 
 
@@ -34,6 +34,10 @@ def main():
     parser.add_argument("--busaddr", help="Address of the bus")
     parser.add_argument("--list-agents", action="store_true",
                         help="list available agents")
+    parser.add_argument("--log-file",
+                        help="Send logs to LOG_FILE")
+    parser.add_argument("--syslog", action="store_true",
+                        help="Send logs to syslog")
     parser.add_argument("--domain", "-d", default=DEFAULT_DOMAIN,
                         help="Work in DOMAIN")
     parser.add_argument("--verbose", "-v", action="count", default=0,
@@ -83,6 +87,21 @@ def main():
 
     log = logging.getLogger('rebus')
     log.setLevel(max(1, 30-10*global_options.verbose))
+
+    if global_options.log_file or global_options.syslog:
+        # remove logging config done by basicConfig()
+        for h in logging.root.handlers[:]:
+            logging.root.removeHandler(h)
+        if global_options.syslog:
+            syslog = logging.handlers.SysLogHandler(address="/dev/log")
+            formatter = logging.Formatter('REbus agent: %(name)s: %(levelname)s: %(message)s')
+            syslog.setFormatter(formatter)
+            logging.root.addHandler(syslog)
+        if global_options.log_file:
+            logfile = logging.FileHandler(global_options.log_file)
+            formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)s: %(message)s')
+            logfile.setFormatter(formatter)
+            logging.root.addHandler(logfile)
 
     try:
         bus_class = BusRegistry.get(global_options.bus)
