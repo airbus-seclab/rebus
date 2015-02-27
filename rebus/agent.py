@@ -192,6 +192,12 @@ class Agent(object):
     def process(self, descriptor, sender_id):
         pass
 
+    def run_and_catch_exc(self):
+        try:
+            self.run()
+        except Exception as e:
+            self.log.exception(e)
+
     def run(self):
         """
         Overriden by agents that do not consume descriptors.

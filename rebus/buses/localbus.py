@@ -155,7 +155,7 @@ class LocalBus(Bus):
 
     def run_agents(self):
         for agent in self.agents.values():
-            t = threading.Thread(target=agent.run)
+            t = threading.Thread(target=agent.run_and_catch_exc)
             t.daemon = True
             t.start()
             self.threads.append(t)

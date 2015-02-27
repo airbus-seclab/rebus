@@ -84,15 +84,19 @@ def main():
     log = logging.getLogger('rebus')
     log.setLevel(max(1, 30-10*global_options.verbose))
 
-    bus_class = BusRegistry.get(global_options.bus)
-    bus = bus_class(busaddr=global_options.busaddr)
-    for stage in stages:
-        log.info("Starting stage %d", stages.index(stage))
-        for agent_name, arguments in stage:
-            agent_class = AgentRegistry.get(agent_name)
-            agent = agent_class(options=arguments, bus=bus,
-                                domain=global_options.domain)
-        bus.run_agents()
+    try:
+        bus_class = BusRegistry.get(global_options.bus)
+        bus = bus_class(busaddr=global_options.busaddr)
+        for stage in stages:
+            log.info("Starting stage %d", stages.index(stage))
+            for agent_name, arguments in stage:
+                agent_class = AgentRegistry.get(agent_name)
+                agent = agent_class(options=arguments, bus=bus,
+                                    domain=global_options.domain)
+            bus.run_agents()
+    except Exception as e:
+        log.error(e)
+        raise
 
 
 if __name__ == "__main__":

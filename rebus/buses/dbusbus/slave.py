@@ -131,7 +131,7 @@ class DBus(Bus):
         self.iface.request_processing(agent_id, desc_domain, selector, targets)
 
     def run_agents(self):
-        self.agent.run()
+        self.agent.run_and_catch_exc()
         if self.agent.__class__.run != Agent.run:
             # the run() method has been overridden - agent will run on his own
             # then quit
