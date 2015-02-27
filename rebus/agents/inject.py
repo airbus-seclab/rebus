@@ -73,7 +73,14 @@ class Inject(Agent):
             start = time.time()
             label = self.config['label'] if self.config['label'] else \
                 os.path.basename(f)
-            data = open(f).read()
+            try:
+                data = open(f).read()
+            except IOError as e:
+                if e.errno != os.errno.ENOENT:
+                    raise
+                self.log.warning("File [%s] not found" % f)
+                continue
+
             selector = self.config['selector'] if self.config['selector'] \
                 else guess_selector(buf=data)
             done = time.time()
