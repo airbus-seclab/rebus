@@ -15,6 +15,15 @@ A few task examples:
 * fetch network service banners
 * fingerprint an SSL service to detect weak ciphersuites or configuration
 
+Very quick start
+================
+
+Run the REbus docker image
+
+.. sourcecode:: bash
+
+  $ docker run -ti iwseclabs/rebus
+
 
 Quick start
 ===========
