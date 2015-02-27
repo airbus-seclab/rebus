@@ -6,6 +6,7 @@ import rebus.buses
 from rebus.agent import AgentRegistry
 from rebus.bus import BusRegistry, DEFAULT_DOMAIN
 import logging.handlers
+import rebus.tools.daemon
 import argparse
 
 
@@ -40,6 +41,8 @@ def main():
                         help="Send logs to syslog")
     parser.add_argument("--domain", "-d", default=DEFAULT_DOMAIN,
                         help="Work in DOMAIN")
+    parser.add_argument("--daemon", "-D", action="store_true",
+                        help="run as a daemon ; logs go to syslog by default")
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Increase verbosity")
     parser.add_argument("--module", "-m", action="append", default=[])
@@ -88,6 +91,9 @@ def main():
     log = logging.getLogger('rebus')
     log.setLevel(max(1, 30-10*global_options.verbose))
 
+    if global_options.daemon and not global_options.log_file:
+        global_options.syslog = True
+
     if global_options.log_file or global_options.syslog:
         # remove logging config done by basicConfig()
         for h in logging.root.handlers[:]:
@@ -102,6 +108,10 @@ def main():
             formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)s: %(message)s')
             logfile.setFormatter(formatter)
             logging.root.addHandler(logfile)
+
+    if global_options.daemon:
+        rebus.tools.daemon.daemonize()
+        log.info("REbus agent daemonized")
 
     try:
         bus_class = BusRegistry.get(global_options.bus)
