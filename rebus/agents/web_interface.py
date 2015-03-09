@@ -1,4 +1,5 @@
 import os
+import os.path
 from rebus.agent import Agent
 import threading
 import tornado.ioloop
@@ -47,6 +48,30 @@ class WebInterface(Agent):
         return desc.uuid
 
 
+class CustomTemplate(tornado.template.Template):
+    """
+    Keeps a dict of functions to be passed to the template at generation time.
+    Useful for preprocessing/formatting data.
+
+    For 'analysis' and 'monitor' actions, the RequestHandler is expected to
+    pass a 'descrinfos' variable to the template, containing a dictionnary.
+
+    For 'view' actions, the RequestHandler is expected to pass a descriptor
+    variable that contains the raw descriptor.
+    """
+    def __init__(self, template_string, **kwargs):
+        if 'functions' in kwargs:
+            self._functions = kwargs['functions']
+            del kwargs['functions']
+        else:
+            self._functions = dict()
+        super(CustomTemplate, self).__init__(template_string, **kwargs)
+
+    def generate(self, **kwargs):
+        kwargs.update(self._functions)
+        return super(CustomTemplate, self).generate(**kwargs)
+
+
 class TemplateLoader(tornado.template.Loader):
     """
     Use parent class Loader to load any template other than descriptors.
@@ -79,17 +104,50 @@ class TemplateLoader(tornado.template.Loader):
             if not (fname.endswith('.html') and os.path.isfile(fullpath)):
                 continue
             #: fname format: desctype_page.html
-            desc_type, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
-            TemplateLoader.register(desc_type, page, open(fullpath,
-                                                          'rb').read())
+            selector_prefix, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
+            templatestr = open(fullpath, 'rb').read()
+            functions = dict()
+            TemplateLoader.register(selector_prefix, page, templatestr,
+                                    functions)
 
     @staticmethod
-    def register(desc_type, page, templatestr):
+    def register(selector_prefix, page, templatestr, functions):
         """
         Called to register a renderering template for the given page and
         descriptor type.
         """
-        TemplateLoader.templates[(desc_type, page)] = templatestr
+        TemplateLoader.templates[(selector_prefix, page)] = (templatestr,
+                                                             functions)
+
+    @staticmethod
+    def register_formatted(template):
+        """
+        Helper for registering templates and one associated formatter function.
+
+        Syntactic sugar, to be used as a decorator for formatter function.
+
+        Sample use:
+        @TemplateLoader.register_formatted(template='selector_prefix_page.html')
+        def formatter(...any args, called from template...):
+
+        where 'selector_prefix_page.html' is present under the
+        formatted_templates/ directory under module where this decorator is
+        being used.
+
+        This template will be used on specified page, for selectors beginning
+        with /selector/prefix, unless another registered template has a longer
+        selector prefix (e.g. selector_prefix_very_specific_page.html)
+        """
+        def func_wrapper(f):
+            fpath = os.path.dirname(f.__globals__['__file__'])
+            templatefile = os.path.join(fpath, 'formatted_templates', template)
+            templatestr = open(templatefile, 'rb').read()
+            selector_prefix, page = template.rsplit('.', 1)[0].rsplit('_', 1)
+            funcdict = {f.__name__: f}
+            TemplateLoader.register(selector_prefix, page, templatestr,
+                                    funcdict)
+            return f
+        return func_wrapper
 
     def resolve_path(self, name, parent_path=None):
         name = super(TemplateLoader, self).resolve_path(name, parent_path)
@@ -102,16 +160,29 @@ class TemplateLoader(tornado.template.Loader):
 
         if not name.startswith('descriptor/'):
             return super(TemplateLoader, self)._create_template(name)
+        # '/' (part of selector) are encoded as '_' in template file names.
+        # ('_' is forbidden in selectors)
+        selector, page = name[11:].replace('/', '_').rsplit('_', 1)
 
-        desc_type, page = name.rsplit('/', 1)[1].rsplit('_', 1)
-        if (desc_type, page) in TemplateLoader.templates:
-            # try to load specific template
-            templatestr = TemplateLoader.templates[(desc_type, page)]
+        args = dict()
+        args['loader'] = self
+        # remove 'descriptor/' from template name
+        # iterate to find template with longest selector prefix
+        desc_prefix = ""
+        for (d, p) in TemplateLoader.templates:
+            if page != p:
+                continue
+            if selector.startswith(d) and len(d) > len(desc_prefix):
+                desc_prefix = d
+        if desc_prefix != "":
+            # load most specific template if exists
+            templatestr, funcs = TemplateLoader.templates[(desc_prefix, page)]
         else:
             # use default otherwise
-            templatestr = TemplateLoader.templates[('default', page)]
-        template = tornado.template.Template(templatestr, name=name,
-                                             loader=self)
+            templatestr, funcs = TemplateLoader.templates[('default', page)]
+        args['functions'] = funcs
+
+        template = CustomTemplate(templatestr, **args)
         return template
 
 
@@ -346,10 +417,11 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
                     for k in ('processing_time',):
                         info[k] = d[k]
                 if page in ('monitor', 'analysis'):
-                    desc_type = d['selector'].split('/')[1]
-                    d['html_' + page] = self.render_string('descriptor/%s_%s'
-                                                           % (desc_type, page),
-                                                           descriptor=d)
+                    d['html_' + page] = \
+                        self.render_string('descriptor%s_%s' % (d['selector'],
+                                                                page),
+                                           descriptor=d)
+
                     info['html'] = d['html_' + page]
         self.finish(dict(descrinfos=infos))
 
@@ -373,36 +445,13 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
             self.send_error(status_code=404)
             return
 
-        label = desc.label
-        data = desc.value
-
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
-                            tornado.escape.url_escape(label))
-        if selector.startswith('/matrix/') and not download:
-            # matrix: ([uuids], [labels], np.array, threshold)
-            # output: [(uuid, label, [(value, color)])]
+                            tornado.escape.url_escape(desc.label))
+            self.finish(desc.value)
 
-            # Sort uuids, labels and indexes by label
-            output = list()
-            uuids = data[0]
-            labels = data[1]
-            indexes = range(len(uuids))
-            values = data[2]
-            labels, uuids, indexes = zip(*sorted(zip(labels, uuids, indexes)))
-
-            for h1 in range(len(uuids)):
-                linecontents = list()
-                for h2 in range(len(uuids)):
-                    value = values[indexes[h1]][indexes[h2]]
-                    linecontents.append(value)
-                output.append((uuids[h1], labels[h1], linecontents))
-            self.finish(self.render_string('descriptor/matrix_view',
-                                           matrix=output))
         else:
-            if type(data) not in [unicode, str]:
-                data = str(data)
-            self.finish(data)
+            self.render('descriptor%s_view' % desc.selector, descriptor=desc)
 
 
 class InjectHandler(tornado.web.RequestHandler):
