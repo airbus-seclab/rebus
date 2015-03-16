@@ -1,0 +1,10 @@
+Request processing by agent
+<table class="table table-striped table-condensed">
+	<thead><th>agent name</th><th>agent configuration</th></thead>
+	<tr>
+		{% for agent, config in agents %}
+		<td><a href='javascript://' class='request-process-link'>{{ agent }}</a></td>
+		<td>{{ config }}</td>
+		{% end %}
+	</tr>
+</table>
