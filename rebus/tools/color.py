@@ -88,3 +88,46 @@ class ProxCS(ColorScheme):
         self.cols[name] = col
         self.tri[name] = tri
         return col
+
+
+class PrefixCS(ColorScheme):
+    """
+    Consider only the first prefixlen name bytes.
+    If the prefixes are known beforehand, it may be passed to init.
+    """
+    def __init__(self, prefixlen=4, prefixes=None, seed=None):
+        self.rnd = random.Random(seed)
+        self.prefixlen = prefixlen
+        #: prefix -> hue
+        self.hues = dict()
+        if prefixes:
+            nb = len(prefixes)
+            for i, prefix in enumerate(prefixes):
+                self.hues[prefix] = i/nb
+        #: (prefix, saturation) -> r, g, b (saturation: int, 0 -> 100)
+        self.colorcache = dict()
+
+    def getfromcache(self, prefix, saturation):
+        val = self.colorcache.get((prefix, saturation), None)
+        if not val:
+            val = colorsys.hsv_to_rgb(self.hues[prefix], saturation, 1.00)
+            self.colorcache[(prefix, saturation)] = val
+        return val
+
+    def get(self, name, saturation=1):
+        prefix = name[:self.prefixlen]
+        if prefix not in self.hues:
+            self.hues[prefix] = self.rnd.random()
+
+        return self.getfromcache(prefix, saturation)
+
+    def get_as_float(self, name, saturation=1):
+        return self.get(name, saturation)
+
+    def get_as_int(self, name, saturation=1):
+        r, g, b = self.get(name, saturation)
+        return int(r*255), int(g*255), int(b*255),
+
+    def get_as_hex(self, name, saturation=1):
+        rgb = self.get_as_int(name, saturation)
+        return "%02x%02x%02x" % rgb
