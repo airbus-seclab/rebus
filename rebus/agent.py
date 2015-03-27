@@ -83,7 +83,12 @@ class Agent(object):
         return self.bus.lock(self.id, lockid, desc_domain, selector)
 
     def on_new_descriptor(self, sender_id, desc_domain, selector,
-                          user_request=False):
+                          request_id=0):
+        """
+        request_id is 0 for automatic processing.
+        A unique id should be used for each interactive (user-requested)
+        processing.
+        """
         self.log.debug("Received from %s descriptor [%s:%s]", sender_id,
                        desc_domain, selector)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
@@ -94,21 +99,21 @@ class Agent(object):
             # not interested in this
             self.bus.mark_processed(self.id, desc_domain, selector)
             return
-        lockid = self.name + get_output_altering_options(self.config_txt)
-        if user_request:
-            lockid += "-interactive"
-        if not self.lock(lockid, desc_domain, selector):
-            # processing has already been started by another instance of
-            # the same agent
-            return
-        if self.config['operationmode'] == 'interactive' and not user_request:
+        if not request_id:
+            # always process user requests
+            lockid = self.name + get_output_altering_options(self.config_txt)
+            if not self.lock(lockid, desc_domain, selector):
+                # processing has already been started by another instance of
+                # the same agent
+                return
+        if self.config['operationmode'] == 'interactive' and not request_id:
             self.bus.mark_processable(self.id, desc_domain, selector)
             return
         desc = self.get(desc_domain, selector)
         if desc is None:
             log.warning("Descriptor %s:%s sent by %s does not exist "
                         "(user request: %s)", desc_domain, selector, sender_id,
-                        user_request)
+                        request_id)
             return
         # TODO detect infinite loops ?
         # if self.name in desc.agents:

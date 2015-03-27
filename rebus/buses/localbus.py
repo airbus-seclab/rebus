@@ -27,6 +27,8 @@ class LocalBus(Bus):
         self.threads = []
         #: maps agentids to their serialized configuration
         self.config_txts = {}
+        #: monotonically increasing user request counter
+        self.userrequestid = 0
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
         agid = "%s-%i" % (agent.name, self.agent_count)
@@ -57,7 +59,7 @@ class LocalBus(Bus):
             for agid, cb in self.callbacks:
                 try:
                     log.debug("Calling %s callback", agid)
-                    cb(agent_id, desc_domain, selector, False)
+                    cb(agent_id, desc_domain, selector, 0)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
         else:
@@ -144,12 +146,13 @@ class LocalBus(Bus):
                            targets):
         log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
                   desc_domain, selector, targets)
+        self.userrequestid += 1
         for agid, cb in self.callbacks:
             if self.agents[agid].name in targets:
                 try:
                     log.debug("Calling %s callback for user-requested "
                               "processing", agid)
-                    cb(agent_id, desc_domain, selector, True)
+                    cb(agent_id, desc_domain, selector, self.userrequestid)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 

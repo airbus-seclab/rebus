@@ -31,6 +31,8 @@ class DBusMaster(dbus.service.Object):
         self.agentnames = {}
         #: maps agentids to their serialized configuration
         self.config_txts = {}
+        #: monotonically increasing user request counter
+        self.userrequestid = 0
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssos', out_signature='')
@@ -211,8 +213,9 @@ class DBusMaster(dbus.service.Object):
     def request_processing(self, agent_id, desc_domain, selector, targets):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
+        self.userrequestid += 1
         self.targeted_descriptor(agent_id, desc_domain, selector, targets,
-                                 True)
+                                 self.userrequestid)
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='sss')
