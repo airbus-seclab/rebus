@@ -209,8 +209,8 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssas', out_signature='')
     def request_processing(self, agent_id, desc_domain, selector, targets):
-        log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
-                  desc_domain, selector, targets)
+        log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
+                  desc_domain, selector, [str(t) for t in targets])
         self.targeted_descriptor(agent_id, desc_domain, selector, targets,
                                  True)
 
