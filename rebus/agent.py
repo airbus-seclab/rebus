@@ -4,6 +4,7 @@ from rebus.bus import DEFAULT_DOMAIN
 import logging
 import time
 import json
+import cPickle
 log = logging.getLogger("rebus.agent")
 
 
@@ -168,7 +169,7 @@ class Agent(object):
         """
         state = self.get_internal_state()
         if state:
-            self.bus.store_internal_state(self.id, state)
+            self.bus.store_internal_state(self.id, cPickle.dumps(state))
 
     def restore_internal_state(self):
         """
@@ -176,7 +177,7 @@ class Agent(object):
         """
         state = self.bus.load_internal_state(self.id)
         if state:
-            self.set_internal_state(state)
+            self.set_internal_state(cPickle.loads(state))
 
     # These are the main methods that any agent might want to overload
     def init_agent(self):
@@ -214,8 +215,8 @@ class Agent(object):
         Should be overridden by agents that have an internal state, which
         should be persistent stored when an agent is stopped.
 
-        Return a string that contains the internal agent state (ex. serialized
-        data structures)
+        Return a picklable data structure that contains the internal agent
+        state (ex. serialized data structures)
         """
         return
 
@@ -224,8 +225,7 @@ class Agent(object):
         Should be overridden by agents that have an internal state, which
         should be persistently stored when an agent is stopped.
 
-        :param state: string that contains the internal agent state (ex.
-          serialized data structures)
+        :param state: data structure that contains the internal agent state
         """
         return
 
