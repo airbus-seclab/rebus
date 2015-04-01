@@ -44,7 +44,6 @@ class Descriptor(object):
         self.domain = domain
         self.version = version
         self.processing_time = processing_time
-        self.value = value
         if uuid is None:
             uuid = str(m_uuid.uuid5(self.NAMESPACE_REBUS, self.hash))
         #: A new uuid is generated for:
