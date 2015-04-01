@@ -24,7 +24,8 @@ class Unarchive(Agent):
         data = descriptor.value
         selector = descriptor.selector
 
-        #: List of (unarchived file name, unarchived file contents)
+        #: List of (unarchived file name, descriptor label, unarchived file
+        #: contents)
         unarchived = []
 
         def do_untar(archive, mode, archive_label=descriptor.label,
@@ -33,7 +34,7 @@ class Unarchive(Agent):
             for finfo in tar.getmembers():
                 if finfo.isfile() and finfo.size > 0:
                     fname = os.path.basename(finfo.name)
-                    unarchived.append((archive_label + ":" + fname,
+                    unarchived.append((fname, archive_label + ":" + fname,
                                        tar.extractfile(finfo).read()))
 
         # Compressed files
@@ -45,7 +46,12 @@ class Unarchive(Agent):
                 # Probably not a compressed tar file
                 import bz2
                 data = bz2.decompress(descriptor.value)
-                unarchived.append(("bunzipped %s" % descriptor.label, data))
+                fname = descriptor.label
+                if fname.endswith('.bz2'):
+                    fname = fname[:-4]
+                else:
+                    fname = "bunzipped %s" % fname
+                unarchived.append((fname, fname, data))
         if "/compressed/gzip" in selector:
             # Try and extract - might be a .tar.gz
             try:
@@ -55,7 +61,12 @@ class Unarchive(Agent):
                 from gzip import GzipFile
                 data = GzipFile(fileobj=StringIO(descriptor.value),
                                 mode='rb').read()
-                unarchived.append(("gunzipped %s" % descriptor.label, data))
+                fname = descriptor.label
+                if fname.endswith('.gz'):
+                    fname = fname[:-3]
+                else:
+                    fname = "gunzipped %s" % fname
+                unarchived.append((fname, fname, data))
 
         # Archive files
         if "/archive/tar" in selector:
@@ -64,14 +75,15 @@ class Unarchive(Agent):
             from zipfile import ZipFile
             fzip = ZipFile(file=StringIO(descriptor.value))
             for fname in fzip.namelist():
-                unarchived.append((descriptor.label + ':' + fname,
+                unarchived.append((fname, descriptor.label + ':' + fname,
                                    fzip.read(fname)))
 
-        for fname, fcontents in unarchived:
+        for fname, desclabel, fcontents in unarchived:
             selector = guess_selector(buf=fcontents)
             done = time.time()
-            desc = Descriptor(fname, selector, fcontents, descriptor.domain,
-                              agent=self._name_, processing_time=(done-start))
+            desc = Descriptor(desclabel, selector, fcontents,
+                              descriptor.domain, agent=self._name_,
+                              processing_time=(done-start))
             self.push(desc)
-            self.declare_link(descriptor, desc, "Unarchived", "%s has been \
-                              unarchived from %s" % (fname, descriptor.label))
+            self.declare_link(descriptor, desc, "Unarchived", "\"%s\" has been \
+                              unarchived from \"%s\"" % (fname, descriptor.label))
