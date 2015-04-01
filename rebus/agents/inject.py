@@ -67,9 +67,9 @@ class Inject(Agent):
                                help="Use SELECTOR")
         subparser.add_argument("--label", "-l",
                                help="Use LABEL instead of file name")
-        subparser.add_argument("--printable", action='store_true', help="Mark "
-                               "this value as printable. Use if the raw value "
-                               "may be displayed to an analyst.")
+        subparser.add_argument("--printable", '-p', action='store_true',
+                               help="Mark this value as printable. Use if the "
+                               "raw value may be displayed to an analyst.")
 
     def run(self):
         for f in self.config['files']:
