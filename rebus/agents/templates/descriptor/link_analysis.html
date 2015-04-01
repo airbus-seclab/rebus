@@ -1,5 +1,5 @@
 <tr id="link_{{ descriptor['hash'] }}_{{ descriptor['linksrchash'] }}">
   <td class="container-key" data-domain="{{url_escape(descriptor['domain'])}}" data-selector="{{url_escape(descriptor['fullselector'])}}">
-    <a href="/analysis/{{ descriptor['domain'] }}/{{ descriptor['value']['otherUUID'] }}">{{ descriptor['value']['otherlabel'] }}</a> <a href='javascript://'><span class="glyphicon glyphicon-cog"></span></a></td>
-  <td>{{ descriptor['value']['reason'] }}</td>
+    linked to <a href="/analysis/{{ descriptor['domain'] }}/{{ descriptor['value']['otherUUID'] }}">{{ descriptor['value']['otherlabel'] }}</a> <a href='javascript://'><span class="glyphicon glyphicon-cog"></span></a></td>
+  <td>Link reason: {{ descriptor['value']['reason'] }}</td>
 </tr>
