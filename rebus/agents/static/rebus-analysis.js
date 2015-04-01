@@ -131,7 +131,9 @@ var updater = {
             $('#filename-uuid').fadeIn();
             $('#helptext').hide();
         }
+        var blockname = descriptor.agent;
         if (descriptor.selector.indexOf('/link/') == 0) {
+            blockname = 'links';
             if (!(descriptor.linksrchash in links)) {
                 links[descriptor.linksrchash] = {};
             }
@@ -154,10 +156,10 @@ var updater = {
                     $(this).focus();
                     });
         }
-        var container = $('#container_' + descriptor.agent);
+        var container = $('#container_' + blockname);
         if (container.length == 0) {
-            container = $('#template_container').clone().attr('id', 'container_' + descriptor.agent);
-                container.find('.panel-title').text(descriptor.agent);
+            container = $('#template_container').clone().attr('id', 'container_' + blockname);
+                container.find('.panel-title').text(blockname);
                 $('#inbox').append(container);
         }
         inbox = container.find('.container-inbox');
