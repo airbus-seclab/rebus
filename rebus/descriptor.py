@@ -159,8 +159,9 @@ class Descriptor(object):
             return self._value
         else:
             if self.bus:
-                return self.bus.get_value(self.agent, self.domain,
-                                          self.selector)
+                self._value = self.bus.get_value(self.agent, self.domain,
+                                                 self.selector)
+                return self._value
         raise Exception('Trying to get unobtainable descriptor value - no '
                         'reference to bus nor value')
 
