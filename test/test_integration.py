@@ -210,6 +210,11 @@ def test_inject(agent_set, agent_test, agent_inject):
     # Get descriptor by version
     descriptor_version = bus_instance.get(agent_test.id, DEFAULT_DOMAIN,
                                           selectors[0].split('%')[0]+'~-1')
+
+    # force fetching descriptor value
+    assert descriptor_version.value == descriptor.value
+    assert descriptor_version == descriptor
+
     assert descriptor == descriptor_version
 
     # Find by value regexp
@@ -223,10 +228,14 @@ def test_inject(agent_set, agent_test, agent_inject):
 
     descriptors_uuid = bus_instance.find_by_uuid(agent_test.id, DEFAULT_DOMAIN,
                                                  descriptor.uuid)
+    # force fetching descriptor value
+    assert descriptors_uuid[0].value == descriptor.value
     assert descriptors_uuid[0] == descriptor
 
     # Check that it has been received by TestAgent
     received = agent_test.received_selectors
     processed = agent_test.processed_descriptors
     assert received == selectors
+    # force fetching descriptor value
+    assert processed[0][0].value == descriptor.value
     assert processed[0][0] == descriptor
