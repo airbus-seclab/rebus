@@ -273,12 +273,17 @@ class DBusMaster(dbus.service.Object):
             svc.mainloop.run()
         except (KeyboardInterrupt, SystemExit):
             if len(svc.clients) > 0:
-                log.info("Stopping all agents")
+                log.info("Trying to stop all agents properly. Press Ctrl-C "
+                         "again to stop.")
                 # Ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
                 svc.bus_exit(store.STORES_INTSTATE)
-                svc.mainloop.run()
+                try:
+                    svc.mainloop.run()
+                except (KeyboardInterrupt, SystemExit):
+                    if len(svc.clients) > 0:
+                        log.info("Not all agents have stopped, exiting")
         log.info("Stopping storage...")
         store.exit()
 
