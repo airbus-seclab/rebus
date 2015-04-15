@@ -157,6 +157,13 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def processed_stats(self, domain):
+        """
+        Returns a list of couples, (agent names, number of processed selectors)
+        and the total amount of selectors in this domain.
+        """
+        raise NotImplementedError
+
     def store_state(self, agent_name, state):
         """
         Store serialized agent state.
