@@ -50,6 +50,8 @@ def guess_selector(fname=None, buf=None):
         return "/archive/tar"
     if "Zip archive data" in guess:
         return "/archive/zip"
+    if "Microsoft Cabinet archive data" in guess:
+        return "/archive/cab"
     return "/unknown"
 
 

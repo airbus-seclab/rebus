@@ -1,11 +1,16 @@
 #! /usr/bin/env python
 
-import os
-import time
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
 from rebus.agents.inject import guess_selector
 from StringIO import StringIO
+from tempfile import mkdtemp, NamedTemporaryFile
+import distutils.spawn
+import os
+import os.path
+import shutil
+import subprocess
+import time
 
 
 @Agent.register
@@ -13,6 +18,12 @@ class Unarchive(Agent):
     _name_ = "unarchive"
     _desc_ = "Extract archives and uncompress files"
     _operationmodes_ = ('automatic', 'interactive')
+
+    def init_agent(self):
+        self.cabextract = distutils.spawn.find_executable("cabextract")
+        if self.cabextract is None:
+            self.log.warn("cabextract executable not found - cab archives "
+                          "will not be extracted")
 
     def selector_filter(self, selector):
         return selector.startswith("/archive/") or\
@@ -78,6 +89,27 @@ class Unarchive(Agent):
                 unarchived.append((fname, descriptor.label + ':' + fname,
                                    fzip.read(fname)))
 
+        if "/archive/cab" in selector and self.cabextract:
+            try:
+                tmpdir = mkdtemp("rebus-cabextract")
+                with NamedTemporaryFile(prefix="rebus-cab") as cabfile:
+                    cabfile.write(descriptor.value)
+                    cabfile.flush()
+                    try:
+                        subprocess.check_output([self.cabextract, '-d', tmpdir,
+                                                 cabfile.name],
+                                                stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError as e:
+                        self.log.error("cabextract exited with status %d" %
+                                       e.returncode)
+                        self.log.error(e.output)
+                for fname in os.listdir(tmpdir):
+                    filepathname = os.path.join(tmpdir, fname)
+                    unarchived.append((fname, descriptor.label + ':' + fname,
+                                       open(filepathname, 'rb').read()))
+            finally:
+                shutil.rmtree(tmpdir)
+
         for fname, desclabel, fcontents in unarchived:
             selector = guess_selector(buf=fcontents)
             done = time.time()
@@ -85,5 +117,6 @@ class Unarchive(Agent):
                               descriptor.domain, agent=self._name_,
                               processing_time=(done-start))
             self.push(desc)
-            self.declare_link(descriptor, desc, "Unarchived", "\"%s\" has been \
-                              unarchived from \"%s\"" % (fname, descriptor.label))
+            self.declare_link(
+                descriptor, desc, "Unarchived", "\"%s\" has been unarchived "
+                "from \"%s\"" % (fname, descriptor.label))
