@@ -24,4 +24,4 @@ class Ls(Agent):
                     sys.stdout.write(s+"\n")
             else:
                 self.log.warning("selector [%s:%s] not found",
-                                 self.config['domain'], s)
+                                 self.domain, s)
