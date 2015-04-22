@@ -38,10 +38,13 @@ class DBusMaster(dbus.service.Object):
                          in_signature='ssos', out_signature='')
     def register(self, agent_id, agent_domain, pth, config_txt):
         #: indicates whether another instance of the same agent is already
-        #: running
+        #: running with the same configuration
         agent_name = agent_id.split('-', 1)[0]
-        already_running = any([k.startswith(agent_name+'-') for k in
-                               self.clients.keys()])
+        already_running = False
+        for k in self.clients.keys():
+            if k.startswith(agent_name+'-') and self.config_txts[k] == config_txt:
+                already_running = True
+                break
         self.clients[agent_id] = pth
         self.agentnames[agent_id] = agent_name
         self.config_txts[agent_id] = config_txt
