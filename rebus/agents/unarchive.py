@@ -10,7 +10,6 @@ import os
 import os.path
 import shutil
 import subprocess
-import time
 
 
 @Agent.register
@@ -31,7 +30,6 @@ class Unarchive(Agent):
 
     def process(self, descriptor, sender_id):
         import tarfile
-        start = time.time()
         data = descriptor.value
         selector = descriptor.selector
 
@@ -112,10 +110,8 @@ class Unarchive(Agent):
 
         for fname, desclabel, fcontents in unarchived:
             selector = guess_selector(buf=fcontents)
-            done = time.time()
             desc = Descriptor(desclabel, selector, fcontents,
-                              descriptor.domain, agent=self._name_,
-                              processing_time=(done-start))
+                              descriptor.domain, agent=self._name_)
             self.push(desc)
             self.declare_link(
                 descriptor, desc, "Unarchived", "\"%s\" has been unarchived "

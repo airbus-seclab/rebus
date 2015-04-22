@@ -43,6 +43,7 @@ class Descriptor(object):
         self.value = value
         self.domain = domain
         self.version = version
+        #: if -1, will be set by agent when push() is called
         self.processing_time = processing_time
         if uuid is None:
             uuid = str(m_uuid.uuid5(self.NAMESPACE_REBUS, self.hash))
@@ -55,8 +56,12 @@ class Descriptor(object):
 
     def spawn_descriptor(self, selector, value, agent, processing_time=-1,
                          label=None):
-        # Allow changing labels, e.g. when spawned descriptor contains same
-        # data type as its precursor (ex. binary -> unpacked binary)
+        """
+        Spawn a child descriptor.
+
+        :param label: will use self's label if unset
+        :param processing_time: agent.push() will set properly if equal to -1
+        """
         if label is None:
             label = self.label
         desc = self.__class__(label, selector, value, self.domain,
@@ -73,6 +78,9 @@ class Descriptor(object):
         descriptors that contain similar data types (ex. dismat contains
         dissimilarity values for descriptors whose datatype is
         /signature/sigtype/)
+
+        :param label: will use self's label if unset
+        :param processing_time: agent.push() will set properly if equal to -1
         """
         desc = self.__class__(label, self.selector.split('%')[0],
                               value, self.domain,
