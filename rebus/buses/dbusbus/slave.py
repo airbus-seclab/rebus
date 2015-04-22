@@ -29,11 +29,9 @@ class DBus(Bus):
         #: agent. Agent must be run using separate DBus() (bus slave)
         #: instances.
         self.agent = None
-        self.callback = None
         self.loop = None
 
-    def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
-        self.callback = callback
+    def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         self.agent = agent
         self.objpath = os.path.join("/agent", self.agent.name)
         self.obj = dbus.service.Object(self.bus, self.objpath)
@@ -42,15 +40,12 @@ class DBus(Bus):
                                                     self.bus)
         self.agent_id = "%s-%s" % (self.agent.name, self.bus.get_unique_name())
 
-        if self.callback:
-            # Always true when called from Agent - even if agent does not
-            # overload process()
-            self.bus.add_signal_receiver(self.broadcast_callback_wrapper,
-                                         dbus_interface="com.airbus.rebus.bus",
-                                         signal_name="new_descriptor")
-            self.bus.add_signal_receiver(self.targeted_callback_wrapper,
-                                         dbus_interface="com.airbus.rebus.bus",
-                                         signal_name="targeted_descriptor")
+        self.bus.add_signal_receiver(self.broadcast_wrapper,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="new_descriptor")
+        self.bus.add_signal_receiver(self.targeted_wrapper,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="targeted_descriptor")
         self.bus.add_signal_receiver(self.bus_exit_handler,
                                      dbus_interface="com.airbus.rebus.bus",
                                      signal_name="bus_exit")
@@ -148,10 +143,10 @@ class DBus(Bus):
             self.loop.quit()
         # Clean up signals - useful for tests, where one process runs several
         # agents successively
-        self.bus.remove_signal_receiver(self.broadcast_callback_wrapper,
+        self.bus.remove_signal_receiver(self.broadcast_wrapper,
                                         dbus_interface="com.airbus.rebus.bus",
                                         signal_name="new_descriptor")
-        self.bus.remove_signal_receiver(self.targeted_callback_wrapper,
+        self.bus.remove_signal_receiver(self.targeted_wrapper,
                                         dbus_interface="com.airbus.rebus.bus",
                                         signal_name="targeted_descriptor")
         self.bus.remove_signal_receiver(self.bus_exit_handler,
@@ -160,14 +155,14 @@ class DBus(Bus):
         self.iface.unregister(self.agent_id)
 
     # DBus specific functions
-    def broadcast_callback_wrapper(self, sender_id, desc_domain, selector):
-        self.callback(str(sender_id), str(desc_domain), str(selector),
+    def broadcast_wrapper(self, sender_id, desc_domain, selector):
+        self.agent.on_new_descriptor(str(sender_id), str(desc_domain), str(selector),
                       0)
 
-    def targeted_callback_wrapper(self, sender_id, desc_domain, selector,
+    def targeted_wrapper(self, sender_id, desc_domain, selector,
                                   targets, user_request):
         if self.agent.name in targets:
-            self.callback(str(sender_id), str(desc_domain), str(selector),
+            self.agent.on_new_descriptor(str(sender_id), str(desc_domain), str(selector),
                           int(user_request))
 
     def bus_exit_handler(self, awaiting_internal_state):

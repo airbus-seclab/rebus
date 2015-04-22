@@ -18,7 +18,7 @@ class Bus(object):
     def __init__(self, busaddr=None):
         pass
 
-    def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         raise NotImplementedError
 
     def lock(self, agent_id, lockid, desc_domain, selector):

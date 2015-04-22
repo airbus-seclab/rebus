@@ -49,7 +49,7 @@ class Agent(object):
         else:
             self.config['output_altering_options'] = \
                 self._output_altering_options_
-        self.id = self.bus.join(self, domain, callback=self.on_new_descriptor)
+        self.id = self.bus.join(self, domain)
         self.log = AgentLogger(log, dict(agent_id=self.id))
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))

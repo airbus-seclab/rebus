@@ -5,7 +5,7 @@ import logging
 import threading
 
 log = logging.getLogger("rebus.localbus")
-agent_desc = namedtuple("agent_desc", ("agent_id", "domain", "callback"))
+agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
 
 
 @Bus.register
@@ -14,7 +14,6 @@ class LocalBus(Bus):
 
     def __init__(self, busaddr=None):
         Bus.__init__(self)
-        self.callbacks = []
         self.locks = defaultdict(set)
         #: Next available agent id. Never decreases.
         self.agent_count = 0
@@ -30,15 +29,11 @@ class LocalBus(Bus):
         #: monotonically increasing user request counter
         self.userrequestid = 0
 
-    def join(self, agent, agent_domain=DEFAULT_DOMAIN, callback=None):
+    def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         agid = "%s-%i" % (agent.name, self.agent_count)
         self.agent_count += 1
-        if callback:
-            # Always true when called from Agent - even if agent does not
-            # overload process()
-            self.callbacks.append((agid, callback))
         self.config_txts[agid] = agent.config_txt
-        self.agent_descs[agid] = agent_desc(agid, agent_domain, callback)
+        self.agent_descs[agid] = agent_desc(agid, agent_domain)
         self.agents[agid] = agent
         return agid
 
@@ -56,10 +51,10 @@ class LocalBus(Bus):
         selector = descriptor.selector
         if self.store.add(descriptor):
             log.info("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
-            for agid, cb in self.callbacks:
+            for agid in self.agents.keys():
                 try:
-                    log.debug("Calling %s callback", agid)
-                    cb(agent_id, desc_domain, selector, 0)
+                    log.debug("Calling %s's on_new_descriptor", agid)
+                    self.agents[agid].on_new_descriptor(agent_id, desc_domain, selector, 0)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
         else:
@@ -147,12 +142,12 @@ class LocalBus(Bus):
         log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
                   desc_domain, selector, targets)
         self.userrequestid += 1
-        for agid, cb in self.callbacks:
+        for agid in self.agents.keys():
             if self.agents[agid].name in targets:
                 try:
-                    log.debug("Calling %s callback for user-requested "
+                    log.debug("Calling %s on_new_descriptor for user-requested "
                               "processing", agid)
-                    cb(agent_id, desc_domain, selector, self.userrequestid)
+                    self.agents[agid].on_new_descriptor(agent_id, desc_domain, selector, self.userrequestid)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 
