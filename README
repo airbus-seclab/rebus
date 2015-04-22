@@ -211,6 +211,8 @@ This will overwrite .rst files in source/.
 
   $ make singlehtml
 
-TODO contact
-TODO licence
-TODO rebus_demo_agents
+
+Licence
+=======
+
+REbus is released under a BSD 2-clause licence.
