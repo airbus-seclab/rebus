@@ -53,13 +53,14 @@ class Agent(object):
         self.log = AgentLogger(log, dict(agent_id=self.id))
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))
-        self.start_time = 0
+        # Updated when starting processing
+        self.processing_start_time = 0
         self.init_agent()
         self.restore_internal_state()
 
     def push(self, descriptor):
         if descriptor.processing_time == -1:
-            descriptor.processing_time = time.time() - self.start_time
+            descriptor.processing_time = time.time() - self.processing_start_time
         result = self.bus.push(self.id, descriptor)
         self.log.debug("pushed {0}, already present: {1}".format(descriptor,
                                                                  not result))
@@ -121,11 +122,11 @@ class Agent(object):
         #     return  # already processed
         if self.descriptor_filter(desc):
             self.log.info("START Processing %r", desc)
-            self.start_time = time.time()
+            self.processing_start_time = time.time()
             self.process(desc, sender_id)
             done = time.time()
             self.log.info("END   Processing |%f| %r",
-                          done-self.start_time, desc)
+                          done-self.processing_start_time, desc)
         self.bus.mark_processed(self.id, desc_domain, selector)
 
     @property
