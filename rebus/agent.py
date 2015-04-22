@@ -23,7 +23,7 @@ class Agent(object):
     #: Supported operation modes. Actual operation mode is chosen at launch;
     #: may be changed on master bus' order.
     #: default mode as 1st element.
-    _operationmodes_ = ('automatic', 'interactive')
+    _operationmodes_ = ('automatic', 'interactive', 'idle')
     #: tuple of names of options that influence output values. If not
     #: overridden, every option except 'operationmode' will be considered as
     #: influencing the output.
@@ -43,6 +43,8 @@ class Agent(object):
         # Chosen operation mode
         if len(self._operationmodes_) == 1:
             self.config['operationmode'] = self._operationmodes_[0]
+        if self.config['operationmode'] == 'idle':
+            self.for_idle = []
         if self._output_altering_options_ is None:
             self.config['output_altering_options'] = self.config.keys()
             self.config['output_altering_options'].remove('operationmode')
@@ -84,6 +86,34 @@ class Agent(object):
     def lock(self, lockid, desc_domain, selector):
         return self.bus.lock(self.id, lockid, desc_domain, selector)
 
+    def on_idle(self):
+        """
+        on_idle is called by the bus when all descriptors have been processed
+        or marked as processable, allowing agents in the 'idle' operation mode
+        to only start processing when all the other agents have finished.
+        it should return True if it processed descriptors,
+        False if not
+        """
+        if self.config['operationmode'] != 'idle':
+            return False
+
+        descriptors = []
+        senders = []
+        for sender, desc_domain, selector in self.for_idle:
+            desc = self.get(desc_domain, selector)
+            if self.descriptor_filter(desc):
+                descriptors.append(desc)
+                senders.append(sender)
+
+        self.for_idle = []
+        if len(descriptors) == 0:
+            return False
+
+        self.bulk_process(descriptors, senders)
+        for _, desc_domain, selector in self.for_idle:
+            self.bus.mark_processed(self.id, desc_domain, selector)
+        return True
+
     def on_new_descriptor(self, sender_id, desc_domain, selector,
                           request_id=0):
         """
@@ -111,6 +141,11 @@ class Agent(object):
         if self.config['operationmode'] == 'interactive' and not request_id:
             self.bus.mark_processable(self.id, desc_domain, selector)
             return
+        elif self.config['operationmode'] == 'idle':
+            self.bus.mark_processable(self.id, desc_domain, selector)
+            self.for_idle.append((sender_id, desc_domain, selector))
+            return
+
         desc = self.get(desc_domain, selector)
         if desc is None:
             log.warning("Descriptor %s:%s sent by %s does not exist "
@@ -195,6 +230,19 @@ class Agent(object):
 
     def descriptor_filter(self, descriptor):
         return True
+
+    def bulk_process(self, descriptors, senders):
+        """
+        descriptors and senders are two lists where
+        senders[i] is the sender_id of the agent which
+        producted descriptors[i]
+        It is used for bulk processing
+        """
+        if len(descriptors) != len(senders):
+            raise Exception
+        for i in xrange(0, len(descriptors)):
+            self.process(descriptors[i], senders[i])
+        return
 
     def process(self, descriptor, sender_id):
         pass

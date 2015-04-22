@@ -159,3 +159,9 @@ class LocalBus(Bus):
             self.threads.append(t)
         for t in self.threads:
             t.join()
+        new_descs = True
+        while new_descs:
+            new_descs = False
+            for agent in self.agents.values():
+                new_descs = new_descs or agent.on_idle()
+
