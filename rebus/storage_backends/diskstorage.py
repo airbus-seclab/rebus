@@ -312,15 +312,29 @@ class DiskStorage(Storage):
         return True
 
     def mark_processed(self, domain, selector, agent_name, config_txt):
-        self.processed[domain][selector].add((agent_name, config_txt))
+        result = False
+        key = (agent_name, config_txt)
+        # Add to processed if not already there
+        if key not in self.processed[domain][selector]:
+            result = True
+            self.processed[domain][selector].add(key)
         # Remove from processable
         if selector in self.processable[domain]:
-            self.processable[domain][selector].discard((agent_name, config_txt))
+            if key in self.processable[domain][selector]:
+                result = False
+                self.processable[domain][selector].discard(key)
+        return result
 
     def mark_processable(self, domain, selector, agent_name, config_txt):
-        if selector not in self.processable[domain]:
-            self.processable[domain][selector] = set()
-        self.processable[domain][selector].add((agent_name, config_txt))
+        result = False
+        key = (agent_name, config_txt)
+        if key not in self.processable[domain][selector]:
+            self.processable[domain][selector].add((agent_name, config_txt))
+            if key not in self.processed[domain][selector]:
+                # avoid case where two instances of an agent run in different
+                # modes
+                result = True
+        return result
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]

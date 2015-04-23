@@ -118,6 +118,9 @@ class Storage(object):
         Mark given selector as having been processed by given agent whose
         configuration is serialized in config_txt.
 
+        Returns a boolean indicating whether this selector had not already been
+        marked as processed or processable by this (agent, config_txt)
+
         :param domain: string, domain on which operations are performed
         :param selector: string
         :param agent_name: string, agent name
@@ -130,6 +133,9 @@ class Storage(object):
         """
         Mark given selector as processable by given agent running in
         interactive mode whose configuration is serialized in config_txt.
+
+        Returns a boolean indicating whether this selector had not already been
+        marked as processed by this (agent, config_txt).
 
         :param domain: string, domain on which operations are performed
         :param selector: string
