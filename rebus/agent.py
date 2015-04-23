@@ -111,7 +111,13 @@ class Agent(object):
         if len(descriptors) == 0:
             return False
 
+
+        self.log.info("START on_idle bulk processing %d descriptors", 
+                                                    len(descriptors))
+        self.processing_start_time = time.time()
         self.bulk_process(descriptors, senders)
+        self.log.info("END  on_idle bulk processing  |%f|",
+                                    time.time()-self.processing_start_time)
 
         for i in xrange(0, len(descriptors)):
             self.bus.mark_processed(self.id, descriptors[i].domain, descriptors[i].selector)
