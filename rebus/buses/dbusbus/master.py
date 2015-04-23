@@ -9,6 +9,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 from rebus.descriptor import Descriptor
 import gobject
 import logging
+from rebus.tools.config import get_output_altering_options
 
 
 log = logging.getLogger("rebus.bus")
@@ -29,8 +30,11 @@ class DBusMaster(dbus.service.Object):
         signal.signal(signal.SIGTERM, self.sigterm_handler)
         #: maps agentids to their names
         self.agentnames = {}
+        #: maps agentids to their serialized configuration - output altering
+        #: options only
+        self.agents_output_altering_options = {}
         #: maps agentids to their serialized configuration
-        self.config_txts = {}
+        self.agents_full_config_txts = {}
         #: monotonically increasing user request counter
         self.userrequestid = 0
 
@@ -40,22 +44,26 @@ class DBusMaster(dbus.service.Object):
         #: indicates whether another instance of the same agent is already
         #: running with the same configuration
         agent_name = agent_id.split('-', 1)[0]
+        self.agentnames[agent_id] = agent_name
+        output_altering_options = get_output_altering_options(str(config_txt))
         already_running = False
-        for k in self.clients.keys():
-            if k.startswith(agent_name+'-') and self.config_txts[k] == config_txt:
+        for k in self.clients:
+            if k.startswith(agent_name+'-') and \
+               self.agents_output_altering_options[k] == output_altering_options:
                 already_running = True
                 break
         self.clients[agent_id] = pth
-        self.agentnames[agent_id] = agent_name
-        self.config_txts[agent_id] = config_txt
+        self.agents_output_altering_options[agent_id] = output_altering_options
+        self.agents_full_config_txts[agent_id] = str(config_txt)
         log.info("New client %s (%s) in domain %s with config %s", pth,
                  agent_id, agent_domain, config_txt)
         # Send not-yet processed descriptors to the agent...
         if not already_running:
             # ...unless another instance of the same agent has already been
             # started, and should be processing those descriptors
-            unprocessed = self.store.list_unprocessed_by_agent(agent_name,
-                                                               config_txt)
+            unprocessed = \
+                self.store.list_unprocessed_by_agent(agent_name,
+                                                     output_altering_options)
             for dom, sel in unprocessed:
                 self.targeted_descriptor("storage", dom, sel, [agent_name],
                                          False)
@@ -149,21 +157,21 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sss', out_signature='')
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
-        config_txt = self.config_txts[agent_id]
+        options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
-                  agent_id, config_txt)
+                  agent_id, options)
         self.store.mark_processed(str(desc_domain), str(selector),
-                                  agent_name, str(config_txt))
+                                  agent_name, str(options))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
     def mark_processable(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
-        config_txt = self.config_txts[agent_id]
+        options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
-                  agent_id, config_txt)
+                  agent_id, options)
         self.store.mark_processable(str(desc_domain), str(selector),
-                                    agent_name, str(config_txt))
+                                    agent_name, str(options))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='aas')

@@ -312,17 +312,15 @@ class DiskStorage(Storage):
         return True
 
     def mark_processed(self, domain, selector, agent_name, config_txt):
-        filtered_conf = get_output_altering_options(config_txt)
-        self.processed[domain][selector].add((agent_name, filtered_conf))
+        self.processed[domain][selector].add((agent_name, config_txt))
         # Remove from processable
         if selector in self.processable[domain]:
-            self.processable[domain][selector].discard((agent_name, filtered_conf))
+            self.processable[domain][selector].discard((agent_name, config_txt))
 
     def mark_processable(self, domain, selector, agent_name, config_txt):
-        filtered_conf = get_output_altering_options(config_txt)
         if selector not in self.processable[domain]:
             self.processable[domain][selector] = set()
-        self.processable[domain][selector].add((agent_name, filtered_conf))
+        self.processable[domain][selector].add((agent_name, config_txt))
 
     def get_processed(self, domain, selector):
         return self.processed[domain][selector]
@@ -360,13 +358,12 @@ class DiskStorage(Storage):
             cPickle.dump(self.processed, fp)
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
-        filtered_conf = get_output_altering_options(config_txt)
         res = []
         for domain in self.version_cache.keys():
             selectors = set.union(*self.uuids[domain].values())
             processed_selectors = set([sel for sel, name_confs in
                                        self.processed[domain].items() if
-                                       (agent_name, filtered_conf) in
+                                       (agent_name, config_txt) in
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
             res.extend([(domain, sel) for sel in unprocessed_sels])

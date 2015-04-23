@@ -3,6 +3,7 @@ from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.storage_backends.ramstorage import RAMStorage
 import logging
 import threading
+from rebus.tools.config import get_output_altering_options
 
 log = logging.getLogger("rebus.localbus")
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
@@ -24,15 +25,20 @@ class LocalBus(Bus):
         #: maps agentid to agent instance
         self.agents = {}
         self.threads = []
+        #: maps agentids to their serialized configuration - output altering
+        #: options only
+        self.agents_output_altering_options = {}
         #: maps agentids to their serialized configuration
-        self.config_txts = {}
+        self.agents_full_config_txts = {}
         #: monotonically increasing user request counter
         self.userrequestid = 0
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         agid = "%s-%i" % (agent.name, self.agent_count)
         self.agent_count += 1
-        self.config_txts[agid] = agent.config_txt
+        self.agents_full_config_txts[agid] = agent.config_txt
+        self.agents_output_altering_options[agid] = \
+            get_output_altering_options(agent.config_txt)
         self.agent_descs[agid] = agent_desc(agid, agent_domain)
         self.agents[agid] = agent
         return agid
@@ -92,7 +98,7 @@ class LocalBus(Bus):
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
-        config_txt = self.config_txts[agent_id]
+        config_txt = self.agents_full_config_txts[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processed(desc_domain, selector, agent_name,
@@ -100,7 +106,7 @@ class LocalBus(Bus):
 
     def mark_processable(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
-        config_txt = self.config_txts[agent_id]
+        config_txt = self.agents_full_config_txts[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processable(desc_domain, selector, agent_name,

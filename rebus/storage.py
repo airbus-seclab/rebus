@@ -122,6 +122,7 @@ class Storage(object):
         :param selector: string
         :param agent_name: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent
+            describing output altering options
         """
         raise NotImplementedError
 
@@ -134,6 +135,7 @@ class Storage(object):
         :param selector: string
         :param agent_name: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent
+            describing output altering options
         """
         raise NotImplementedError
 
@@ -195,7 +197,8 @@ class Storage(object):
         this agent, identified by its name.
 
         :param agent_name: string, agent name
-        :param config_txt: string, agent name, serialized agent configuration
+        :param config_txt: string, JSON-serialized configuration of agent
+            describing output altering options
         """
         return []
 
