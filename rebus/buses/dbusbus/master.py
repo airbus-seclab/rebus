@@ -37,6 +37,33 @@ class DBusMaster(dbus.service.Object):
         self.agents_full_config_txts = {}
         #: monotonically increasing user request counter
         self.userrequestid = 0
+        #: number of descriptors
+        self.descriptor_count = 0
+        #: count descriptors marked as processed/processable by each uniquely
+        #: configured agent
+        self.descriptor_handled_count = {}
+        #: dict keyed by "uniquely configured agents", i.e.
+        #: (agent_name, config_txt) listing agent_ids
+        self.uniq_conf_clients = defaultdict(list)
+
+    def update_check_idle(self, agent_name, output_altering_options):
+        """
+        Increases the count of handled descriptors and checks
+        if all descriptors have been handled (processed/marked
+        as processable).
+        In that case, send the "on_idle" message.
+        """
+        name_config = (agent_name, output_altering_options)
+        self.descriptor_handled_count[name_config] += 1
+        # Check if we have reached idle state
+        nbdistinctagents = len(self.descriptor_handled_count)
+        nbhandlings = sum(self.descriptor_handled_count.values())
+        if self.descriptor_count*nbdistinctagents == nbhandlings:
+            log.debug("IDLE: %d agents having distinct (name, config) %d "
+                      "descriptors %d handled", nbdistinctagents,
+                      self.descriptor_count, nbhandlings)
+            self.on_idle()
+        return
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssos', out_signature='')
@@ -46,12 +73,11 @@ class DBusMaster(dbus.service.Object):
         agent_name = agent_id.split('-', 1)[0]
         self.agentnames[agent_id] = agent_name
         output_altering_options = get_output_altering_options(str(config_txt))
-        already_running = False
-        for k in self.clients:
-            if k.startswith(agent_name+'-') and \
-               self.agents_output_altering_options[k] == output_altering_options:
-                already_running = True
-                break
+
+        name_config = (agent_name, output_altering_options)
+        already_running = len(self.uniq_conf_clients[name_config]) > 1
+        self.uniq_conf_clients[name_config].append(agent_id)
+
         self.clients[agent_id] = pth
         self.agents_output_altering_options[agent_id] = output_altering_options
         self.agents_full_config_txts[agent_id] = str(config_txt)
@@ -64,6 +90,8 @@ class DBusMaster(dbus.service.Object):
             unprocessed = \
                 self.store.list_unprocessed_by_agent(agent_name,
                                                      output_altering_options)
+            self.descriptor_handled_count[name_config] = \
+                self.descriptor_count - len(unprocessed)
             for dom, sel in unprocessed:
                 self.targeted_descriptor("storage", dom, sel, [agent_name],
                                          False)
@@ -72,6 +100,12 @@ class DBusMaster(dbus.service.Object):
                          in_signature='s', out_signature='')
     def unregister(self, agent_id):
         log.info("Agent %s has unregistered", agent_id)
+        agent_name = self.agentnames[agent_id]
+        options = self.agents_output_altering_options[agent_id]
+        name_config = (agent_name, options)
+        self.uniq_conf_clients[name_config].remove(agent_id)
+        if len(self.uniq_conf_clients[name_config]) == 0:
+            del self.descriptor_handled_count[name_config]
         del self.clients[agent_id]
         if self.exiting:
             if len(self.clients) == 0:
@@ -102,6 +136,7 @@ class DBusMaster(dbus.service.Object):
         selector = str(unserialized_descriptor.selector)
         if self.store.add(unserialized_descriptor,
                           serialized_descriptor=str(descriptor)):
+            self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             self.new_descriptor(agent_id, desc_domain, selector)
             return True
@@ -160,8 +195,10 @@ class DBusMaster(dbus.service.Object):
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, options)
-        self.store.mark_processed(str(desc_domain), str(selector),
-                                  agent_name, str(options))
+        isnew = self.store.mark_processed(str(desc_domain), str(selector),
+                                          agent_name, str(options))
+        if isnew:
+            self.update_check_idle(agent_name, options)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
@@ -170,8 +207,10 @@ class DBusMaster(dbus.service.Object):
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
                   agent_id, options)
-        self.store.mark_processable(str(desc_domain), str(selector),
-                                    agent_name, str(options))
+        isnew = self.store.mark_processable(str(desc_domain), str(selector),
+                                            agent_name, str(options))
+        if isnew:
+            self.update_check_idle(agent_name, options)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='aas')
@@ -267,6 +306,15 @@ class DBusMaster(dbus.service.Object):
         """
         self.exiting = True
         return
+
+    @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
+                         signature='')
+    def on_idle(self):
+        """
+        Signal sent when the bus is idle, i.e. all descriptors have been
+        marked as processed or processable by agents.
+        """
+        pass
 
     @classmethod
     def run(cls, store):

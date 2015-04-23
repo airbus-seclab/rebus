@@ -104,14 +104,17 @@ class Agent(object):
             if self.descriptor_filter(desc):
                 descriptors.append(desc)
                 senders.append(sender)
+            else:
+                self.bus.mark_processed(self.id, desc_domain, selector)
 
         self.for_idle = []
         if len(descriptors) == 0:
             return False
 
         self.bulk_process(descriptors, senders)
-        for _, desc_domain, selector in self.for_idle:
-            self.bus.mark_processed(self.id, desc_domain, selector)
+
+        for i in xrange(0, len(descriptors)):
+            self.bus.mark_processed(self.id, descriptors[i].domain, descriptors[i].selector)
         return True
 
     def on_new_descriptor(self, sender_id, desc_domain, selector,
@@ -131,19 +134,18 @@ class Agent(object):
             # not interested in this
             self.bus.mark_processed(self.id, desc_domain, selector)
             return
-        if not request_id:
-            # always process user requests
-            lockid = self.name + get_output_altering_options(self.config_txt)
-            if not self.lock(lockid, desc_domain, selector):
-                # processing has already been started by another instance of
-                # the same agent
-                return
         if self.config['operationmode'] == 'interactive' and not request_id:
             self.bus.mark_processable(self.id, desc_domain, selector)
             return
         elif self.config['operationmode'] == 'idle':
             self.bus.mark_processable(self.id, desc_domain, selector)
             self.for_idle.append((sender_id, desc_domain, selector))
+            return
+        lockid = self.name + get_output_altering_options(self.config_txt) + \
+            str(request_id)
+        if not self.lock(lockid, desc_domain, selector):
+            # processing has already been started by another instance of
+            # the same agent having the same configuration
             return
 
         desc = self.get(desc_domain, selector)
@@ -240,7 +242,7 @@ class Agent(object):
         """
         if len(descriptors) != len(senders):
             raise Exception
-        for i in xrange(0, len(descriptors)):
+        for i in xrange(len(descriptors)):
             self.process(descriptors[i], senders[i])
         return
 

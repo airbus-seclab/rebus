@@ -49,6 +49,10 @@ class DBus(Bus):
         self.bus.add_signal_receiver(self.bus_exit_handler,
                                      dbus_interface="com.airbus.rebus.bus",
                                      signal_name="bus_exit")
+        # Pass "on_idle" signal to the agent as a method call
+        self.bus.add_signal_receiver(self.agent.on_idle,
+                                     dbus_interface="com.airbus.rebus.bus",
+                                     signal_name="on_idle")
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
         self.iface.register(self.agent_id, agent_domain, self.objpath,
