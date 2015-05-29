@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import argparse
 import yaml
 import logging.handlers
@@ -118,34 +119,44 @@ def main():
     # Load YAML configuration file
     config = yaml.load(file(configFile, 'r'))
 
+    if 'master' not in config:
+        log.error('No \"master\" section in ' + str(configFile))
+        sys.exit(1)
+
+    if 'agents' not in config:
+        log.error('No \"agents\" section in ' + str(configFile))
+        sys.exit(1)
+
     # Get the bus configuration
     try:
-        busConfig = getBusConfig(config)
+        busConfig = getBusConfig(config['master'])
     except ValueError as e:
         log.error(e)
-        return -1
+        sys.exit(1)
     
     # Get the address of the bus
     busaddr = None
-    if 'busaddr' in config:
-        busaddr = config['busaddr']
+    if 'busaddr' in config['agents']:
+        busaddr = config['agents']['busaddr']
 
     # Optional modules
     modules = []
-    if (config['modules'] is not None):
-        modules.extend(config['modules'].split())
+    if 'modules' in config['agents'] and config['agents']['modules'] is not None:
+        modules.extend(config['agents']['modules'].split())
 
     rebusMasterPid = runBusMaster(busConfig, busaddr)
     
     # If we use the localbus
     if rebusMasterPid == -1:
-        rebusMasterPid = runLocalBus(busConfig, config, modules)
+        rebusMasterPid = runLocalBus(busConfig, config['agents'], modules)
         signal = os.waitpid(rebusMasterPid, 0)
     else:
     # Run stages (dbus)
-        for stage in config['stages']:
+        for stage in config['agents']['stages']:
             runStage(stage, busConfig.bus, busaddr, modules)
         signal = os.waitpid(rebusMasterPid, 0)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

@@ -1,15 +1,23 @@
-bus: dbus
-logfile: /tmp/rebus_master.log
-verbose_level: 0
-storage: ramstorage
-# busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
-modules:
-#  rebus_demo.agents 
-stages:
-  - id: 1
-    agents:
-      - inject: /bin/bash /bin/ls
-      - inject: /bin/cp
-  - id: 2
-    agents:
-      - ls: "/binary/elf"
+# =================== Bus Master =============================
+
+master:
+  bus: localbus
+  logfile: /tmp/rebus_master.log
+  verbose_level: 0
+  storage: ramstorage
+  # busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
+    
+# ===================  Agents ===============================
+    
+agents:
+  #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
+  modules:
+    #rebus_demo.agents
+  stages:
+    - id: 1
+      agents:
+        - inject: /bin/bash /bin/ls
+        - inject: /bin/cp
+    - id: 2
+      agents:
+        - ls: "/binary/elf"
