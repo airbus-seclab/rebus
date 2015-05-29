@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+import yaml
+import logging.handlers
+from collections import namedtuple
+
+def runAgent(agent, bus, busaddr, agentArgs, modules):
+    childPid = os.fork()
+    if childPid == 0:
+        args = ['rebus_agent']
+        if (bus is not None):
+            args.extend(['--bus', str(bus)])
+        if (busaddr  is not None):
+            args.extend(['--busaddr', str(busaddr)])    
+        for module in modules:
+            args.extend(['-m', module])
+        args.append(str(agent))
+        if (agentArgs is not None):
+            args.extend(agentArgs.split())
+        os.execvp('./rebus_agent', args)
+    return childPid
+
+    
+def runBusMaster(busConfig, busaddr):
+    if busConfig.bus != 'dbus':
+        return -1
+    rebusMasterPid = os.fork()
+    if (rebusMasterPid == 0):
+        args = ['rebus_master_dbus']
+        if busConfig.logfile is not None:
+            args.extend(['-f', busConfig.logfile])
+        if busConfig.verboseLevel is not None:
+            args.extend(['-v', busConfig.verboseLevel])
+        args.append(busConfig.storage)
+        os.execvp('./rebus_master_dbus', args)
+    return rebusMasterPid
+
+
+def runStage(stage, bus, busaddr, modules):
+    agentsPid = []
+    for agent in stage['agents']:
+        for agent, args in agent.iteritems():
+            agentsPid.append(runAgent(agent, bus, busaddr, args, modules))
+    for pid in agentsPid:
+        os.waitpid(pid, 0)
+
+def getBusConfig(config):
+    busConfig = namedtuple('busConfig', 'bus logfile verboseLevel storage')
+    busConfig.bus = 'localbus'
+    busConfig.logfile = None
+    busConfig.verboseLevel = None
+    busConfig.storage = 'ramstorage'
+
+    # Bus type
+    if 'bus' in config:
+        busConfig.bus = config['bus']
+        if busConfig.bus != 'dbus' and busConfig.bus != 'localbus':
+            raise ValueError(busConfig.bus + ' is not a valid bus choice.')
+
+    # Log file path
+    if 'logfile' in config:
+        busConfig.logfile = config['logfile']
+
+    # Verbose level
+    if 'verbose_level' in config:
+        if (not isinstance(config['verbose_level'], int)  or
+            config['verbose_level'] < 0 or
+            config['verbose_level'] > 50):
+            raise ValueError(str(config['verbose_level']) + ' is not a valid verbose level.')
+        busConfig.verboseLevel = str(config['verbose_level'])
+
+    # Storage mode
+    if 'storage' in config:
+        busConfig.storage = config['storage']
+        if busConfig.storage != 'ramstorage' and busConfig.storage != 'diskstorage':
+            raise ValueError(busConfig.storage + ' is not a valid storage choice.')
+    return busConfig
+
+def appendLocalBusAgentCmd(busConfig, config, agent, args):
+    for agent, agentArgs in agent.iteritems():
+        args.append(agent)
+        if agentArgs is not None:
+            args.extend(agentArgs.split())
+
+def appendLocalBusStageCmd(busConfig, config, stage, args):
+    for agent in stage['agents'][:-1]:
+        appendLocalBusAgentCmd(busConfig, config, agent, args)
+        args.append('--')
+    appendLocalBusAgentCmd(busConfig, config, stage['agents'][-1], args)
+        
+def runLocalBus(busConfig, config, modules):
+    childPid = os.fork()
+    if childPid == 0:
+        args = ['rebus_agent', '--bus', str(busConfig.bus)]
+        for module in modules:
+            args.extend(['-m', module])
+        for stage in config['stages'][:-1]:
+            appendLocalBusStageCmd(busConfig, config, stage, args)
+            args.extend(['--', '::'])
+        appendLocalBusStageCmd(busConfig, config, config['stages'][-1], args)
+
+        os.execvp('rebus_agent', args)
+    return childPid
+
+
+def main():
+    logging.basicConfig()
+    log = logging.getLogger('rebus_infra')
+
+    # Setup program arguments
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--config-file", "-f", help="The path of the configuration file", required=True)
+    options = parser.parse_args()
+    configFile = options.config_file
+
+    # Load YAML configuration file
+    config = yaml.load(file(configFile, 'r'))
+
+    # Get the bus configuration
+    try:
+        busConfig = getBusConfig(config)
+    except ValueError as e:
+        log.error(e)
+        return -1
+    
+    # Get the address of the bus
+    busaddr = None
+    if 'busaddr' in config:
+        busaddr = config['busaddr']
+
+    # Optional modules
+    modules = []
+    if (config['modules'] is not None):
+        modules.extend(config['modules'].split())
+
+    rebusMasterPid = runBusMaster(busConfig, busaddr)
+    
+    # If we use the localbus
+    if rebusMasterPid == -1:
+        rebusMasterPid = runLocalBus(busConfig, config, modules)
+        signal = os.waitpid(rebusMasterPid, 0)
+    else:
+    # Run stages (dbus)
+        for stage in config['stages']:
+            runStage(stage, busConfig.bus, busaddr, modules)
+        signal = os.waitpid(rebusMasterPid, 0)
+
+if __name__ == "__main__":
+    main()
