@@ -5,7 +5,6 @@ master:
   logfile: /tmp/rebus_master.log
   verbose_level: 0
   storage: ramstorage
-  # busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
     
 # ===================  Agents ===============================
     

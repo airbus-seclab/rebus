@@ -23,7 +23,7 @@ setup(
     data_files = [
         ('etc/rebus', ['conf/dbus_session.conf']),
         ('etc/rebus/services', glob('conf/services/*.service')),
-        ('etc/rebus', ['conf/rebus-infra-config-example.yaml']),
+        ('/etc/rebus', ['conf/rebus-infra-config-example.yaml']),
     ],
 
     # Metadata
