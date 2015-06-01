@@ -20,7 +20,7 @@ def runAgent(agent, bus, busaddr, agentArgs, modules):
         args.append(str(agent))
         if (agentArgs is not None):
             args.extend(agentArgs.split())
-        os.execvp('./rebus_agent', args)
+        os.execvp('rebus_agent', args)
     return childPid
 
     
@@ -35,7 +35,7 @@ def runBusMaster(busConfig, busaddr):
         if busConfig.verboseLevel is not None:
             args.extend(['-v', busConfig.verboseLevel])
         args.append(busConfig.storage)
-        os.execvp('./rebus_master_dbus', args)
+        os.execvp('rebus_master_dbus', args)
     return rebusMasterPid
 
 
