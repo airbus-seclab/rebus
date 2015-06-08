@@ -204,16 +204,15 @@ Those two sections contain the following attributes:
 * **Master Section**
   - **bus** : 'localbus' or 'dbus'
   - **logfile** : The logfile's path
-  - **verbose_level : Between 0 and 50. 0 the is the most verbose 50 the least
+  - **verbose_level : Between 0 and 50. 0 the is the most verbose, 50 the least
   - **storage** : 'ramstorage' or 'diskstorage'
 * **Agents Section**
-  - **busaddr** : Address of the dbus bus.
-  - **modules** : All the modules to load
+  - **busaddr** : Address of the dbus bus
+  - **modules** : All the (Python) modules to load
   - **stages** : Describes all the stages in the execution order
     * **id** : Identifier of the stage
     * **agents** : list of agents to execute in the stage in the execution order
       - 'agent_name' : 'arguments'
-
 
 Here is an example of a configuration file for 'rebus_infra'
 
