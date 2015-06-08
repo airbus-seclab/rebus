@@ -76,7 +76,7 @@ var updater = {
             return;
         }
         updater.errorSleepTime = 500;
-        window.setTimeout(updater.poll, 0);
+        window.setTimeout(updater.poll, 1000);
     },
 
     onError: function(response, errorString, e) {
