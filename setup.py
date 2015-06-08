@@ -19,10 +19,11 @@ setup(
         'static/jquery-file-upload/*.js',
         'templates/*.html',
         'templates/descriptor/*.html']},
-    scripts = [ 'bin/rebus_master_dbus', 'bin/rebus_agent' ],
+    scripts = [ 'bin/rebus_master_dbus', 'bin/rebus_agent', 'bin/rebus_infra' ],
     data_files = [
         ('etc/rebus', ['conf/dbus_session.conf']),
         ('etc/rebus/services', glob('conf/services/*.service')),
+        ('/etc/rebus', ['conf/rebus-infra-config-example.yaml']),
     ],
 
     # Metadata

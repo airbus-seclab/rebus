@@ -186,6 +186,69 @@ not to perform any data analysis.
 * **dotrenderer** rendering dot to svg
 * **web_interface** web interface
 
+Rebus Infrastructure launcher (bin/rebus_infra)
+-----------------------------------------------
+
+rebus_infra stands for REbus infractructure. This script deploys a REbus bus
+and its agents based on a configuration file.
+
+.. sourcecode:: bash
+
+   $ rebus_infra -f configuration_file.yaml
+
+This file must contain at least a 'master' and an 'agents' section at the
+root of the document.
+
+Those two sections contain the following attributes:
+
+* **Master Section**
+  - **bus** : 'localbus' or 'dbus'
+  - **logfile** : The logfile's path
+  - **verbose_level : Between 0 and 50. 0 the is the most verbose, 50 the least
+  - **storage** : 'ramstorage' or 'diskstorage'
+* **Agents Section**
+  - **busaddr** : Address of the dbus bus
+  - **modules** : All the (Python) modules to load
+  - **stages** : Describes all the stages in the execution order
+    * **id** : Identifier of the stage
+    * **agents** : list of agents to execute in the stage in the execution order
+      - 'agent_name' : 'arguments'
+
+Here is an example of a configuration file for 'rebus_infra'
+
+.. sourcecode:: yaml
+
+   # =================== Bus Master =============================
+
+   master:
+     bus: localbus
+     logfile: /tmp/rebus_master.log
+     verbose_level: 0
+     storage: ramstorage
+    
+   # ===================  Agents ===============================
+    
+   agents:
+     #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
+     modules:
+       #rebus_demo.agents
+     stages:
+       - id: 1
+         agents:
+           - inject: /bin/bash /bin/ls
+           - inject: /bin/cp
+       - id: 2
+         agents:
+           - ls: "/binary/elf"
+
+
+.. sourcecode:: bash
+
+   $ rebus_infra -f /etc/rebus/rebus-infra-config-example.yaml
+   /binary/elf/%5360589177f5bf3e48bfbe587a916090b6122ad1cde74f28ec269ecdffab03e1
+   /binary/elf/%5f39f1d8c9b2300dd28353dbf01836f4b9a467756d55938e0e7fbf6192dfd595
+   /binary/elf/%ac77566d8f621c4132fc53f136e65fada7a45c180c6465ab37f1509ba9f93fc5
+
 
 Building the documentation
 ==========================
