@@ -21,8 +21,8 @@ class Unarchive(Agent):
     def init_agent(self):
         self.cabextract = distutils.spawn.find_executable("cabextract")
         if self.cabextract is None:
-            self.log.warn("cabextract executable not found - cab archives "
-                          "will not be extracted")
+            self.log.warning("cabextract executable not found - cab archives "
+                             "will not be extracted")
 
     def selector_filter(self, selector):
         return selector.startswith("/archive/") or\
