@@ -249,7 +249,13 @@ class Agent(object):
         if len(descriptors) != len(senders):
             raise Exception
         for i in xrange(len(descriptors)):
+            self.log.info("START bulk_process descriptor %d/%d using "
+                          "process()", i+1, len(descriptors))
+            self.processing_start_time = time.time()
             self.process(descriptors[i], senders[i])
+            self.log.info("END bulk_process descriptor %d/%d |%f|", i+1,
+                          len(descriptors)
+                          time.time()-self.processing_start_time)
         return
 
     def process(self, descriptor, sender_id):
@@ -264,6 +270,8 @@ class Agent(object):
     def run(self):
         """
         Overriden by agents that do not consume descriptors.
+
+        process() and bulk_process() will not be called if run() is overridden
         """
         pass
 
