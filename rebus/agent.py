@@ -254,7 +254,7 @@ class Agent(object):
             self.processing_start_time = time.time()
             self.process(descriptors[i], senders[i])
             self.log.info("END bulk_process descriptor %d/%d |%f|", i+1,
-                          len(descriptors)
+                          len(descriptors),
                           time.time()-self.processing_start_time)
         return
 
