@@ -93,10 +93,13 @@ class TemplateLoader(tornado.template.Loader):
     #: of rebus) agents, as well of static files that are part of rebus
     templates = dict()
 
-    def __init__(self, root_directory, **kwargs):
+    def __init__(self, root_directory=None, **kwargs):
         """
         Register existing static files
         """
+        if not root_directory:
+            root_directory = os.path.join(os.path.dirname(__file__),
+                                          'templates')
         super(TemplateLoader, self).__init__(root_directory, **kwargs)
 
         for fname in os.listdir(os.path.join(root_directory, "descriptor")):
@@ -203,9 +206,7 @@ class Application(tornado.web.Application):
         ]
         params = {
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
-            'template_loader':
-                TemplateLoader(os.path.join(os.path.dirname(__file__),
-                                            'templates'),)
+            'template_loader': TemplateLoader()
         }
         self.dstore = dstore
         self.agent = self.dstore.agent
