@@ -104,14 +104,23 @@ class TemplateLoader(tornado.template.Loader):
 
         for fname in os.listdir(os.path.join(root_directory, "descriptor")):
             fullpath = os.path.join(root_directory, "descriptor", fname)
-            if not (fname.endswith('.html') and os.path.isfile(fullpath)):
-                continue
-            #: fname format: desctype_page.html
+            self.register_file_descriptor_template(fullpath, fname)
+
+    def register_file_descriptor_template(self, fullpath, fname):
+        if not (fname.endswith('.html') and os.path.isfile(fullpath)):
+            return
+        #: fname format: desctype_page.html
+        try:
             selector_prefix, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
-            templatestr = open(fullpath, 'rb').read()
-            functions = dict()
-            TemplateLoader.register(selector_prefix, page, templatestr,
-                                    functions)
+        except ValueError:
+            raise ValueError("Invalid descriptor template name %s" %
+                             fullpath)
+
+        selector_prefix, page = fname.rsplit('.', 1)[0].rsplit('_', 1)
+        templatestr = open(fullpath, 'rb').read()
+        functions = dict()
+        TemplateLoader.register(selector_prefix, page, templatestr,
+                                functions)
 
     @staticmethod
     def register(selector_prefix, page, templatestr, functions):
