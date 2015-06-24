@@ -159,15 +159,15 @@ class DBus(Bus):
         self.iface.unregister(self.agent_id)
 
     # DBus specific functions
-    def broadcast_wrapper(self, sender_id, desc_domain, selector):
-        self.agent.on_new_descriptor(str(sender_id), str(desc_domain), str(selector),
-                      0)
+    def broadcast_wrapper(self, sender_id, desc_domain, uuid, selector):
+        self.agent.on_new_descriptor(str(sender_id), str(desc_domain), str(uuid),
+                                     str(selector), 0)
 
-    def targeted_wrapper(self, sender_id, desc_domain, selector,
+    def targeted_wrapper(self, sender_id, desc_domain, uuid, selector, 
                                   targets, user_request):
         if self.agent.name in targets:
-            self.agent.on_new_descriptor(str(sender_id), str(desc_domain), str(selector),
-                          int(user_request))
+            self.agent.on_new_descriptor(str(sender_id), str(desc_domain),  str(uuid),
+                                         str(selector), int(user_request))
 
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:

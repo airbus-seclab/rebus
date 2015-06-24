@@ -123,15 +123,15 @@ class Agent(object):
             self.bus.mark_processed(self.id, descriptors[i].domain, descriptors[i].selector)
         return True
 
-    def on_new_descriptor(self, sender_id, desc_domain, selector,
+    def on_new_descriptor(self, sender_id, desc_domain, uuid, selector, 
                           request_id=0):
         """
         request_id is 0 for automatic processing.
         A unique id should be used for each interactive (user-requested)
         processing.
         """
-        self.log.debug("Received from %s descriptor [%s:%s]", sender_id,
-                       desc_domain, selector)
+        self.log.debug("Received from %s descriptor [%s:%s] for UUID %s", 
+                       sender_id, desc_domain, selector, uuid)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
             # this agent only processes descriptors whose domain is self.domain
             self.bus.mark_processed(self.id, desc_domain, selector)

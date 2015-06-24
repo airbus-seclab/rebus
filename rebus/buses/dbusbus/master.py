@@ -92,8 +92,8 @@ class DBusMaster(dbus.service.Object):
                                                      output_altering_options)
             self.descriptor_handled_count[name_config] = \
                 self.descriptor_count - len(unprocessed)
-            for dom, sel in unprocessed:
-                self.targeted_descriptor("storage", dom, sel, [agent_name],
+            for dom, uuid, sel in unprocessed:
+                self.targeted_descriptor("storage", dom, uuid, sel, [agent_name],
                                          False)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -133,12 +133,13 @@ class DBusMaster(dbus.service.Object):
     def push(self, agent_id, descriptor):
         unserialized_descriptor = Descriptor.unserialize(str(descriptor))
         desc_domain = str(unserialized_descriptor.domain)
+        uuid = str(unserialized_descriptor.uuid)
         selector = str(unserialized_descriptor.selector)
         if self.store.add(unserialized_descriptor,
                           serialized_descriptor=str(descriptor)):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
-            self.new_descriptor(agent_id, desc_domain, selector)
+            self.new_descriptor(agent_id, desc_domain, uuid, selector)
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
@@ -263,18 +264,22 @@ class DBusMaster(dbus.service.Object):
     def request_processing(self, agent_id, desc_domain, selector, targets):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
+
+        d = self.store.get_descriptor(str(desc_domain), str(selector),
+                                  serialized=False)
         self.userrequestid += 1
-        self.targeted_descriptor(agent_id, desc_domain, selector, targets,
+        
+        self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector, targets,
                                  self.userrequestid)
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
-                         signature='sss')
-    def new_descriptor(self, sender_id, desc_domain, selector):
+                         signature='ssss')
+    def new_descriptor(self, sender_id, desc_domain, uuid, selector):
         pass
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
-                         signature='sssasb')
-    def targeted_descriptor(self, sender_id, desc_domain, selector, targets,
+                         signature='ssssasb')
+    def targeted_descriptor(self, sender_id, desc_domain, uuid, selector, targets,
                             user_request):
         """
         Signal sent when a descriptor is sent to some target agents (not
