@@ -11,6 +11,7 @@ class Monitor(Agent):
         print "=" * 60
         print "From=%s" % sender_id
         print "Domain=%s" % descriptor.domain
+        print "UUID=%s" % descriptor.uuid
         print "Label=%s" % descriptor.label
         print "Selector=%s" % descriptor.selector
         v = repr(descriptor.value)
