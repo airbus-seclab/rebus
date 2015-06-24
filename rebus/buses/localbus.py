@@ -60,7 +60,10 @@ class LocalBus(Bus):
             for agid in self.agents.keys():
                 try:
                     log.debug("Calling %s's on_new_descriptor", agid)
-                    self.agents[agid].on_new_descriptor(agent_id, desc_domain, selector, 0)
+                    self.agents[agid].on_new_descriptor(agent_id,
+                                                        desc_domain,
+                                                        descriptor.uuid,
+                                                        selector, 0)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
         else:
@@ -148,12 +151,17 @@ class LocalBus(Bus):
         log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
                   desc_domain, selector, targets)
         self.userrequestid += 1
+        d = self.store.get_descriptor(desc_domain, selector, serialized=False)
         for agid in self.agents.keys():
             if self.agents[agid].name in targets:
                 try:
-                    log.debug("Calling %s on_new_descriptor for user-requested "
-                              "processing", agid)
-                    self.agents[agid].on_new_descriptor(agent_id, desc_domain, selector, self.userrequestid)
+                    log.debug("Calling %s on_new_descriptor for user-requested"
+                              " processing", agid)
+                    self.agents[agid].on_new_descriptor(agent_id,
+                                                        desc_domain,
+                                                        d.uuid,
+                                                        selector,
+                                                        self.userrequestid)
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 
@@ -170,4 +178,3 @@ class LocalBus(Bus):
             new_descs = False
             for agent in self.agents.values():
                 new_descs = new_descs or agent.on_idle()
-

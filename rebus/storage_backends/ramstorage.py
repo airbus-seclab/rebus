@@ -191,5 +191,6 @@ class RAMStorage(Storage):
                                        (agent_name, config_txt) in
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
-            res.extend([(domain, self.dstore[domain][sel].uuid, sel) for sel in unprocessed_sels])
+            res.extend([(domain, self.dstore[domain][sel].uuid, sel)
+                        for sel in unprocessed_sels])
         return res

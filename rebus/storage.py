@@ -199,8 +199,8 @@ class Storage(object):
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
         """
-        Return a list of (domain, uuid, selector) that have not been processed by
-        this agent, identified by its name.
+        Return a list of (domain, uuid, selector) that have not been processed
+        by this agent, identified by its name.
 
         :param agent_name: string, agent name
         :param config_txt: string, JSON-serialized configuration of agent

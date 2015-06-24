@@ -374,7 +374,7 @@ class DiskStorage(Storage):
     def list_unprocessed_by_agent(self, agent_name, config_txt):
         res = []
         for domain in self.version_cache.keys():
-            for uuid,selectors in self.uuids[domain].iteritems():
+            for uuid, selectors in self.uuids[domain].iteritems():
                 processed_selectors = set([sel for sel, name_confs in
                                            self.processed[domain].items() if
                                            (agent_name, config_txt) in

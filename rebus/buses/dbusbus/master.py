@@ -93,8 +93,8 @@ class DBusMaster(dbus.service.Object):
             self.descriptor_handled_count[name_config] = \
                 self.descriptor_count - len(unprocessed)
             for dom, uuid, sel in unprocessed:
-                self.targeted_descriptor("storage", dom, uuid, sel, [agent_name],
-                                         False)
+                self.targeted_descriptor("storage", dom, uuid, sel,
+                                         [agent_name], False)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='')
@@ -266,11 +266,11 @@ class DBusMaster(dbus.service.Object):
                   desc_domain, selector, [str(t) for t in targets])
 
         d = self.store.get_descriptor(str(desc_domain), str(selector),
-                                  serialized=False)
+                                      serialized=False)
         self.userrequestid += 1
-        
-        self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector, targets,
-                                 self.userrequestid)
+
+        self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector,
+                                 targets, self.userrequestid)
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='ssss')
@@ -279,8 +279,8 @@ class DBusMaster(dbus.service.Object):
 
     @dbus.service.signal(dbus_interface='com.airbus.rebus.bus',
                          signature='ssssasb')
-    def targeted_descriptor(self, sender_id, desc_domain, uuid, selector, targets,
-                            user_request):
+    def targeted_descriptor(self, sender_id, desc_domain, uuid, selector,
+                            targets, user_request):
         """
         Signal sent when a descriptor is sent to some target agents (not
         broadcast).
@@ -293,6 +293,7 @@ class DBusMaster(dbus.service.Object):
 
         :param sender_id: sender id
         :param desc_domain: descriptor domain
+        :param uuid: descriptor uuid
         :param selector: descriptor selector
         :param targets: list of target agent names. Agents not in this list
           should ignore this descriptor.
