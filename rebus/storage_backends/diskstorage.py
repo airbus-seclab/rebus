@@ -144,7 +144,10 @@ class DiskStorage(Storage):
             # If it has not been restored from processed.cfg
             self.processed[domain][selector] = set()
         self.uuids[domain][desc.uuid].add(selector)
-        self.labels[domain][desc.uuid] = desc.label
+        if not self.labels[domain][desc.uuid] or desc.precursors:
+            # Heuristic for choosing uuid label : prefer label of a descriptor
+            # that has no precursor
+            self.labels[domain][desc.uuid] = desc.label
 
     def find(self, domain, selector_regex, limit):
         regex = re.compile(selector_regex)
