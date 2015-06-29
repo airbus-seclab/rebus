@@ -1,6 +1,7 @@
 from rebus.tools.registry import Registry
 from rebus.tools.config import get_output_altering_options
 from rebus.bus import DEFAULT_DOMAIN
+from collections import defaultdict
 import logging
 import time
 import json
@@ -20,6 +21,8 @@ class AgentLogger(logging.LoggerAdapter):
 class Agent(object):
     _name_ = "Agent"
     _desc_ = "N/A"
+    _process_slots_ = None
+
     #: Supported operation modes. Actual operation mode is chosen at launch;
     #: may be changed on master bus' order.
     #: default mode as 1st element.
@@ -55,6 +58,7 @@ class Agent(object):
         self.log = AgentLogger(log, dict(agent_id=self.id))
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))
+        self.process_slots = defaultdict(dict)
         # Updated when starting processing
         self.processing_start_time = 0
         self.init_agent()
@@ -97,30 +101,15 @@ class Agent(object):
         if self.config['operationmode'] != 'idle':
             return False
 
-        descriptors = []
-        senders = []
-        for sender, desc_domain, selector in self.for_idle:
-            desc = self.get(desc_domain, selector)
-            if self.descriptor_filter(desc):
-                descriptors.append(desc)
-                senders.append(sender)
-            else:
-                self.bus.mark_processed(self.id, desc_domain, selector)
-
-        self.for_idle = []
-        if len(descriptors) == 0:
-            return False
-
-
         self.log.info("START on_idle bulk processing %d descriptors", 
                                                     len(descriptors))
         self.processing_start_time = time.time()
-        self.bulk_process(descriptors, senders)
+        for params in self.for_idle:
+            self.call_process(*params)
+        self.for_idle = []
         self.log.info("END  on_idle bulk processing  |%f|",
                                     time.time()-self.processing_start_time)
 
-        for i in xrange(0, len(descriptors)):
-            self.bus.mark_processed(self.id, descriptors[i].domain, descriptors[i].selector)
         return True
 
     def on_new_descriptor(self, sender_id, desc_domain, uuid, selector, 
@@ -136,41 +125,70 @@ class Agent(object):
             # this agent only processes descriptors whose domain is self.domain
             self.bus.mark_processed(self.id, desc_domain, selector)
             return
-        if not self.selector_filter(selector):
+        fres = self.selector_filter(selector)
+        if not fres:
             # not interested in this
             self.bus.mark_processed(self.id, desc_domain, selector)
             return
+        slots = {}
+        if self._process_slots_:
+            assert fres in self._process_slots_
+            slots = self.process_slots[uuid]
+            slots[fres] = selector
+            self.log.info("Filling slot %s for %s. Filling level %i/%i." % 
+                          (fres, uuid, len(slots), len(self._process_slots_)))
+            if len(slots) < len(self._process_slots_):
+                self.bus.mark_processable(self.id, desc_domain, selector)
+                return
+
         if self.config['operationmode'] == 'interactive' and not request_id:
             self.bus.mark_processable(self.id, desc_domain, selector)
             return
         elif self.config['operationmode'] == 'idle':
             self.bus.mark_processable(self.id, desc_domain, selector)
-            self.for_idle.append((sender_id, desc_domain, selector))
+            self.for_idle.append((sender_id, desc_domain, selector, slots))
             return
+
+
+        self.call_process(sender_id, desc_domain, selector, slots, request_id)
+
+    def call_process(self, sender_id, desc_domain, selector, slots, request_id=0):
+
         lockid = self.name + get_output_altering_options(self.config_txt) + \
             str(request_id)
-        if not self.lock(lockid, desc_domain, selector):
+        # In case of slots, lock on the first selector slot so that all instances
+        # of an agent lock on the same selector even if they do not receive them
+        # in the same order
+        locksel = selector if not self._process_slots_ else slots[self._process_slots_[0]]
+        
+        if not self.lock(lockid, desc_domain, locksel):
             # processing has already been started by another instance of
             # the same agent having the same configuration
             return
-
         desc = self.get(desc_domain, selector)
         if desc is None:
             log.warning("Descriptor %s:%s sent by %s does not exist "
                         "(user request: %s)", desc_domain, selector, sender_id,
                         request_id)
             return
+
+        additional_desc = { k: self.get(desc_domain,s) if s != selector else desc
+                            for k,s in slots.iteritems() }
         # TODO detect infinite loops ?
         # if self.name in desc.agents:
         #     return  # already processed
-        if self.descriptor_filter(desc):
+        if self.descriptor_filter(desc, **additional_desc):
             self.log.info("START Processing %r", desc)
             self.processing_start_time = time.time()
-            self.process(desc, sender_id)
+            self.process(desc, sender_id, **additional_desc)
             done = time.time()
             self.log.info("END   Processing |%f| %r",
                           done-self.processing_start_time, desc)
-        self.bus.mark_processed(self.id, desc_domain, selector)
+        if additional_desc:
+            for adesc in additional_desc.itervalues():
+                self.bus.mark_processed(self.id, desc_domain, adesc.selector)
+        else:
+            self.bus.mark_processed(self.id, desc_domain, selector)
 
     @property
     def config_txt(self):
@@ -236,29 +254,10 @@ class Agent(object):
     def selector_filter(self, selector):
         return True
 
-    def descriptor_filter(self, descriptor):
+    def descriptor_filter(self, descriptor, **kwargs):
         return True
 
-    def bulk_process(self, descriptors, senders):
-        """
-        descriptors and senders are two lists where
-        senders[i] is the sender_id of the agent which
-        producted descriptors[i]
-        It is used for bulk processing
-        """
-        if len(descriptors) != len(senders):
-            raise Exception
-        for i in xrange(len(descriptors)):
-            self.log.info("START bulk_process descriptor %d/%d using "
-                          "process()", i+1, len(descriptors))
-            self.processing_start_time = time.time()
-            self.process(descriptors[i], senders[i])
-            self.log.info("END bulk_process descriptor %d/%d |%f|", i+1,
-                          len(descriptors),
-                          time.time()-self.processing_start_time)
-        return
-
-    def process(self, descriptor, sender_id):
+    def process(self, descriptor, sender_id, **kargs):
         pass
 
     def run_and_catch_exc(self):
@@ -311,3 +310,6 @@ class Agent(object):
         Overridden by agents that have configuration parameters
         """
         pass
+
+
+
