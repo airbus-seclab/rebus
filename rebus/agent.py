@@ -90,6 +90,14 @@ class Agent(object):
     def lock(self, lockid, desc_domain, selector):
         return self.bus.lock(self.id, lockid, desc_domain, selector)
 
+    def slots_are_processable(self, slots):
+        """
+        Test if a set of slots is ready to be processed. By default, this methods checks
+        that the slot set is complete, but an agent can overload it to have incomplete 
+        sets to processed anyway, for instance if one slot is not mandatory.
+        """
+        return len(slots) == len(self._process_slots_)
+
     def on_idle(self):
         """
         on_idle is called by the bus when all descriptors have been processed
@@ -137,7 +145,7 @@ class Agent(object):
             slots[fres] = selector
             self.log.info("Filling slot %s for %s. Filling level %i/%i." % 
                           (fres, uuid, len(slots), len(self._process_slots_)))
-            if len(slots) < len(self._process_slots_):
+            if not self.slots_are_processable(slots):
                 self.bus.mark_processable(self.id, desc_domain, selector)
                 return
 
@@ -156,10 +164,14 @@ class Agent(object):
 
         lockid = self.name + get_output_altering_options(self.config_txt) + \
             str(request_id)
-        # In case of slots, lock on the first selector slot so that all instances
-        # of an agent lock on the same selector even if they do not receive them
-        # in the same order
-        locksel = selector if not self._process_slots_ else slots[self._process_slots_[0]]
+        # In case of slots, lock on all the selectors at once, so that if one 
+        # optional selector is missing at the time of the lock, another lock
+        # will be taken when this selector is received and processing the complete 
+        # set of slots will not be blocked.
+        if self._process_slots_:
+            locksel = "!".join(slots.get(s,"?") for s in self._process_slots_)
+        else:
+            locksel = selector
         
         if not self.lock(lockid, desc_domain, locksel):
             # processing has already been started by another instance of
