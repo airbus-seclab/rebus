@@ -110,7 +110,7 @@ class Agent(object):
             return False
 
         self.log.info("START on_idle bulk processing %d descriptors", 
-                                                    len(descriptors))
+                                                    len(self.for_idle))
         self.processing_start_time = time.time()
         for params in self.for_idle:
             self.call_process(*params)
