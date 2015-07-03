@@ -43,6 +43,8 @@ class RAMStorage(Storage):
         #: are able to process this descriptor.
         self.processable = defaultdict(lambda: defaultdict(set))
 
+        self.internal_state = {}
+
     def find(self, domain, selector_regex, limit):
         regex = re.compile(selector_regex)
         sel_list = reversed(self.processed[domain].keys())
@@ -194,3 +196,9 @@ class RAMStorage(Storage):
             res.extend([(domain, self.dstore[domain][sel].uuid, sel)
                         for sel in unprocessed_sels])
         return res
+
+    def store_state(self, agent_id, state):
+        self.internal_state[agent_id] = state
+
+    def load_state(self, agent_id):
+        return self.internal_state.get(agent_id, "")
