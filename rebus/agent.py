@@ -242,16 +242,25 @@ class Agent(object):
         storage is in use.
         """
         state = self.get_internal_state()
-        if state:
-            self.bus.store_internal_state(self.id, cPickle.dumps(state))
+        if state or self._process_slots_:
+            complete_state = (state,self.process_slots)
+            self.log.info("Save internal state %r" % (complete_state,))
+            self.bus.store_internal_state(self.id, cPickle.dumps(complete_state))
 
     def restore_internal_state(self):
         """
         Retrieve internal state from storage.
         """
-        state = self.bus.load_internal_state(self.id)
-        if state:
-            self.set_internal_state(cPickle.loads(state))
+        state_ps = self.bus.load_internal_state(self.id)
+        self.log.info("Restore state: %r" % state_ps)
+        if state_ps:
+            state,ps = cPickle.loads(state_ps)
+            if self._process_slots_:
+                self.log.info("Restore process slot state: %r" % ps)
+                self.process_slots = ps
+            if state:
+                self.log.info("Restore internal state: %r" % state)
+                self.set_internal_state(state)
 
     # These are the main methods that any agent might want to overload
     def init_agent(self):
