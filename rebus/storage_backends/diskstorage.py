@@ -119,7 +119,11 @@ class DiskStorage(Storage):
                     # Bus configuration
                     if elem == '_processed.cfg':
                         with open(name, 'rb') as fp:
-                            self.processed = cPickle.load(fp)
+                            # copy processed info to self.processed
+                            p = cPickle.load(fp)
+                            for dom in p.keys():
+                                for sel, val in p[dom].items():
+                                    self.processed[dom][sel] = val
                 else:
                     raise Exception(
                         'Invalid file name - %s has an invalid extension '
