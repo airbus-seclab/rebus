@@ -157,6 +157,7 @@ class DBus(Bus):
                                         dbus_interface="com.airbus.rebus.bus",
                                         signal_name="bus_exit")
         self.iface.unregister(self.agent_id)
+        self.agent.save_internal_state()
 
     # DBus specific functions
     def broadcast_wrapper(self, sender_id, desc_domain, uuid, selector):
