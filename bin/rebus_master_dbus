@@ -15,20 +15,31 @@ def main():
                                      epilog='Uses the ramstorage backend if\
                                      none is specified.')
     parser.add_argument('-f', '--logfile', help="Destination log file")
-    parser.add_argument('-v', '--verbose',
-                        help="Verbosity, 0 is most verbose, 50 least",
-                        type=int, default=10, metavar="LEVEL")
-    subparsers = parser.add_subparsers(help='Storage backends', dest='storage')
+
+    parser.add_argument("--verbose", "-v", action="count", default=3,
+                        help="be more verbose (can be used many times)")
+    parser.add_argument("--quiet", "-q", action="count", default=0,
+                        help="be more quiet (can be used many times)")
+
+
+    parser.add_argument('storage', nargs= argparse.REMAINDER, help="Storage backend")
+
+    parser2 = argparse.ArgumentParser()
+    subparsers = parser2.add_subparsers(help='Storage backends', dest='storage')
     for backend, cls in StorageRegistry.iteritems():
         subparser = subparsers.add_parser(backend)
         cls.add_arguments(subparser)
 
-    if len(sys.argv) < 2:
-        options = parser.parse_args(["ramstorage"])
-    else:
-        options = parser.parse_args()
+    options = parser.parse_args()
+    if not options.storage:
+        options.storage = ["ramstorage"]
+    options_storage = parser2.parse_args(options.storage)
+    options.__dict__.update(options_storage.__dict__)
 
-    logging.basicConfig(level=options.verbose, filename=options.logfile)
+
+    options.verbosity = max(1, 50+10*(options.quiet-options.verbose))
+    logging.basicConfig(format="%(levelname)-5s: %(message)s", level=options.verbosity, 
+                        filename=options.logfile)
     storage_class = StorageRegistry.get(options.storage)
     storage = storage_class(**vars(options))
     DBusMaster.run(storage)
