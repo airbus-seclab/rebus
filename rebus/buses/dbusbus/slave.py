@@ -2,14 +2,13 @@ import os
 import sys
 import signal
 import dbus
-import dbus.glib
-from dbus.mainloop.glib import DBusGMainLoop
+import dbus.mainloop.glib
 import dbus.service
+import logging
 import gobject
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
-import logging
 log = logging.getLogger("rebus.bus.dbus")
 
 
@@ -20,6 +19,9 @@ class DBus(Bus):
 
     # Bus methods implementations - same order as in bus.py
     def __init__(self, busaddr=None):
+        gobject.threads_init()
+        dbus.mainloop.glib.threads_init()
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         Bus.__init__(self)
         self.bus = dbus.SessionBus() if busaddr is None else \
             dbus.bus.BusConnection(busaddr)
@@ -129,6 +131,9 @@ class DBus(Bus):
     def request_processing(self, agent_id, desc_domain, selector, targets):
         self.iface.request_processing(agent_id, desc_domain, selector, targets)
 
+    def busthread_call(self, method, *args):
+        gobject.idle_add(method, *args)
+
     def run_agents(self):
         self.agent.run_and_catch_exc()
         if self.agent.__class__.run != Agent.run:
@@ -136,9 +141,6 @@ class DBus(Bus):
             # then quit
             self.iface.unregister(self.agent_id)
             return
-        gobject.threads_init()
-        dbus.glib.init_threads()
-        DBusGMainLoop(set_as_default=True)
         log.info("Entering agent loop")
         self.loop = gobject.MainLoop()
         try:

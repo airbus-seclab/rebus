@@ -117,6 +117,12 @@ class Bus(object):
         """
         raise NotImplementedError
 
+    def busthread_call(self, method, **params):
+        """
+        Request that method be called in the bus thread's context.
+        """
+        raise NotImplementedError
+
     def run_agents(self):
         """
         Runs all agents that have been added to the bus previously.

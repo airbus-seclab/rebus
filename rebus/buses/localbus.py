@@ -165,6 +165,9 @@ class LocalBus(Bus):
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 
+    def busthread_call(self, method, **params):
+        method(**params)
+
     def run_agents(self):
         for agent in self.agents.values():
             t = threading.Thread(target=agent.run_and_catch_exc)
