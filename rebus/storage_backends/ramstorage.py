@@ -82,7 +82,10 @@ class RAMStorage(Storage):
     def list_uuids(self, domain):
         result = dict()
         for desc in self.dstore[domain].values():
-            result[desc.uuid] = desc.label
+            # Heuristic for choosing uuid label : prefer label of a descriptor
+            # that has no precursor
+            if desc.uuid not in result or not desc.precursors:
+                result[desc.uuid] = desc.label
         return result
 
     def get_descriptor(self, domain, selector, serialized=False):
