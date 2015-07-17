@@ -284,9 +284,11 @@ class DiskStorage(Storage):
         Checks selector & domain sanity (character whitelist)
         """
         if not self.selector_regex.match(selector):
-            raise Exception("Provided selector contains forbidden characters")
+            raise Exception("Provided selector (hex: %s) contains forbidden "
+                            "characters" % selector.encode('hex'))
         if not self.domain_regex.match(domain):
-            raise Exception("Provided domain contains forbidden characters")
+            raise Exception("Provided domain (hex: %s) contains forbidden "
+                            "characters" % domain.encode('hex'))
 
         path = os.path.join(self.basepath, domain, selector[1:])
         return path
