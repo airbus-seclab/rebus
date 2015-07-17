@@ -12,7 +12,7 @@ class Ls(Agent):
     def add_arguments(cls, subparser):
         subparser.add_argument("--limit", nargs='?', type=int, default=0,
                                help="Max number of selectors to return")
-        subparser.add_argument("selectors", nargs="+",
+        subparser.add_argument("selectors", nargs="*", default=[""],
                                help="Regex to match selectors, "
                                "results will be displayed on stdout")
 
