@@ -17,11 +17,14 @@ class Ls(Agent):
                                "results will be displayed on stdout")
 
     def run(self):
+        done = set()
         for s in self.config['selectors']:
             sels = self.find(self.domain, s, self.config['limit'])
             if len(sels) > 0:
                 for s in sels:
-                    sys.stdout.write(s+"\n")
+                    if s not in done:
+                        sys.stdout.write(s+"\n")
+                        done.add(s)
             else:
                 self.log.warning("selector [%s:%s] not found",
                                  self.domain, s)
