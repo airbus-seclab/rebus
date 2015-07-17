@@ -36,7 +36,7 @@ Dependencies:
 * python2-tornado >= 3.0
 * dbus
 * python2-dbus
-* python2-gobjects
+* python2-gobject
 * dbus-glib
 
 To install these dependencies on Arch Linux:
