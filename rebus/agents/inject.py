@@ -6,6 +6,7 @@ from rebus.descriptor import Descriptor
 from rebus.tools import magic_wrap
 import struct
 import time
+import uuid
 
 
 def guess_selector(fname=None, buf=None):
@@ -67,6 +68,8 @@ class Inject(Agent):
                                help="Inject FILES into the bus")
         subparser.add_argument("--selector", "-s",
                                help="Use SELECTOR")
+        subparser.add_argument("--uuid", type=lambda x: str(uuid.UUID(x)),
+                               help="Override UUID")
         subparser.add_argument("--label", "-l",
                                help="Use LABEL instead of file name")
         subparser.add_argument("--printable", '-p', action='store_true',
@@ -74,6 +77,7 @@ class Inject(Agent):
                                "raw value may be displayed to an analyst.")
 
     def run(self):
+        dparam = {} if not self.config["uuid"] else {"uuid": self.config["uuid"]}
         for f in self.config['files']:
             start = time.time()
             label = self.config['label'] if self.config['label'] else \
@@ -92,5 +96,5 @@ class Inject(Agent):
                 else guess_selector(buf=data)
             done = time.time()
             desc = Descriptor(label, selector, data, self.domain,
-                              agent=self._name_, processing_time=(done-start))
+                              agent=self._name_, processing_time=(done-start), **dparam)
             self.push(desc)
