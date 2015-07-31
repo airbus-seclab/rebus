@@ -158,7 +158,7 @@ class Agent(object):
             return
 
 
-        self.call_process(sender_id, desc_domain, selector, slots, request_id)
+        self.bus.agent_process(sender_id, desc_domain, selector, slots, request_id)
 
     def call_process(self, sender_id, desc_domain, selector, slots, request_id=0):
 

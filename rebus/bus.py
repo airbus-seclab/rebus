@@ -128,3 +128,10 @@ class Bus(object):
         Runs all agents that have been added to the bus previously.
         """
         raise NotImplementedError
+
+
+    def agent_process(self, *args, **kargs):
+        """
+        Call agent's call_process method
+        """
+        self.agent.call_process(*args, **kargs)
