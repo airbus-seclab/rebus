@@ -6,6 +6,7 @@ import dbus.mainloop.glib
 import dbus.service
 import logging
 import gobject
+import thread
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
@@ -32,6 +33,7 @@ class DBus(Bus):
         #: instances.
         self.agent = None
         self.loop = None
+        self.main_thread_id = thread.get_ident()
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         self.agent = agent
@@ -70,6 +72,12 @@ class DBus(Bus):
                                     selector))
 
     def push(self, agent_id, descriptor):
+        if thread.get_ident() == self.main_thread_id:
+            self._push(agent_id, descriptor)
+        else:
+            self.busthread_call(self._push, agent_id, descriptor)
+
+    def _push(self, agent_id, descriptor):
         return bool(self.iface.push(str(agent_id), descriptor.serialize()))
 
     def get(self, agent_id, desc_domain, selector):
