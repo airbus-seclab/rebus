@@ -36,6 +36,14 @@ class Agent(object):
     def register(f):
         return AgentRegistry.register_ref(f, key="_name_")
 
+    # Use this decorator on an agent class to authorize concurrent runs if possible
+    @staticmethod
+    def parallelize(max_thread=0):
+        def deco(agt):
+            agt._parallelize_ = {"max_thread":max_thread}
+            return agt
+        return deco
+
     def __init__(self, bus, options, name=None, domain='default'):
         self.name = name if name else self._name_
         self.domain = domain
