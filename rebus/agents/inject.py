@@ -9,7 +9,7 @@ import time
 import uuid
 
 
-def guess_selector(fname=None, buf=None):
+def guess_selector(fname=None, buf=None, label=None):
     if fname is not None:
         guess = magic_wrap.from_file(fname)
     elif buf is not None:
@@ -93,7 +93,7 @@ class Inject(Agent):
                 data = unicode(data)
 
             selector = self.config['selector'] if self.config['selector'] \
-                else guess_selector(buf=data)
+                else guess_selector(buf=data, label=label)
             done = time.time()
             desc = Descriptor(label, selector, data, self.domain,
                               agent=self._name_, processing_time=(done-start), **dparam)

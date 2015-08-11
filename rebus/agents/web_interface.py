@@ -36,7 +36,7 @@ class WebInterface(Agent):
 
     def inject(self, filename, buf):
         label = filename
-        selector = rebus.agents.inject.guess_selector(buf=buf)
+        selector = rebus.agents.inject.guess_selector(buf=buf, label=label)
         value = buf
         domain = "default"  # TODO allow user to specify domain
         desc = Descriptor(label, selector, value, domain,

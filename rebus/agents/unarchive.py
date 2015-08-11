@@ -109,7 +109,7 @@ class Unarchive(Agent):
                 shutil.rmtree(tmpdir)
 
         for fname, desclabel, fcontents in unarchived:
-            selector = guess_selector(buf=fcontents)
+            selector = guess_selector(buf=fcontents, label=desclabel)
             desc = Descriptor(desclabel, selector, fcontents,
                               descriptor.domain, agent=self._name_)
             self.push(desc)
