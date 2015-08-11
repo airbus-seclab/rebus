@@ -53,6 +53,19 @@ def guess_selector(fname=None, buf=None, label=None):
         return "/archive/zip"
     if "Microsoft Cabinet archive data" in guess:
         return "/archive/cab"
+
+    # E-mails
+    if 'Composite Document File V2 Document' in guess:
+        if label.endswith('.msg'):
+            return "/email/msg"
+    if 'ASCII text' in guess:
+        if label.endswith('.eml'):
+            return '/email/eml'
+        # TODO peek at contents & grep headers to identify e-mail?
+    if 'RFC 822 mail, ASCII text' in guess:
+        return '/email/eml'
+    if 'SMTP mail, ASCII text' in guess:
+        return '/email/eml'
     return "/unknown"
 
 
