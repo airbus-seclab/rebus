@@ -3,12 +3,15 @@ import hashlib
 import logging
 import os
 import uuid as m_uuid
+import string
 
 log = logging.getLogger("rebus.descriptor")
 
 
 class Descriptor(object):
 
+    allowed_selector_chars = string.letters + string.digits + '~%/_-'
+    allowed_domain_chars = string.letters + string.digits + '-'
     NAMESPACE_REBUS = m_uuid.uuid5(m_uuid.NAMESPACE_DNS, "rebus.airbus.com")
 
     def __init__(self, label, selector, value=None, domain="default",
@@ -39,9 +42,12 @@ class Descriptor(object):
                 v = value
             self.hash = hashlib.sha256(v).hexdigest()
             selector = os.path.join(selector, "%" + self.hash)
+        self.selector = ''.join([c for c in selector if c in
+                                 Descriptor.allowed_selector_chars])
         self.selector = selector
         self.value = value
-        self.domain = domain
+        self.domain = ''.join([c for c in domain if c in
+                               Descriptor.allowed_domain_chars])
         self.version = version
         #: if -1, will be set by agent when push() is called
         self.processing_time = processing_time
