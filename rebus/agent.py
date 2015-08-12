@@ -36,11 +36,14 @@ class Agent(object):
     def register(f):
         return AgentRegistry.register_ref(f, key="_name_")
 
-    # Use this decorator on an agent class to authorize concurrent runs if possible
     @staticmethod
     def parallelize(max_thread=0):
+        """
+        Use this decorator on an agent class to authorize concurrent runs if
+        possible
+        """
         def deco(agt):
-            agt._parallelize_ = {"max_thread":max_thread}
+            agt._parallelize_ = {"max_thread": max_thread}
             return agt
         return deco
 
@@ -74,7 +77,7 @@ class Agent(object):
 
     def push(self, descriptor):
         if descriptor.processing_time == -1:
-            descriptor.processing_time = time.time() - self.processing_start_time
+            descriptor.processing_time = time.time()-self.processing_start_time
         result = self.bus.push(self.id, descriptor)
         self.log.debug("pushed {0}, already present: {1}".format(descriptor,
                                                                  not result))
@@ -100,9 +103,10 @@ class Agent(object):
 
     def slots_are_processable(self, slots):
         """
-        Test if a set of slots is ready to be processed. By default, this methods checks
-        that the slot set is complete, but an agent can overload it to have incomplete 
-        sets to processed anyway, for instance if one slot is not mandatory.
+        Test if a set of slots is ready to be processed. By default, this
+        methods checks that the slot set is complete, but an agent can overload
+        it to have incomplete sets to processed anyway, for instance if one
+        slot is not mandatory.
         """
         return len(slots) == len(self._process_slots_)
 
@@ -117,25 +121,25 @@ class Agent(object):
         if self.config['operationmode'] != 'idle':
             return False
 
-        self.log.info("START on_idle bulk processing %d descriptors", 
-                                                    len(self.for_idle))
+        self.log.info("START on_idle bulk processing %d descriptors",
+                      len(self.for_idle))
         self.processing_start_time = time.time()
         for params in self.for_idle:
             self.call_process(*params)
         self.for_idle = []
         self.log.info("END  on_idle bulk processing  |%f|",
-                                    time.time()-self.processing_start_time)
+                      time.time()-self.processing_start_time)
 
         return True
 
-    def on_new_descriptor(self, sender_id, desc_domain, uuid, selector, 
+    def on_new_descriptor(self, sender_id, desc_domain, uuid, selector,
                           request_id=0):
         """
         request_id is 0 for automatic processing.
         A unique id should be used for each interactive (user-requested)
         processing.
         """
-        self.log.debug("Received from %s descriptor [%s:%s] for UUID %s", 
+        self.log.debug("Received from %s descriptor [%s:%s] for UUID %s",
                        sender_id, desc_domain, selector, uuid)
         if self.domain != DEFAULT_DOMAIN and desc_domain != self.domain:
             # this agent only processes descriptors whose domain is self.domain
@@ -151,7 +155,7 @@ class Agent(object):
             assert fres in self._process_slots_
             slots = self.process_slots[uuid]
             slots[fres] = selector
-            self.log.info("Filling slot %s for %s. Filling level %i/%i." % 
+            self.log.info("Filling slot %s for %s. Filling level %i/%i." %
                           (fres, uuid, len(slots), len(self._process_slots_)))
             if not self.slots_are_processable(slots):
                 self.bus.mark_processable(self.id, desc_domain, selector)
@@ -165,22 +169,23 @@ class Agent(object):
             self.for_idle.append((sender_id, desc_domain, selector, slots))
             return
 
+        self.bus.agent_process(sender_id, desc_domain, selector, slots,
+                               request_id)
 
-        self.bus.agent_process(sender_id, desc_domain, selector, slots, request_id)
-
-    def call_process(self, sender_id, desc_domain, selector, slots, request_id=0):
+    def call_process(self, sender_id, desc_domain, selector, slots,
+                     request_id=0):
 
         lockid = self.name + get_output_altering_options(self.config_txt) + \
             str(request_id)
-        # In case of slots, lock on all the selectors at once, so that if one 
+        # In case of slots, lock on all the selectors at once, so that if one
         # optional selector is missing at the time of the lock, another lock
-        # will be taken when this selector is received and processing the complete 
-        # set of slots will not be blocked.
+        # will be taken when this selector is received and processing the
+        # complete set of slots will not be blocked.
         if self._process_slots_:
-            locksel = "!".join(slots.get(s,"?") for s in self._process_slots_)
+            locksel = "!".join(slots.get(s, "?") for s in self._process_slots_)
         else:
             locksel = selector
-        
+
         if not self.lock(lockid, desc_domain, locksel):
             # processing has already been started by another instance of
             # the same agent having the same configuration
@@ -192,8 +197,9 @@ class Agent(object):
                         request_id)
             return
 
-        additional_desc = { k: self.get(desc_domain,s) if s != selector else desc
-                            for k,s in slots.iteritems() }
+        additional_desc = {k: self.get(desc_domain, s)
+                           if s != selector else
+                           desc for k, s in slots.iteritems()}
         # TODO detect infinite loops ?
         # if self.name in desc.agents:
         #     return  # already processed
@@ -251,9 +257,10 @@ class Agent(object):
         """
         state = self.get_internal_state()
         if state or self._process_slots_:
-            complete_state = (state,self.process_slots)
+            complete_state = (state, self.process_slots)
             self.log.info("Save internal state %r" % (complete_state,))
-            self.bus.store_internal_state(self.id, cPickle.dumps(complete_state))
+            self.bus.store_internal_state(self.id,
+                                          cPickle.dumps(complete_state))
 
     def restore_internal_state(self):
         """
@@ -262,7 +269,7 @@ class Agent(object):
         state_ps = self.bus.load_internal_state(self.id)
         self.log.info("Restore state: %r" % state_ps)
         if state_ps:
-            state,ps = cPickle.loads(state_ps)
+            state, ps = cPickle.loads(state_ps)
             if self._process_slots_:
                 self.log.info("Restore process slot state: %r" % ps)
                 self.process_slots = ps
@@ -339,6 +346,3 @@ class Agent(object):
         Overridden by agents that have configuration parameters
         """
         pass
-
-
-

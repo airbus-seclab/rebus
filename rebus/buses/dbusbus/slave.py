@@ -192,10 +192,10 @@ class DBus(Bus):
         log.info("Caught Sigterm, unregistering and exiting.")
         sys.exit(0)
 
-
     def agent_process(self, *args, **kargs):
         if hasattr(self.agent, "_parallelize_"):
-            log.debug("======> run in thread!!! params=%r" % self.agent._parallelize_)
+            log.debug("======> run in thread!!! params=%r",
+                      self.agent._parallelize_)
             thread.start_new_thread(self.agent.call_process, args, kargs)
         else:
             self.agent.call_process(*args, **kargs)

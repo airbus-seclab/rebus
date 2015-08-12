@@ -90,7 +90,8 @@ class Inject(Agent):
                                "raw value may be displayed to an analyst.")
 
     def run(self):
-        dparam = {} if not self.config["uuid"] else {"uuid": self.config["uuid"]}
+        dparam = ({} if not self.config["uuid"]
+                  else {"uuid": self.config["uuid"]})
         for f in self.config['files']:
             start = time.time()
             label = self.config['label'] if self.config['label'] else \
@@ -109,5 +110,6 @@ class Inject(Agent):
                 else guess_selector(buf=data, label=label)
             done = time.time()
             desc = Descriptor(label, selector, data, self.domain,
-                              agent=self._name_, processing_time=(done-start), **dparam)
+                              agent=self._name_, processing_time=(done-start),
+                              **dparam)
             self.push(desc)

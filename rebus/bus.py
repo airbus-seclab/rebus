@@ -129,7 +129,6 @@ class Bus(object):
         """
         raise NotImplementedError
 
-
     def agent_process(self, *args, **kargs):
         """
         Call agent's call_process method
