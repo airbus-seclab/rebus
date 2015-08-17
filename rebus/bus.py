@@ -129,8 +129,9 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def agent_process(self, *args, **kargs):
+    def agent_process(self, agent, *args, **kargs):
         """
-        Call agent's call_process method
+        Call agent's call_process method.
+        Used to implement the "parallelize" feature in some buses.
         """
-        self.agent.call_process(*args, **kargs)
+        agent.call_process(*args, **kargs)

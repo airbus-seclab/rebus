@@ -20,7 +20,10 @@ rebus.buses.import_all()
 
 # This file implements integration testing - injects a file to the bus, checks
 # that it has properly been received by agents & storage, that no agent has
-# crashed...
+# crashed.
+
+# Warning: py.test hides exceptions that happen during the test; run REbus
+# without py.test when tests misbehave
 
 # TODO tests (cf bta/test/test_miners): all agents are registered / instantiate
 # without crashing

@@ -169,7 +169,7 @@ class Agent(object):
             self.for_idle.append((sender_id, desc_domain, selector, slots))
             return
 
-        self.bus.agent_process(sender_id, desc_domain, selector, slots,
+        self.bus.agent_process(self, sender_id, desc_domain, selector, slots,
                                request_id)
 
     def call_process(self, sender_id, desc_domain, selector, slots,
