@@ -203,7 +203,7 @@ and its agents based on a configuration file.
 
 .. sourcecode:: bash
 
-   $ rebus_infra -f configuration_file.yaml
+   $ rebus_infra configuration_file.yaml
 
 This file must contain at least a 'master' and an 'agents' section at the
 root of the document.
@@ -211,17 +211,25 @@ root of the document.
 Those two sections contain the following attributes:
 
 * **Master Section**
+
   - **bus** : 'localbus' or 'dbus'
   - **logfile** : The logfile's path
-  - **verbose_level : Between 0 and 50. 0 the is the most verbose, 50 the least
+  - **verbose_level** : Verbosity level for this agent, between 0 and 3
   - **storage** : 'ramstorage' or 'diskstorage'
 * **Agents Section**
+
   - **busaddr** : Address of the dbus bus
   - **modules** : All the (Python) modules to load
   - **stages** : Describes all the stages in the execution order
-    * **id** : Identifier of the stage
-    * **agents** : list of agents to execute in the stage in the execution order
-      - 'agent_name' : 'arguments'
+
+    - **agents** : list of agents to execute in the stage in the execution order
+    -  # == *alternative 1* ==
+    - **agent_name** : 'parameters'
+    -  # == *alternative 2* ==
+    - **agent_name** :
+
+      - **params**: parameters
+      - **verbose_level**: Verbosity level for this agent, between 0 and 3
 
 Here is an example of a configuration file for 'rebus_infra'
 
@@ -230,33 +238,44 @@ Here is an example of a configuration file for 'rebus_infra'
    # =================== Bus Master =============================
 
    master:
-     bus: localbus
+     bus: dbus
      logfile: /tmp/rebus_master.log
      verbose_level: 0
-     storage: ramstorage
-    
+
    # ===================  Agents ===============================
-    
+
    agents:
      #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
      modules:
-       #rebus_demo.agents
+     #rebus_demo.agents
      stages:
-       - id: 1
-         agents:
-           - inject: /bin/bash /bin/ls
+       - agents:
+           - inject:
+               params: /bin/bash /bin/ls
+               verbose_level: 3
            - inject: /bin/cp
-       - id: 2
-         agents:
-           - ls: "/binary/elf"
-
+       - agents:
+           - ls:
+               params: "/binary/elf"
+               verbose_level: 3
+           - inject: /bin/bash
 
 .. sourcecode:: bash
 
    $ rebus_infra -f /etc/rebus/rebus-infra-config-example.yaml
-   /binary/elf/%5360589177f5bf3e48bfbe587a916090b6122ad1cde74f28ec269ecdffab03e1
-   /binary/elf/%5f39f1d8c9b2300dd28353dbf01836f4b9a467756d55938e0e7fbf6192dfd595
-   /binary/elf/%ac77566d8f621c4132fc53f136e65fada7a45c180c6465ab37f1509ba9f93fc5
+  INFO:rebus:Starting stage 0
+  INFO:rebus.bus.dbus:Agent inject registered with id inject-:1.165 on domain default
+  INFO:rebus.agent:[inject-:1.165] Agent inject registered on bus dbus with id inject-:1.165
+  INFO:rebus.agent:[inject-:1.165] Restore state: ''
+  DEBUG:rebus.agent:[inject-:1.165] pushed default:/binary/elf/%6e152ac57f5d5cf5d52411d8f558658482e025b18eff10db813071855e038ae1(bash)=[2306587]['\x7fELF\x02\x01\x01\x...], already present: True
+  DEBUG:rebus.agent:[inject-:1.165] pushed default:/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c(ls)=[358061]['\x7fELF\x02\x01\x01\x...], already present: True
+  INFO:rebus:Starting stage 0
+  INFO:rebus.bus.dbus:Agent ls registered with id ls-:1.166 on domain default
+  INFO:rebus.agent:[ls-:1.166] Agent ls registered on bus dbus with id ls-:1.166
+  INFO:rebus.agent:[ls-:1.166] Restore state: ''
+  /binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c
+  /binary/elf/%6e152ac57f5d5cf5d52411d8f558658482e025b18eff10db813071855e038ae1
+  /binary/elf/%258f4cde050970ecbc039c0f250ac30d97d8b966dab029bfd135090b0101ac16
 
 
 Building the documentation
