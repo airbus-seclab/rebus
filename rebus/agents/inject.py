@@ -56,10 +56,10 @@ def guess_selector(fname=None, buf=None, label=None):
 
     # E-mails
     if 'Composite Document File V2 Document' in guess:
-        if label.endswith('.msg'):
+        if label and label.endswith('.msg'):
             return "/email/msg"
     if 'ASCII text' in guess:
-        if label.endswith('.eml'):
+        if label and label.endswith('.eml'):
             return '/email/eml'
         # TODO peek at contents & grep headers to identify e-mail?
     if 'RFC 822 mail, ASCII text' in guess:

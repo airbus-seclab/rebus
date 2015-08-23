@@ -302,6 +302,10 @@ This will overwrite .rst files in source/.
 
   $ make singlehtml
 
+REbus resources
+===============
+REbus has been presented at SSTIC 2015. Slides and video (in french) can be
+found at https://www.sstic.org/2015/presentation/rebus/
 
 Licence
 =======

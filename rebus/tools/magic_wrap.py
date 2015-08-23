@@ -14,15 +14,17 @@ else:
     native = False
 
 
-def from_file(fname):
+def from_file(fname, uncompress=False):
     if native:
         return ms.file(fname)
     else:
-        return magic.from_file(fname)
+        m = magic.Magic(uncompress)
+        return m.from_file(fname)
 
 
-def from_buffer(data):
+def from_buffer(data, uncompress=False):
     if native:
         return ms.buffer(data)
     else:
-        return magic.from_buffer(data)
+        m = magic.Magic(uncompress)
+        return m.from_buffer(data)
