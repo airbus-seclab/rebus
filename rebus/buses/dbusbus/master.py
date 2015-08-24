@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import os
+import sys
 import signal
 from collections import Counter, defaultdict
 import dbus.service
@@ -248,7 +248,7 @@ class DBusMaster(dbus.service.Object):
         agent_name = self.agentnames[str(agent_id)]
         log.debug("STORE_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
-            self.store.store_state(agent_name, str(state))
+            self.store.store_agent_state(agent_name, str(state))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='s', out_signature='s')
@@ -256,7 +256,7 @@ class DBusMaster(dbus.service.Object):
         agent_name = self.agentnames[str(agent_id)]
         log.debug("LOAD_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
-            return self.store.load_state(agent_name)
+            return self.store.load_agent_state(agent_name)
         return ""
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -344,15 +344,16 @@ class DBusMaster(dbus.service.Object):
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
                 svc.bus_exit(store.STORES_INTSTATE)
+                store.store_state()
                 try:
                     svc.mainloop.run()
                 except (KeyboardInterrupt, SystemExit):
                     if len(svc.clients) > 0:
                         log.info("Not all agents have stopped, exiting")
         log.info("Stopping storage...")
-        store.exit()
+        store.store_state()
 
     @staticmethod
     def sigterm_handler(sig, frame):
-        log.info("Caught Sigterm, exiting.")
-        os._exit(1)
+        # Try to exit cleanly the first time; if that does not work, exit.
+        sys.exit(0)

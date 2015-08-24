@@ -137,13 +137,13 @@ class LocalBus(Bus):
         log.debug("STORE_INTSTATE: %s", agent_id)
         if self.store.STORES_INTSTATE:
             agent_name = self.agents[agent_id].name
-            self.store.store_state(agent_name, str(state))
+            self.store.store_agent_state(agent_name, str(state))
 
     def load_internal_state(self, agent_id):
         log.debug("LOAD_INTSTATE: %s", agent_id)
         if self.store.STORES_INTSTATE:
             agent_name = self.agents[agent_id].name
-            return self.store.load_state(agent_name)
+            return self.store.load_agent_state(agent_name)
         return ""
 
     def request_processing(self, agent_id, desc_domain, selector,

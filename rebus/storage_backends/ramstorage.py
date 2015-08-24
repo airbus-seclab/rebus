@@ -43,6 +43,7 @@ class RAMStorage(Storage):
         #: are able to process this descriptor.
         self.processable = defaultdict(lambda: defaultdict(set))
 
+        #: internal state of agents
         self.internal_state = {}
 
     def find(self, domain, selector_regex, limit):
@@ -200,8 +201,8 @@ class RAMStorage(Storage):
                         for sel in unprocessed_sels])
         return res
 
-    def store_state(self, agent_id, state):
+    def store_agent_state(self, agent_id, state):
         self.internal_state[agent_id] = state
 
-    def load_state(self, agent_id):
+    def load_agent_state(self, agent_id):
         return self.internal_state.get(agent_id, "")

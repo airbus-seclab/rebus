@@ -362,13 +362,13 @@ class DiskStorage(Storage):
             result.update([name for name, _ in agentlist])
         return result.items(), len(processed)
 
-    def store_state(self, agent_id, state):
+    def store_agent_state(self, agent_id, state):
         fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
                              '.intstate')
         with open(fname, 'wb') as fp:
             fp.write(state)
 
-    def load_state(self, agent_id):
+    def load_agent_state(self, agent_id):
         fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
                              '.intstate')
         if not os.path.isfile(fname):
@@ -376,7 +376,7 @@ class DiskStorage(Storage):
         with open(fname, 'rb') as fp:
             return fp.read()
 
-    def exit(self):
+    def store_state(self):
         with open(self.basepath + '/_processed.cfg', 'wb') as fp:
             cPickle.dump(self.processed, fp)
 

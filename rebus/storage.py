@@ -172,7 +172,7 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def store_state(self, agent_name, state):
+    def store_agent_state(self, agent_name, state):
         """
         Store serialized agent state.
 
@@ -181,7 +181,7 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def load_state(self, agent_name):
+    def load_agent_state(self, agent_name):
         """
         Return serialized agent state.
 
@@ -190,10 +190,9 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def exit(self):
+    def store_state(self):
         """
-        Called when the process is going to exit. Used to persistently store
-        storage internal state.
+        May be used to store storage state.
         """
         pass
 
