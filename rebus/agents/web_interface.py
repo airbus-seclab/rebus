@@ -2,6 +2,9 @@ import os
 import os.path
 from rebus.agent import Agent
 import threading
+import datetime
+import time
+import tornado.autoreload
 import tornado.ioloop
 import tornado.web
 import tornado.template
@@ -11,41 +14,79 @@ import re
 import json
 
 
+class AsyncProxy(object):
+    def __init__(self, agent):
+        self._agent = agent
+
+    def __getattr__(self, attr):
+        if not attr.startswith('async_'):
+            raise AttributeError
+        method_name = attr[6:]
+
+        if hasattr(self, method_name + '_buscallback'):
+            method = None
+            bus_callback = getattr(self, method_name + '_buscallback')
+        else:
+            method = getattr(self._agent.bus, method_name)
+
+            def bus_callback(method, callback, *args):
+                results = method(self._agent, *args)
+                self._agent.ioloop.add_callback(callback, results)
+                # dbus-specific - indicates this method should only be called
+                # once
+                return False
+
+        def _async(callback, *args):
+            self._agent.bus.busthread_call(bus_callback, method, callback,
+                                           *args)
+        return _async
+
+    def getwithvalue_buscallback(self, method, callback, *args):
+        desc = self._agent.bus.get(self._agent, *args)
+        # force value retrieval
+        value = desc.value
+        self._agent.ioloop.add_callback(callback, desc)
+        return False
+
+    def find_by_uuid_withvalue_buscallback(self, method, callback, *args):
+        descs = self._agent.bus.find_by_uuid(self._agent, *args)
+        # force value retrieval
+        for desc in descs:
+            value = desc.value
+        self._agent.ioloop.add_callback(callback, descs)
+        return False
+
+
 @Agent.register
 class WebInterface(Agent):
     _name_ = "web_interface"
     _desc_ = "Display all descriptors exchanged on the bus in a web interface"
 
+    @classmethod
+    def add_arguments(cls, subparser):
+        subparser.add_argument(
+            '--autoreload', action='store_true',
+            help='Auto reload static files - use for development')
+
     def init_agent(self):
-        self.dstore = DescriptorStore(self)
-        self.gui = Application(self.dstore)
-        self.gui.listen(8080)
+        # Build list of async methods, to be used from the tornado thread
+        self.async_proxy = AsyncProxy(self)
+
+        self.dstore = DescriptorStore(self, self.async_proxy)
         self.ioloop = tornado.ioloop.IOLoop.instance()
+        self.gui = Application(self.dstore, self.async_proxy, self.ioloop,
+                               autoreload=self.config['autoreload'])
+        self.gui.listen(8080)
         t = threading.Thread(target=self.ioloop.start)
         t.daemon = True
         t.start()
 
     def process(self, descriptor, sender_id):
         # tornado version must be >= 3.0
+        # force value retrieval
+        value = descriptor.value
         self.ioloop.add_callback(self.dstore.new_descriptor, descriptor,
                                  sender_id)
-
-    def get_descriptor(self, domain, selector):
-        desc = self.bus.get(self, domain, selector)
-        return desc
-
-    def inject(self, filename, buf):
-        label = filename
-        selector = rebus.agents.inject.guess_selector(buf=buf, label=label)
-        value = buf
-        domain = "default"  # TODO allow user to specify domain
-        desc = Descriptor(label, selector, value, domain,
-                          agent=self._name_ + '_inject')
-        if not self.push(desc):
-            for desc in self.bus.find_by_uuid(self, domain, desc.uuid):
-                self.ioloop.add_callback(self.dstore.new_descriptor, desc,
-                                         "storage-0")
-        return desc.uuid
 
 
 class CustomTemplate(tornado.template.Template):
@@ -199,12 +240,12 @@ class TemplateLoader(tornado.template.Loader):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, dstore):
+    def __init__(self, dstore, async, ioloop, autoreload):
         handlers = [
             (r"/", tornado.web.RedirectHandler, {'url': '/monitor'}),
             (r"/monitor", MonitorHandler),
             (r"/inject", InjectHandler),
-            (r"/uuid/(.*)", UUIDHandler),
+            (r"/uuid/(.*)", AnalysisListHandler),
             (r"/analysis(|/.*)", AnalysisHandler),
             (r"/selectors", SelectorsHandler),
             (r"/poll_descriptors", DescriptorUpdatesHandler),
@@ -217,16 +258,24 @@ class Application(tornado.web.Application):
             'static_path': os.path.join(os.path.dirname(__file__), 'static'),
             'template_loader': TemplateLoader()
         }
+        if autoreload:
+            params['autoreload'] = True
+            for path in ('templates', 'static'):
+                for d, _, files in os.walk(os.path.dirname(__file__), path):
+                    for f in files:
+                        tornado.autoreload.watch(os.path.join(d, f))
+
         self.dstore = dstore
-        self.agent = self.dstore.agent
+        self.async = async
+        self.ioloop = ioloop
         tornado.web.Application.__init__(self, handlers, **params)
 
 
 class DescriptorStore(object):
-    def __init__(self, agent):
-        self.agent = agent
+    def __init__(self, agent, async):
 
-        #: self.waiters is a set of (domain, uuid, callback, page) for new
+        self.async = async
+        #: self.waiters is a set of (domain, uuid, callback) for new
         #: descriptors on specified uuid and domain
         #: "domain" and "uuid" may be empty for callback to be called on any
         #: value
@@ -240,10 +289,6 @@ class DescriptorStore(object):
         #:   between two (long) pollings
         self.cache = []
         self.cache_size = 200
-
-        #: Used to protect access to self.cache from both threads (bus and
-        #: tornado)
-        self.rlock = threading.RLock()
 
     def wait_for_descriptors(self, callback, domain, uuid, page, cursor):
         """
@@ -271,38 +316,42 @@ class DescriptorStore(object):
             # Search whole bus
             # Domain or uuid must be defined
             # Wait if none have been found
-            descs = []
             if domain and uuid:
-                descs = self.agent.bus.find_by_uuid(self.agent, domain, uuid)
-            matching_infos = self.info_from_desc(descs)
+                self.async.async_find_by_uuid_withvalue(callback, domain, uuid)
+                return
 
         else:
             # Return cached descriptors that are newer than cursor (all cached
             # if cursor is not in cache anymore).
             # Also works for cursor == 'cached'
-            with self.rlock:
-                new_count = 0
-                for desc in reversed(self.cache):
-                    if desc['hash'] == cursor:
-                        break
-                    new_count += 1
-                if new_count > 0:
-                    # New descriptors are available. Send them if they match.
-                    for desc in self.cache[-new_count:]:
-                        if domain == desc['domain'] or not domain:
-                            if uuid == desc['uuid'] or not uuid:
-                                matching_infos.append(desc)
-                    if matching_infos:
-                        callback(matching_infos, page)
-                        return
+            new_count = 0
+            for desc in reversed(self.cache):
+                if desc.hash == cursor:
+                    break
+                new_count += 1
+            if new_count > 0:
+                # New descriptors are available. Send them if they match.
+                for desc in self.cache[-new_count:]:
+                    if domain == desc.domain or not domain:
+                        if uuid == desc.uuid or not uuid:
+                            matching_infos.append(desc)
+                if matching_infos:
+                    callback(matching_infos)
+                    return
 
         if matching_infos:
-            callback(matching_infos, page)
+            callback(matching_infos)
             return
         # No new matching descriptors have been found, start waiting
-        self.waiters.add((domain, uuid, callback, page))
+        self.add_to_waitlist(domain, uuid, callback)
 
-    def info_from_desc(self, descriptors):
+    def add_to_waitlist(self, domain, uuid, callback):
+        """
+        :param callback: method of a RequestHandler instance
+        """
+        self.waiters.add((domain, uuid, callback))
+
+    def info_from_descs(self, descriptors):
         """
         :param descriptors: list of descriptors
 
@@ -326,6 +375,7 @@ class DescriptorStore(object):
                 'label': desc.label,
                 'printablevalue': printablevalue,
                 'processing_time': format(desc.processing_time, '.3f'),
+                'precursors': desc.precursors,
                 'version': desc.version,
             }
             if desc.selector.startswith('/link/'):
@@ -335,9 +385,9 @@ class DescriptorStore(object):
         return descrinfos
 
     def cancel_wait(self, callback):
-        for (domain, uuid, cb, page) in set(self.waiters):
+        for (domain, uuid, cb) in set(self.waiters):
             if callback == cb:
-                self.waiters.remove((domain, uuid, cb, page))
+                self.waiters.remove((domain, uuid, cb))
 
     def new_descriptor(self, descriptor, sender_id):
         """
@@ -348,16 +398,14 @@ class DescriptorStore(object):
         Called whenever a new descriptor is available (received from bus, or
         injected by web_interface)
         """
-        descrinfo = self.info_from_desc([descriptor])[0]
-        for (domain, uuid, callback, page) in list(self.waiters):
+        for (domain, uuid, callback) in list(self.waiters):
             if domain == descriptor.domain or not domain:
                 if uuid == descriptor.uuid or not uuid:
-                    callback([descrinfo], page)
-                    self.waiters.remove((domain, uuid, callback, page))
-        with self.rlock:
-            self.cache.append(descrinfo)
-            if len(self.cache) > self.cache_size:
-                self.cache = self.cache[-self.cache_size:]
+                    callback([descriptor])
+                    self.waiters.remove((domain, uuid, callback))
+        self.cache.append(descriptor)
+        if len(self.cache) > self.cache_size:
+            self.cache = self.cache[-self.cache_size:]
 
 
 class AnalysisHandler(tornado.web.RequestHandler):
@@ -375,17 +423,29 @@ class AnalysisHandler(tornado.web.RequestHandler):
         self.render('analysis.html', uuid=uuid)
 
 
-class UUIDHandler(tornado.web.RequestHandler):
+class AnalysisListHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
     def get(self, domain):
-        uuid_label = self.application.agent.list_uuids(domain)
-        self.render('uuid.html', domain=domain,
+        if domain == '':
+            domain = 'default'
+        self.domain = domain
+        self.application.async.async_list_uuids(self.send_results_cb, domain)
+
+    def send_results_cb(self, uuid_label):
+        if self.request.connection.stream.closed():
+            return
+        self.render('uuid.html', domain=self.domain,
                     selectors=sorted(uuid_label.items(), key=lambda x: x[1]))
 
 
 class SelectorsHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
     def get(self):
-        sels = self.application.agent.find(
-            self.get_argument('domain', 'default'), '/.*', limit=100)
+        self.application.async.async_find(
+            self.get_selectors_cb,
+            self.get_argument('domain', 'default'), '/.*', 100)
+
+    def get_selectors_cb(self, sels):
         self.render('selectors.html', selectors=sorted(sels))
 
 
@@ -400,39 +460,41 @@ class DescriptorUpdatesHandler(tornado.web.RequestHandler):
     """
     @tornado.web.asynchronous
     def post(self):
-        cursor = self.get_argument('cursor')
-        page = self.get_argument('page')
-        domain = self.get_argument('domain')
-        uuid = self.get_argument('uuid')
+        self.cursor = self.get_argument('cursor')
+        self.page = self.get_argument('page')
+        self.domain = self.get_argument('domain')
+        self.uuid = self.get_argument('uuid')
         self.application.dstore.wait_for_descriptors(self.on_new_descriptors,
-                                                     domain, uuid, page,
-                                                     cursor)
+                                                     self.domain, self.uuid,
+                                                     self.page, self.cursor)
 
-    def on_new_descriptors(self, descrinfos, page):
+    def on_new_descriptors(self, descs):
         if self.request.connection.stream.closed():
             return
 
+        if not descs:
+            self.application.dstore.add_to_waitlist(self.domain, self.uuid,
+                                                    self.on_new_descriptors)
+            return
+        descrinfos = self.application.dstore.info_from_descs(descs)
+
         #: Contains only data from descrinfos needed to render page
         infos = []
-        with self.application.dstore.rlock:
-            for d in descrinfos:
-                info = {}
-                infos.append(info)
-                for k in ('hash', 'selector', 'fullselector', 'printablevalue',
-                          'agent', 'domain', 'label', 'linksrchash',
-                          'version'):
-                    if k in d:
-                        info[k] = d[k]
-                if page == 'monitor':
-                    for k in ('processing_time',):
-                        info[k] = d[k]
-                if page in ('monitor', 'analysis'):
-                    d['html_' + page] = \
-                        self.render_string('descriptor%s_%s' % (d['selector'],
-                                                                page),
-                                           descriptor=d)
+        for d in descrinfos:
+            info = {}
+            infos.append(info)
+            for k in ('hash', 'selector', 'fullselector', 'printablevalue',
+                      'agent', 'domain', 'label', 'linksrchash',
+                      'version', 'processing_time'):
+                if k in d:
+                    info[k] = d[k]
+            if self.page in ('monitor', 'analysis'):
+                d['html_' + self.page] = \
+                    self.render_string('descriptor%s_%s' % (d['selector'],
+                                                            self.page),
+                                       descriptor=d)
 
-                    info['html'] = d['html_' + page]
+                info['html'] = d['html_' + self.page]
         self.finish(dict(descrinfos=infos))
 
     def on_connection_close(self):
@@ -447,21 +509,31 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
     The forward slash after "/get" is part of the selector
     The selector hash (ex. %1234...) may be replaced with a version (ex. ~-1)
     """
+    @tornado.web.asynchronous
     def get(self, selector='', *args, **kwargs):
-        download = (self.get_argument('download', '0') == '1')
         domain = self.get_argument('domain', 'default')
-        desc = self.application.agent.get_descriptor(domain, selector)
+        self.application.async.async_getwithvalue(self.process_get_results,
+                                                  domain, selector)
+
+    def process_get_results(self, desc):
+        download = (self.get_argument('download', '0') == '1')
         if desc is None:
             self.send_error(status_code=404)
             return
-
+        value = desc.value
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(desc.label))
-            self.finish(desc.value)
+            self.finish(value)
 
         else:
-            self.render('descriptor%s_view' % desc.selector, descriptor=desc)
+            if type(value) is list:
+                self.finish(json.dumps(dict(list=value)))
+            elif type(value) is dict:
+                self.finish(json.dumps(value))
+            else:
+                self.render('descriptor%s_view' % desc.selector,
+                            descriptor=desc)
 
 
 class InjectHandler(tornado.web.RequestHandler):
@@ -469,20 +541,49 @@ class InjectHandler(tornado.web.RequestHandler):
     Injects a file to the bus.
     """
     def post(self, *args, **kwargs):
-        f = self.request.files['file'][0]
-        uuid = self.application.agent.inject(f['filename'], f['body'])
-        self.finish(dict(uuid=uuid))
+        t1 = time.time()
+        self.f = self.request.files['file'][0]
+        self.filename = self.f['filename']
+        value = self.f['body']
+        agentname = 'web_interface_inject'
+        selector = rebus.agents.inject.guess_selector(buf=value,
+                                                      label=self.filename)
+        domain = "default"  # TODO allow user to specify domain
+        processing_time = time.time() - t1
+        filedesc = Descriptor(self.filename, selector, value, domain,
+                              agent=agentname, processing_time=processing_time)
+        self.uuid = filedesc.uuid
+        self.desc = filedesc
+        self.application.async.async_push(self.process_inject_results,
+                                          self.desc)
+        submission_data = {'filename': self.filename,
+                           'date': datetime.datetime.now().isoformat()}
+        submdesc = filedesc.spawn_descriptor('/submission/',
+                                             submission_data,
+                                             agentname)
+        self.desc = submdesc
+        self.application.async.async_push(self.process_inject_results,
+                                          submdesc)
+        self.finish(dict(uuid=self.uuid, filename=self.filename))
+
+    def process_inject_results(self, result):
+        self.application.ioloop.add_callback(
+            self.application.dstore.new_descriptor,
+            self.desc, "storage-0")
 
 
 class ProcessingListHandler(tornado.web.RequestHandler):
     """
     Lists (agents, config) that could process this descriptor
     """
+    @tornado.web.asynchronous
     def post(self, *args, **kwargs):
         domain = self.get_argument('domain')
         selector = self.get_argument('selector')
-        agents = self.application.agent.get_processable(str(domain),
-                                                        str(selector))
+        self.application.async.async_get_processable(
+            self.processing_list_cb, str(domain), str(selector))
+
+    def processing_list_cb(self, agents):
         agents = [(name, ', '.join(
             ["%s=%s" % (k, v) for (k, v) in json.loads(config_txt).items()]
                 )) for (name, config_txt) in agents]
@@ -500,9 +601,11 @@ class ProcessingRequestsHandler(tornado.web.RequestHandler):
             self.send_error(400)
         if not all([isinstance(i, unicode) for i in params['targets']]):
             self.send_error(400)
-        self.application.agent.request_processing(str(params['domain']),
-                                                  str(params['selector']),
-                                                  list(params['targets']))
+        self.application.async.async_request_processing(
+            lambda x: None,
+            str(params['domain']),
+            str(params['selector']),
+            list(params['targets']))
         self.finish()
 
 
@@ -513,13 +616,19 @@ class AgentsHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('agents.html')
 
+    @tornado.web.asynchronous
     def post(self, *args, **kwargs):
         # TODO fetch agents descriptions
         domain = self.get_argument('domain', 'default')
-        processed, total = self.application.agent.processed_stats(domain)
-        agent_count = {k: [k, v, 0] for k, v in
-                       self.application.agent.list_agents().items()}
-        for agent, nbprocessed in processed:
+        self.application.async.async_processed_stats(self.agents_cb1, domain)
+
+    def agents_cb1(self, params):
+        self.processed, self.total = params
+        self.application.async.async_list_agents(self.agents_cb2)
+
+    def agents_cb2(self, res):
+        agent_count = {k: [k, v, 0] for k, v in res.items()}
+        for agent, nbprocessed in self.processed:
             if agent in agent_count:
                 # agent is still registered
                 agent_count[agent][2] = nbprocessed
@@ -527,4 +636,4 @@ class AgentsHandler(tornado.web.RequestHandler):
         stats = list()
         for agent in sorted(agent_count):
             stats.append(agent_count[agent])
-        self.finish(dict(agents_stats=stats, total=total))
+        self.finish(dict(agents_stats=stats, total=self.total))

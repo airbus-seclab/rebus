@@ -115,8 +115,7 @@ class Agent(object):
         on_idle is called by the bus when all descriptors have been processed
         or marked as processable, allowing agents in the 'idle' operation mode
         to only start processing when all the other agents have finished.
-        it should return True if it processed descriptors,
-        False if not
+        it should return True if it processed descriptors, False if not.
         """
         if self.config['operationmode'] != 'idle':
             return False

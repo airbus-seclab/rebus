@@ -73,9 +73,9 @@ class DBus(Bus):
 
     def push(self, agent_id, descriptor):
         if thread.get_ident() == self.main_thread_id:
-            self._push(agent_id, descriptor)
+            self._push(str(agent_id), descriptor)
         else:
-            self.busthread_call(self._push, agent_id, descriptor)
+            self.busthread_call(self._push, str(agent_id), descriptor)
 
     def _push(self, agent_id, descriptor):
         return bool(self.iface.push(str(agent_id), descriptor.serialize()))
@@ -108,18 +108,19 @@ class DBus(Bus):
                                          selector_prefix, value_regex)]
 
     def mark_processed(self, agent_id, desc_domain, selector):
-        self.iface.mark_processed(agent_id, desc_domain, selector)
+        self.iface.mark_processed(str(agent_id), desc_domain, selector)
 
     def mark_processable(self, agent_id, desc_domain, selector):
-        self.iface.mark_processable(agent_id, desc_domain, selector)
+        self.iface.mark_processable(str(agent_id), desc_domain, selector)
 
     def get_processable(self, agent_id, desc_domain, selector):
         return [(str(agent_name), str(config_txt)) for (agent_name, config_txt)
-                in self.iface.get_processable(agent_id, desc_domain, selector)]
+                in self.iface.get_processable(str(agent_id), desc_domain,
+                                              selector)]
 
     def list_agents(self, agent_id):
         return {str(k): int(v) for k, v in
-                self.iface.list_agents(agent_id).items()}
+                self.iface.list_agents(str(agent_id)).items()}
 
     def processed_stats(self, agent_id, desc_domain):
         stats, total = self.iface.processed_stats(str(agent_id), desc_domain)
@@ -131,13 +132,14 @@ class DBus(Bus):
                                         recurse)]
 
     def store_internal_state(self, agent_id, state):
-        self.iface.store_internal_state(agent_id, state)
+        self.iface.store_internal_state(str(agent_id), state)
 
     def load_internal_state(self, agent_id):
-        return str(self.iface.load_internal_state(agent_id))
+        return str(self.iface.load_internal_state(str(agent_id)))
 
     def request_processing(self, agent_id, desc_domain, selector, targets):
-        self.iface.request_processing(agent_id, desc_domain, selector, targets)
+        self.iface.request_processing(str(agent_id), desc_domain, selector,
+                                      targets)
 
     def busthread_call(self, method, *args):
         gobject.idle_add(method, *args)
