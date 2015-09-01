@@ -154,6 +154,13 @@ This bus implementation runs Agents as several threads in a single process.
 The bus exits once every agent has finished carrying out its duties (ex.
 injecting files, processing descriptors).
 
+The run() method of every agent is run in a separate threads. For agents that
+do not override run(), the thread exits immediately. Processing is performed in
+threads that have defined this method, typically inject. As agents might not be
+thread-safe (ex. due to the use of non-thread-safe features of Python objects,
+non-thread-safe C bindings...), you might want to refrain from using several
+"inject" agents.
+
 DBusBus
 '''''''
 This bus implementation runs Agents as separate processes.
@@ -179,6 +186,53 @@ Two storage backends have currently been implemented:
 * RAMStorage: stored data is forgotten when the bus exits
 * Diskstorage: stores data as files. The bus may be stopped and resumed later
 
+Agents
+------
+Agents process Descriptors_, and usually act as an interface between the
+`Communication Bus`_ and external tools.
+
+Some agents are short-lived as they perfom only one task, then exit. The
+**inject** agent or **ls** agent are such examples. These agents override the
+**run()** method.
+
+Most agents process Descriptors_ they are interested in. These agents override
+the **process()** and/or **bulk_process()** methods.
+
+Operation Modes
+'''''''''''''''
+Agents that use Descriptors_ as input override the **process()** and/or
+**bulk_process()** methods. These methods are called by the `Communication
+Bus`_ according to the Operation Mode this agent is in.
+
+By default, agents support all operation modes. The list of supported operation
+modes as well as the default operation mode can be overridden by defining the
+_operationmodes_ attribute in an Agent.
+
+Automatic operation mode
+````````````````````````
+Agents that run in automatic mode process every descriptor they are interested
+in as soon as they are received, provided the agent is not busy processing
+another Descriptor at that time.
+
+Interactive operation mode
+``````````````````````````
+Agents that run in interactive mode indicate to the `Communication Bus`_ that
+they are able to process `Descriptors`_ they are interested in. The actual
+processing is performed whenever the `Communication Bus`_ requests it, usually
+when the user has requested it.
+
+Idle operation mode
+```````````````````
+Agents that run in idle operation mode indicate to the `Communication Bus`_
+that they are able to process `Descriptors`_ they are interested in. These
+descriptors get processed when the `Communication Bus`_ indicates that all
+`Descriptors`_ have been processed or marked processable; the bus is said to be
+"idle" at that time.
+
+To receive all such descriptors at once, agents may override the bulk_process
+method.
+
+
 Provided agents
 ---------------
 
@@ -186,7 +240,7 @@ A few agents are provided with REbus. Their purpose is to assist using the bus,
 not to perform any data analysis.
 
 * **inject** inject local files in the bus
-* **httplistener** inject Descriptors from HTTP POST requests
+* **httplistener** inject Descriptors_ from HTTP POST requests
 * **ls** list descriptors
 * **unarchive** recursively extract archives, inject contained files
 * **return** output descriptors to stdout if selector matches regexp
