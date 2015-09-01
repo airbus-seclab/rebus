@@ -98,8 +98,25 @@ class Agent(object):
     def processed_stats(self, desc_domain):
         return self.bus.processed_stats(self.id, desc_domain)
 
-    def lock(self, lockid, desc_domain, selector):
-        return self.bus.lock(self.id, lockid, desc_domain, selector)
+    def lock(self, desc_domain, selector, slots, request_id=0):
+        """
+        :param selectorstr: describes the selectors being processed
+        """
+        #: describes the agent & its configuration
+        agentstr = self.name + get_output_altering_options(self.config_txt)
+
+        # In case of slots, lock on all the selectors at once, so that if one
+        # optional selector is missing at the time of the lock, another lock
+        # will be taken when this selector is received and processing the
+        # complete set of slots will not be blocked.
+        if self._process_slots_:
+            #: describes selectors that are considered for this lock
+            selectorsstr = "!".join(slots.get(s, "?") for s in
+                                    self._process_slots_)
+        else:
+            selectorsstr = selector
+
+        return self.bus.lock(self.id, agentstr, desc_domain, selectorsstr)
 
     def slots_are_processable(self, slots):
         """
@@ -123,8 +140,7 @@ class Agent(object):
         self.log.info("START on_idle bulk processing %d descriptors",
                       len(self.for_idle))
         self.processing_start_time = time.time()
-        for params in self.for_idle:
-            self.call_process(*params)
+        self.call_bulk_process(self.for_idle)
         self.for_idle = []
         self.log.info("END  on_idle bulk processing  |%f|",
                       time.time()-self.processing_start_time)
@@ -171,49 +187,92 @@ class Agent(object):
         self.bus.agent_process(self, sender_id, desc_domain, selector, slots,
                                request_id)
 
-    def call_process(self, sender_id, desc_domain, selector, slots,
+    def _pre_process(self, sender_id, desc_domain, selector, slots,
                      request_id=0):
-
-        lockid = self.name + get_output_altering_options(self.config_txt) + \
-            str(request_id)
-        # In case of slots, lock on all the selectors at once, so that if one
-        # optional selector is missing at the time of the lock, another lock
-        # will be taken when this selector is received and processing the
-        # complete set of slots will not be blocked.
-        if self._process_slots_:
-            locksel = "!".join(slots.get(s, "?") for s in self._process_slots_)
-        else:
-            locksel = selector
-
-        if not self.lock(lockid, desc_domain, locksel):
+        """
+        To be run before processing a descriptor. Takes care of the following:
+        * acquire locks
+        * fetch descriptors
+        * call descriptor_filter
+        * returns False if processing should not be performed, a list of
+        arguments suitable for process() otherwise.
+        """
+        if not self.lock(desc_domain, selector, slots, request_id):
             # processing has already been started by another instance of
             # the same agent having the same configuration
-            return
+            return False
         desc = self.get(desc_domain, selector)
         if desc is None:
             log.warning("Descriptor %s:%s sent by %s does not exist "
                         "(user request: %s)", desc_domain, selector, sender_id,
                         request_id)
-            return
+            return False
 
-        additional_desc = {k: self.get(desc_domain, s)
-                           if s != selector else
-                           desc for k, s in slots.iteritems()}
+        additional_descs = {k: self.get(desc_domain, s)
+                            if s != selector else
+                            desc for k, s in slots.iteritems()}
+        if not self.descriptor_filter(desc, **additional_descs):
+            return False
         # TODO detect infinite loops ?
-        # if self.name in desc.agents:
-        #     return  # already processed
-        if self.descriptor_filter(desc, **additional_desc):
-            self.log.info("START Processing %r", desc)
-            self.processing_start_time = time.time()
-            self.process(desc, sender_id, **additional_desc)
-            done = time.time()
-            self.log.info("END   Processing |%f| %r",
-                          done-self.processing_start_time, desc)
-        if additional_desc:
-            for adesc in additional_desc.itervalues():
+        return (desc, sender_id, additional_descs)
+
+    def _post_process(self, desc_domain, selector, additional_descs):
+        """
+        Marks required selectors as processed.
+        """
+        if additional_descs:
+            for adesc in additional_descs.itervalues():
                 self.bus.mark_processed(self.id, desc_domain, adesc.selector)
         else:
             self.bus.mark_processed(self.id, desc_domain, selector)
+
+    def call_bulk_process(self, processlist):
+        """
+        :param paramlist: list of descriptors (+ associated slots) to be
+        processed)
+        """
+        # pre-process descriptors
+        descriptors = []
+        senders = []
+        additional_descs = []
+        for args in processlist:
+            res = self._pre_process(*args)
+            if res:
+                d, s, a = res
+                descriptors.append(d)
+                senders.append(s)
+                additional_descs.append(a)
+        # process
+        self.log.info("START Bulk processing %d descriptors", len(descriptors))
+        self.processing_start_time = time.time()
+        self.bulk_process(descriptors, senders, additional_descs)
+        done = time.time()
+        self.log.info("END   Bulk processing |%f|",
+                      done-self.processing_start_time)
+        # post-process - mark as processed
+        for idx, desc in enumerate(descriptors):
+            self._post_process(desc.domain, desc.selector,
+                               additional_descs[idx])
+
+    def call_process(self, sender_id, desc_domain, selector, slots,
+                     request_id=0):
+
+        # pre-process descriptors
+        res = self._pre_process(sender_id, desc_domain, selector, slots,
+                                request_id)
+        if res is False:
+            return
+
+        # process
+        desc, sender_id, additional_descs = res
+        self.log.info("START Processing %r", desc)
+        self.processing_start_time = time.time()
+        self.process(desc, sender_id, **additional_descs)
+        done = time.time()
+        self.log.info("END   Processing |%f| %r",
+                      done-self.processing_start_time, desc)
+        # post-process - mark as processed
+        self._post_process(desc_domain, selector, additional_descs)
 
     @property
     def config_txt(self):
@@ -292,7 +351,19 @@ class Agent(object):
     def descriptor_filter(self, descriptor, **kwargs):
         return True
 
-    def process(self, descriptor, sender_id, **kargs):
+    def bulk_process(self, descriptors, senders, *args):
+        """
+        Called in idle mode. Calls process() if not overridden.
+        :param descriptors: a list of descriptors
+        :param senders: a list of senders
+        :param args: a list of dictionaries, containing additional descriptors
+        if slots are in use
+        All 3 lists must have the same length.
+        """
+        for i in range(descriptors):
+            self.process(descriptors[i], senders[i], **args[i])
+
+    def process(self, descriptor, sender_id, **kwargs):
         pass
 
     def run_and_catch_exc(self):
