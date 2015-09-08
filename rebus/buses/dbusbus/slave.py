@@ -83,7 +83,7 @@ class DBus(Bus):
         # The true limit apply to the total size (message + header)
         #  -> I don't know the size of the message header
         if len(sd) > 134210000: 
-            log.warning("Descriptor too long for Dbus : " + len(sd) + " bytes")
+            log.warning("Descriptor too long for Dbus : " + str(len(sd)) + " bytes")
             return False
         return bool(self.iface.push(str(agent_id), sd))
 
