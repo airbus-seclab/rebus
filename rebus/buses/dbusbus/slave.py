@@ -78,7 +78,14 @@ class DBus(Bus):
             self.busthread_call(self._push, str(agent_id), descriptor)
 
     def _push(self, agent_id, descriptor):
-        return bool(self.iface.push(str(agent_id), descriptor.serialize()))
+        sd = descriptor.serialize()
+        # Arbitrary size based on the true limit of 134217728 bytes
+        # The true limit apply to the total size (message + header)
+        #  -> I don't know the size of the message header
+        if len(sd) > 134210000: 
+            log.warning("Descriptor too long for Dbus : " + len(sd) + " bytes")
+            return False
+        return bool(self.iface.push(str(agent_id), sd))
 
     def get(self, agent_id, desc_domain, selector):
         return Descriptor.unserialize(str(
