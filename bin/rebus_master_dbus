@@ -6,6 +6,7 @@ from rebus.storage import StorageRegistry
 
 from rebus.buses.dbusbus.master import DBusMaster
 
+log = logging.getLogger("rebus.master.main")
 
 def main():
     rebus.storage_backends.import_all()
@@ -39,8 +40,10 @@ def main():
     options.verbosity = max(1, 50+10*(options.quiet-options.verbose))
     logging.basicConfig(format="%(levelname)-5s: %(message)s",
                         level=options.verbosity, filename=options.logfile)
+    log.info("Start loading storage")
     storage_class = StorageRegistry.get(options.storage)
     storage = storage_class(**vars(options))
+    log.info("Storage loaded")
     DBusMaster.run(storage)
 
 if __name__ == "__main__":
