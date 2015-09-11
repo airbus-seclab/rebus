@@ -7,6 +7,7 @@ import dbus.service
 import logging
 import gobject
 import thread
+import time
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
@@ -59,8 +60,15 @@ class DBus(Bus):
                                      signal_name="on_idle")
 
         self.iface = dbus.Interface(self.rebus, "com.airbus.rebus.bus")
-        self.iface.register(self.agent_id, agent_domain, self.objpath,
-                            self.agent.config_txt)
+        registerSucceed = False
+        while not registerSucceed:
+            try:
+                self.iface.register(self.agent_id, agent_domain, self.objpath,
+                                    self.agent.config_txt)
+                registerSucceed = True
+            except dbus.exceptions.DBusException as e:
+                self.warning("Cannot register because of " + str(e) + " : wait 1s and retry")
+                time.sleep(1)
 
         log.info("Agent %s registered with id %s on domain %s",
                  self.agent.name, self.agent_id, agent_domain)
