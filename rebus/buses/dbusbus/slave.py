@@ -67,7 +67,7 @@ class DBus(Bus):
                                     self.agent.config_txt)
                 registerSucceed = True
             except dbus.exceptions.DBusException as e:
-                self.warning("Cannot register because of " + str(e) + " : wait 1s and retry")
+                log.warning("Cannot register because of " + str(e) + " : wait 1s and retry")
                 time.sleep(1)
 
         log.info("Agent %s registered with id %s on domain %s",
