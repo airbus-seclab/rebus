@@ -382,14 +382,30 @@ class DiskStorage(Storage):
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
         res = []
+        agent_nameconf = (agent_name, config_txt)
         for domain in self.version_cache.keys():
-            for uuid, selectors in self.uuids[domain].iteritems():
-                processed_selectors = set([sel for sel, name_confs in
-                                           self.processed[domain].items() if
-                                           (agent_name, config_txt) in
-                                           name_confs])
-                unprocessed_sels = selectors - processed_selectors
-                res.extend([(domain, uuid, sel) for sel in unprocessed_sels])
+
+            # list all selectors
+            selectors = set()
+
+            # build temporary selector to uuids lookup table
+            # 1 selectors might belong in several uuids (or might in the
+            # future), add them all
+            sel_to_uuid = defaultdict(list)
+            for uuid, selset in self.uuids[domain].iteritems():
+                selectors.update(selset)
+                for sss in selset:
+                    sel_to_uuid[sss].append(uuid)
+            for sel, name_confs in self.processed[domain].iteritems():
+                if agent_nameconf not in name_confs:
+                    continue
+                selectors.remove(sel)
+            # selectors now contains a list of selectors that have not been
+            # processed by this agent_nameconf
+
+            for sel in selectors:
+                for uuid in sel_to_uuid[sel]:
+                    res.append((domain, uuid, sel))
         return res
 
     @staticmethod
