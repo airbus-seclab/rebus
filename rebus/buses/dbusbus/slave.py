@@ -67,7 +67,8 @@ class DBus(Bus):
                                     self.agent.config_txt)
                 registerSucceed = True
             except dbus.exceptions.DBusException as e:
-                log.warning("Cannot register because of " + str(e) + " : wait 1s and retry")
+                log.warning("Cannot register because of " + str(e) +
+                            " : wait 1s and retry")
                 time.sleep(1)
 
         log.info("Agent %s registered with id %s on domain %s",
@@ -90,8 +91,9 @@ class DBus(Bus):
         # Arbitrary size based on the true limit of 134217728 bytes
         # The true limit apply to the total size (message + header)
         #  -> I don't know the size of the message header
-        if len(sd) > 134210000: 
-            log.warning("Descriptor too long for Dbus : " + str(len(sd)) + " bytes")
+        if len(sd) > 134210000:
+            log.warning("Descriptor too long for Dbus : " + str(len(sd)) +
+                        " bytes")
             return False
         return bool(self.iface.push(str(agent_id), sd))
 
