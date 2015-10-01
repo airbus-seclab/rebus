@@ -66,6 +66,38 @@ def guess_selector(fname=None, buf=None, label=None):
         return '/email/eml'
     if 'SMTP mail, ASCII text' in guess:
         return '/email/eml'
+
+    # Documents
+    if 'PDF document, version' in guess:
+        return "/document/pdf"
+    if 'Rich Text Format' in guess:
+        return "/document/rtf"
+    if 'Microsoft Word 2007+' in guess:
+        return "/document/docx"
+    if 'Microsoft Excel 2007+' in guess:
+        return "/document/xlsx"
+    if 'Microsoft PowerPoint 2007+' in guess:
+        return "/document/pptx"
+    if 'Composite Document File V2 Document' in guess:
+        if 'Microsoft Excel' in guess:
+            return "/document/xls"
+        if 'Microsoft PowerPoint' in guess:
+            return "/document/ppt"
+        if label:
+            if label.endswith('.ppt'):
+                return "/document/ppt"
+            if label.endswith('.pptx'):
+                return "/document/pptx"
+            if label.endswith('.xls'):
+                return "/document/xls"
+            if label.endswith('.xlsx'):
+                return "/document/xlsx"
+            if label.endswith('.doc'):
+                return "/document/doc"
+            if label.endswith('.docx'):
+                return "/document/docx"
+        return "/document/doc"
+
     return "/unknown"
 
 
