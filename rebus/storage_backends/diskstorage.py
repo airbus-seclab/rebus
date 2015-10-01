@@ -117,6 +117,8 @@ class DiskStorage(Storage):
                         self.register_meta(desc)
                 elif name.endswith('.cfg') and relpath == '/':
                     # Bus configuration
+                    # TODO periodically save this file. Use two file, overwrite
+                    # oldest.
                     if elem == '_processed.cfg':
                         with open(name, 'rb') as fp:
                             # copy processed info to self.processed
