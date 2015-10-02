@@ -11,14 +11,18 @@ class Cat(Agent):
     @classmethod
     def add_arguments(cls, subparser):
         subparser.add_argument(
-            "selectors", nargs="+", help="Find up to 3 existing descriptor "
-            "whose selector matches provided regex, and dump their values.")
+            "selectors", nargs="+", help="Find up to N (default=3) existing "
+            "descriptor whose selector matches provided regex, and dump their "
+            "values.")
+        subparser.add_argument('-n', '--max-number',
+                               help="Max number of descriptors to display "
+                               "(0=unlimited)", type=int, default=3)
         subparser.add_argument('--raw', help="Output descriptors' raw values",
                                action='store_true')
 
     def run(self):
         for selregex in self.config['selectors']:
-            sels = self.find(self.domain, selregex, 3)
+            sels = self.find(self.domain, selregex, self.config['max_number'])
             if len(sels) > 0:
                 for s in sels:
                     desc = self.get(self.domain, s)
