@@ -27,7 +27,17 @@ class DBus(Bus):
         Bus.__init__(self)
         self.bus = dbus.SessionBus() if busaddr is None else \
             dbus.bus.BusConnection(busaddr)
-        self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
+        counter = 20
+        while not (counter == 0):
+            try:
+                self.rebus = self.bus.get_object("com.airbus.rebus.bus", "/bus")
+                counter = 0
+            except dbus.exceptions.DBusException as e:
+                log.warning("Cannot get bus object's because : " + str(e) +
+                            " : wait 5s and retry")
+                counter = counter - 1
+                time.sleep(5)
+                
         signal.signal(signal.SIGTERM, self.sigterm_handler)
         #: Contains agent instance. This Bus implementation accepts only one
         #: agent. Agent must be run using separate DBus() (bus slave)
