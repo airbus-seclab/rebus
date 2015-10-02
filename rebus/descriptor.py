@@ -144,6 +144,9 @@ class Descriptor(object):
         """
         Serialize descriptor, without its value.
         """
+        # FIXME dumps may return non-ascii characters ("extended" ascii, "8-bit
+        # ascii") which may result in invalid UTF-8, thus causing errors when
+        # using dbus
         return cPickle.dumps(
             {k: getattr(self, k) for k in dir(self)
              if k in ["label", "selector", "domain", "agent", "precursors",
