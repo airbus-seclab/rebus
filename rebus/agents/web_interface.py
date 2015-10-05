@@ -15,6 +15,13 @@ import json
 
 
 class AsyncProxy(object):
+    """
+    Provides methods for making API requests from the main thread.
+
+    When DBus is used, DBus method calls must not be called from the tornado
+    thread; symptoms include expired 25s DBus timeouts, during which the web
+    server freezes.
+    """
     def __init__(self, agent):
         self._agent = agent
 
@@ -42,6 +49,11 @@ class AsyncProxy(object):
         return _async
 
     def getwithvalue_buscallback(self, method, callback, *args):
+        """
+        Ensures descriptor's values are retrieved before passing a descriptor
+        to the web server thread, to avoid DBus calls when the value @property
+        is read.
+        """
         desc = self._agent.bus.get(self._agent, *args)
         # force value retrieval
         value = desc.value
@@ -49,6 +61,11 @@ class AsyncProxy(object):
         return False
 
     def find_by_uuid_withvalue_buscallback(self, method, callback, *args):
+        """
+        Ensures descriptor's values are retrieved before passing a descriptor
+        to the web server thread, to avoid DBus calls when the value @property
+        is read.
+        """
         descs = self._agent.bus.find_by_uuid(self._agent, *args)
         # force value retrieval
         for desc in descs:
