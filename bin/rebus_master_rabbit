@@ -1,0 +1,51 @@
+#! /usr/bin/python
+import argparse
+import logging
+import rebus.storage_backends
+from rebus.storage import StorageRegistry
+
+from rebus.buses.rabbitbus.master import RabbitBusMaster
+
+log = logging.getLogger("rebus.master.main")
+
+def main():
+    rebus.storage_backends.import_all()
+
+    parser = argparse.ArgumentParser(description='Rebus Rabbit master',
+                                     epilog='Uses the ramstorage backend if\
+                                     none is specified.')
+    parser.add_argument('-f', '--logfile', help="Destination log file")
+    parser.add_argument('--rabbitaddr', help="The rabbitmq server address",
+                        default=None)
+    parser.add_argument("--verbose", "-v", action="count", default=3,
+                        help="be more verbose (can be used many times)")
+    parser.add_argument("--quiet", "-q", action="count", default=0,
+                        help="be more quiet (can be used many times)")
+
+    parser.add_argument('storage', nargs=argparse.REMAINDER,
+                        help="Storage backend")
+
+    parser2 = argparse.ArgumentParser()
+    subparsers = parser2.add_subparsers(help='Storage backends',
+                                        dest='storage')
+    for backend, cls in StorageRegistry.iteritems():
+        subparser = subparsers.add_parser(backend)
+        cls.add_arguments(subparser)
+
+    options = parser.parse_args()
+    if not options.storage:
+        options.storage = ["ramstorage"]
+    options_storage = parser2.parse_args(options.storage)
+    options.__dict__.update(options_storage.__dict__)
+
+    options.verbosity = max(1, 50+10*(options.quiet-options.verbose))
+    logging.basicConfig(format="%(levelname)-5s: %(message)s",
+                        level=options.verbosity, filename=options.logfile)
+    log.info("Start loading storage")
+    storage_class = StorageRegistry.get(options.storage)
+    storage = storage_class(**vars(options))
+    log.info("Storage loaded")
+    RabbitBusMaster.run(storage, options.rabbitaddr)
+
+if __name__ == "__main__":
+    main()

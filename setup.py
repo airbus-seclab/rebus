@@ -6,7 +6,7 @@ from glob import glob
 setup(
     name = 'rebus',
     version = '0.1',
-    packages=[ 'rebus', 'rebus/buses', 'rebus/buses/dbusbus', 'rebus/agents', 'rebus/tools', 'rebus/storage_backends'],
+    packages=[ 'rebus', 'rebus/buses', 'rebus/buses/dbusbus', 'rebus/buses/rabbitbus', 'rebus/agents', 'rebus/tools', 'rebus/storage_backends'],
     package_data={'rebus/agents': ['static/*.js',
         'static/*.css',
         'static/bootstrap-3.1.1-dist/css/*.css',
@@ -19,7 +19,7 @@ setup(
         'static/jquery-file-upload/*.js',
         'templates/*.html',
         'templates/descriptor/*.html']},
-    scripts = [ 'bin/rebus_master_dbus', 'bin/rebus_agent', 'bin/rebus_infra' ],
+    scripts = [ 'bin/rebus_master_dbus', 'bin/rebus_master_rabbit', 'bin/rebus_agent', 'bin/rebus_infra' ],
     data_files = [
         ('etc/rebus', ['conf/dbus_session.conf']),
         ('etc/rebus/services', glob('conf/services/*.service')),
