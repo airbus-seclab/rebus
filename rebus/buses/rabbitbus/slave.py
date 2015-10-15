@@ -17,7 +17,6 @@ import uuid
 
 log = logging.getLogger("rebus.bus.rabbitbus")
 
-
 @Bus.register
 class RabbitBus(Bus):
     _name_ = "rabbitbus"
@@ -295,7 +294,7 @@ class RabbitBus(Bus):
     def busthread_call(self, method, *args):
         f = lambda : method(*args)
         self.connection.add_timeout(0, f)
-    
+
     def run_agents(self):
         self.agent.run_and_catch_exc()
         if self.agent.__class__.run != Agent.run:
@@ -349,3 +348,6 @@ class RabbitBus(Bus):
 
     def agent_process(self, agent, *args, **kargs):
         self.agent.call_process(*args, **kargs)
+
+    def sleep(self, time):
+        self.connection.sleep(time)

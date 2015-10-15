@@ -1,4 +1,5 @@
 from rebus.tools.registry import Registry
+import time
 
 DEFAULT_DOMAIN = "default"
 
@@ -135,3 +136,11 @@ class Bus(object):
         Used to implement the "parallelize" feature in some buses.
         """
         agent.call_process(*args, **kargs)
+
+    def sleep(self, time):
+        """
+        Call by the agent when it need to wait
+        Used to reimplement the standard time.sleep() function
+        :param time: The time to sleep.
+        """
+        time.sleep(time)

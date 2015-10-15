@@ -363,6 +363,17 @@ class Agent(object):
         for i in range(descriptors):
             self.process(descriptors[i], senders[i], **args[i])
 
+    def sleep(self, time):
+        """
+        Should be called by the agent instead of the usual time.sleep()
+        It allows REbus to do things while waiting. This function is
+        really useful when waiting for a long time and using a bus
+        implementation forbidding such long sleep.
+        (e.g. RabbitMQ based bus)
+        :param time: The time to sleep.
+        """
+        self.bus.sleep(time)
+
     def process(self, descriptor, sender_id, **kwargs):
         pass
 
