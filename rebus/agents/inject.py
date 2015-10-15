@@ -19,9 +19,9 @@ def guess_selector(fname=None, buf=None, label=None):
                         "guess_selector.")
     if ".Net" in guess:
         return "/binary/net"
-    if "ELF" in guess:
+    if "ELF" in guess and ("sharedobject" in guess or "executable" in guess):
         return "/binary/elf"
-    if "PE" in guess:
+    if "executable" in guess and "PE32" in guess:
         return "/binary/pe"
     if "DOS" in guess:
         # libmagic is a bit buggy
