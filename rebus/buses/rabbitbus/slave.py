@@ -29,9 +29,9 @@ class RabbitBus(Bus):
 
         # Connects to the rabbitmq server
         if busaddr is None:
-            busaddr = "amqp://localhost/%2F?connection_attempts=20&heartbeat_interval=1"
+            busaddr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=1"
         else:
-            busaddr = busaddr + "/%2F?connection_attempts=20&heartbeat_interval=1"
+            busaddr = busaddr + "/%2F?connection_attempts=200&heartbeat_interval=1"
         params = pika.URLParameters(busaddr)
         log.info("Connecting to rabbitmq server at: " + str(busaddr))
         try:

@@ -49,9 +49,9 @@ class RabbitBusMaster():
 
         # Connects to the rabbitmq server
         if server_addr is None:
-            server_addr = "amqp://localhost/%2F?connection_attempts=20&heartbeat_interval=1"
+            server_addr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=1"
         else:
-            server_addr = server_addr + "/%2F?connection_attempts=20&heartbeat_interval=1"
+            server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=1"
         params = pika.URLParameters(server_addr)
         try:
             self.connection = pika.BlockingConnection(params)
