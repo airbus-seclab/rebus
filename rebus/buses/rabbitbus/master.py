@@ -189,19 +189,14 @@ class RabbitBusMaster():
                          len(self.clients), self.clients.keys()[0])
 
     def lock(self, agent_id, lockid, desc_domain, selector):
-        print "In lock function"
         objpath = self.clients[agent_id]
         processed = self.processed[desc_domain]
         key = (lockid, selector)
         log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
                   key in processed, desc_domain, selector)
-        print "if key in processed then false else true"
         if key in processed:
-            print "lock return False"
             return False
-        print "processed.add(key)"
         processed.add(key)
-        print "lock return True"
         return True
 
     def push(self, agent_id, descriptor):
