@@ -50,6 +50,9 @@ def main():
         "agents", nargs=argparse.REMAINDER, help="available agents: %s. Use -h"
         " after agent name to see agent's options."
         % ', '.join(AgentRegistry.iterkeys()))
+    #TODO : Find a cleaner way to configure the heartbeat (rabbitMQ only)
+    parser.add_argument('--heartbeat', help="The rabbitmq heartbeat interval",
+                        default=0)
     global_options = parser.parse_args()
 
     # subparser (agents) options
@@ -115,7 +118,8 @@ def main():
 
     try:
         bus_class = BusRegistry.get(global_options.bus)
-        bus = bus_class(busaddr=global_options.busaddr)
+        bus = bus_class(busaddr=global_options.busaddr,
+                        heartbeat_interval=global_options.heartbeat)
         for stage in stages:
             log.info("Starting stage %d", stages.index(stage))
             for agent_name, arguments in stage:

@@ -13,7 +13,8 @@ agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
 class LocalBus(Bus):
     _name_ = "localbus"
 
-    def __init__(self, busaddr=None):
+    #TODO : find a way to remove the heartbeat_interval
+    def __init__(self, busaddr=None, heartbeat_interval=0):
         Bus.__init__(self)
         self.locks = defaultdict(set)
         #: Next available agent id. Never decreases.

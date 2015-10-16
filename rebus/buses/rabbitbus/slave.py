@@ -23,14 +23,14 @@ class RabbitBus(Bus):
     _desc_ = "Use RabbitMQ to exchange messages by connecting to REbus master"
 
     # Bus methods implementations - same order as in bus.py
-    def __init__(self, busaddr=None):
+    def __init__(self, busaddr=None, heartbeat_interval=0):
         Bus.__init__(self)
 
         # Connects to the rabbitmq server
         if busaddr is None:
-            busaddr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=1"
+            busaddr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         else:
-            busaddr = busaddr + "/%2F?connection_attempts=200&heartbeat_interval=1"
+            busaddr = busaddr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         params = pika.URLParameters(busaddr)
         log.info("Connecting to rabbitmq server at: " + str(busaddr))
         try:
@@ -338,7 +338,6 @@ class RabbitBus(Bus):
     def bus_exit_handler(self, awaiting_internal_state):
         if awaiting_internal_state:
             self.agent.save_internal_state()
-            self.loop.quit()
         self.channel.stop_consuming()
 
     @staticmethod

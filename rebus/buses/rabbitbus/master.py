@@ -18,7 +18,7 @@ import uuid
 log = logging.getLogger("rebus.bus")
 
 class RabbitBusMaster():
-    def __init__(self, store, server_addr):
+    def __init__(self, store, server_addr, heartbeat_interval=0):
         self.store = store
         #: maps agentid (ex. inject-:1.234) to object path (ex:
         #: /agent/inject)
@@ -49,9 +49,9 @@ class RabbitBusMaster():
 
         # Connects to the rabbitmq server
         if server_addr is None:
-            server_addr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=1"
+            server_addr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         else:
-            server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=1"
+            server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         params = pika.URLParameters(server_addr)
         try:
             self.connection = pika.BlockingConnection(params)
@@ -369,9 +369,9 @@ class RabbitBusMaster():
         self.send_signal("on_idle", args)
 
     @classmethod
-    def run(cls, store, server_addr):
+    def run(cls, store, server_addr, heartbeat_interval=0):
         
-        svc = cls(store, server_addr)
+        svc = cls(store, server_addr, heartbeat_interval)
         log.info("Entering main loop.")
         try:
             svc.channel.start_consuming()

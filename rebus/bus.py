@@ -16,7 +16,8 @@ class Bus(object):
     def register(f):
         return BusRegistry.register_ref(f, key="_name_")
 
-    def __init__(self, busaddr=None):
+    #TODO: find a way to remove the heartbeat_interval
+    def __init__(self, busaddr=None, heartbeat_interval=0):
         pass
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):

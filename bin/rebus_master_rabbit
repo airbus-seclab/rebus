@@ -17,6 +17,8 @@ def main():
     parser.add_argument('-f', '--logfile', help="Destination log file")
     parser.add_argument('--rabbitaddr', help="The rabbitmq server address",
                         default=None)
+    parser.add_argument('--heartbeat', help="The rabbitmq heartbeat interval",
+                        default=0)
     parser.add_argument("--verbose", "-v", action="count", default=3,
                         help="be more verbose (can be used many times)")
     parser.add_argument("--quiet", "-q", action="count", default=0,
@@ -45,7 +47,7 @@ def main():
     storage_class = StorageRegistry.get(options.storage)
     storage = storage_class(**vars(options))
     log.info("Storage loaded")
-    RabbitBusMaster.run(storage, options.rabbitaddr)
+    RabbitBusMaster.run(storage, options.rabbitaddr, options.heartbeat)
 
 if __name__ == "__main__":
     main()
