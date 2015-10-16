@@ -66,7 +66,7 @@ class RabbitBusMaster():
         self.channel.queue_declare(queue="registration_queue", auto_delete=True)
         for id in range(10000):
             self.channel.basic_publish(exchange = "", routing_key = "registration_queue",
-                                       body=str(1), properties=pika.BasicProperties(delivery_mode = 2,))
+                                       body=str(id), properties=pika.BasicProperties(delivery_mode = 2,))
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
         
