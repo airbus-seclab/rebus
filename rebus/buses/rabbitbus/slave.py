@@ -59,12 +59,13 @@ class RabbitBus(Bus):
         f[signal_type['signal_name']](**signal_type['args'])
         
 
-    def send_rpc(self, func_name, args):
+    def send_rpc(self, func_name, args, high_priority=True):
         # Call the remote function
         body = pickle.dumps({'func_name' : func_name, 'args' : args}, protocol=2)
         corr_id = str(uuid.uuid4())
+        routing_key = 'rebus_master_rpc_highprio' if high_priority else 'rebus_master_rpc_lowprio'
         retpublish = self.channel.basic_publish(exchange='',
-                                                routing_key='rebus_master_rpc',
+                                                routing_key=routing_key,
                                                 body=body,
                                                 properties=pika.BasicProperties(reply_to = self.return_queue,
                                                                                 correlation_id = corr_id,))
@@ -103,7 +104,7 @@ class RabbitBus(Bus):
 
     def rpc_push(self, agent_id, descriptor):
         args = {'agent_id' : agent_id, 'descriptor' : descriptor}
-        return self.send_rpc("push", args)
+        return self.send_rpc("push", args, False)
 
     def rpc_get(self, agent_id, desc_domain, selector):
         args = {'agent_id' : agent_id, 'desc_domain' : desc_domain,
@@ -188,7 +189,8 @@ class RabbitBus(Bus):
 
         # Declare the registration queue and the rpc queue
         self.channel.queue_declare(queue="registration_queue", auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc", auto_delete=True)
+        self.channel.queue_declare(queue="rebus_master_rpc_highprio", auto_delete=True)
+        self.channel.queue_declare(queue="rebus_master_rpc_lowprio", auto_delete=True)
 
         # Fetch an ID from the ID queue
         method = False
