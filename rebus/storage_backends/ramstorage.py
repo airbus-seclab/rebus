@@ -68,6 +68,16 @@ class RAMStorage(Storage):
                     result.append(desc)
         return result
 
+    def find_by_selector(self, domain, selector_prefix, serialized=False):
+        result = []
+        for selector, desc in self.dstore[domain].iteritems():
+            if desc.selector.startswith(selector_prefix):
+                if serialized:
+                    result.append(self.serialized_store[domain][selector])
+                else:
+                    result.append(desc)
+        return result
+
     def find_by_value(self, domain, selector_prefix, value_regex,
                       serialized=False):
         result = []

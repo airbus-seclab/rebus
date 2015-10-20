@@ -168,7 +168,6 @@ class DiskStorage(Storage):
         return res
 
     def find_by_selector(self, domain, selector_prefix, serialized=False):
-
         result = []
         # File paths to explore
         pathprefix = self.basepath + '/' + domain + selector_prefix

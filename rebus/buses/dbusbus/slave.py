@@ -20,7 +20,7 @@ class DBus(Bus):
     _desc_ = "Use DBus to exchange messages by connecting to REbus master"
 
     # Bus methods implementations - same order as in bus.py
-    def __init__(self, busaddr=None):
+    def __init__(self, busaddr=None, heartbeat_interval=0):
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -127,6 +127,11 @@ class DBus(Bus):
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         return [Descriptor.unserialize(str(s), bus=self) for s in
                 self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.iface.find_by_selector(str(agent_id), desc_domain,
+                                            selector_prefix)]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
