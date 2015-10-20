@@ -167,6 +167,26 @@ class DiskStorage(Storage):
                     return res
         return res
 
+    def find_by_selector(self, domain, selector_prefix, serialized=False):
+
+        result = []
+        # File paths to explore
+        pathprefix = self.basepath + '/' + domain + selector_prefix
+        paths = [path for path in self.existing_paths if
+                 path.startswith(pathprefix)]
+        for path in paths:
+            # open and run re.match() on every file matching *.value
+            for name in os.listdir(path):
+                if os.path.isfile(path + name) and name.endswith('.value'):
+                    contents = Descriptor.unserialize_value(
+                        open(path + name, 'rb').read())
+                    selector = path[len(self.basepath)+len(domain)+1:] +\
+                        name.split('.')[0]
+                    if serialized:
+                        desc = self.get_descriptor(domain, selector)
+                        result.append(desc)
+        return result
+
     def find_by_uuid(self, domain, uuid, serialized=False):
         result = []
         for selector in self.uuids[domain][uuid]:

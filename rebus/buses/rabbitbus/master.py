@@ -95,6 +95,7 @@ class RabbitBusMaster():
               'list_uuids' : self.list_uuids,
               'find' : self.find,
               'find_by_uuid' : self.find_by_uuid,
+              'find_by_selector': self.find_by_selector,
               'find_by_value' : self.find_by_value,
               'mark_processed' : self.mark_processed,
               'mark_processable' : self.mark_processable,
@@ -242,6 +243,12 @@ class RabbitBusMaster():
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
         return self.store.find_by_uuid(str(desc_domain), str(uuid),
                                        serialized=True)
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
+                  selector_prefix)
+        return self.store.find_by_selector(str(desc_domain), str(selector_prefix),
+                                         serialized=True)
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):

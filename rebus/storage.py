@@ -37,6 +37,9 @@ class Storage(object):
         """
         raise NotImplementedError
 
+    def find_by_selector(self, domain, selec_pref, serialized=False):
+        raise NotImplementedError
+
     def find_by_uuid(self, domain, uuid, serialized=False):
         """
         Return a list of descriptors whose uuid match given parameter.

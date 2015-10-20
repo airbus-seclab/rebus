@@ -32,6 +32,9 @@ class Bus(object):
     def get(self, agent_id, desc_domain, selector):
         raise NotImplementedError
 
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        raise NotImplementedError
+
     def get_value(self, agent_id, desc_domain, selector):
         """
         Returns a descriptor's value.

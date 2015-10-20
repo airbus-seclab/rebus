@@ -130,6 +130,11 @@ class RabbitBus(Bus):
                 'uuid' : uuid}
         return self.send_rpc("find_by_uuid", args)
 
+    def rpc_find_by_selector(self, agent_id, desc_domain, selector_pref):
+        args = {'agent_id' : agent_id, 'desc_domain' : desc_domain,
+                'selector_prefix' : selector_pref}
+        return self.send_rpc("find_by_selector", args)
+
     def rpc_find_by_value(self, agent_id, desc_domain, uuid):
         args = {'agent_id' : agent_id, 'desc_domain' : desc_domain,
                 'uuid' : uuid}
@@ -258,6 +263,11 @@ class RabbitBus(Bus):
         return [Descriptor.unserialize(str(s), bus=self) for s in
                 self.rpc_find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        return [Descriptor.unserialize(str(s), bus=self) for s in
+                self.rpc_find_by_selector(str(agent_id), desc_domain,
+                                          selector_prefix)]
 
     def mark_processed(self, agent_id, desc_domain, selector):
         self.rpc_mark_processed(str(agent_id), desc_domain, selector)
