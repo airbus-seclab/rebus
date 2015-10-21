@@ -28,8 +28,8 @@ class DiskStorage(Storage):
         if not os.path.isdir(self.basepath + '/agent_intstate'):
             os.makedirs(self.basepath + '/agent_intstate')
 
-        #: Set of existing descriptor storage paths, all starting and ending
-        #: with '/'
+        #: Set of existing descriptor storage directories, all starting and
+        #: ending with '/'
         self.existing_paths = set((self.basepath + '/',))
 
         #: self.version_cache['domain']['/selector/'][version] = /selector/%123
