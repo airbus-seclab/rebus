@@ -72,7 +72,17 @@ class RabbitBus(Bus):
         get_time("end SIGNAL_HANDLER", s)
         log.debug("=========================================================")
         
-
+    def reconnect(self):
+        b = False
+        while not b:
+            try:
+                self.connection = self.connection.connect()
+                self.channel = self.connection.channel()
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                pass
+                
+        
     def send_rpc(self, func_name, args, high_priority=True):
         log.debug("============== SEND RPC =======================")
         s = get_time("start SEND RPC")
@@ -81,11 +91,19 @@ class RabbitBus(Bus):
         pickletime = get_time("pickle dumps done", s)
         corr_id = str(uuid.uuid4())
         routing_key = 'rebus_master_rpc_highprio' if high_priority else 'rebus_master_rpc_lowprio'
-        retpublish = self.channel.basic_publish(exchange='',
-                                                routing_key=routing_key,
-                                                body=body,
-                                                properties=pika.BasicProperties(reply_to = self.return_queue,
-                                                                                correlation_id = corr_id,))
+        b = False
+        while not b:
+            try:
+                retpublish = self.channel.basic_publish(exchange='',
+                                                        routing_key=routing_key,
+                                                        body=body,
+                                                        properties=pika.BasicProperties(reply_to = self.return_queue,
+                                                                                        correlation_id = corr_id,))
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.info("Disconnected. Trying to reconnect")
+                self.reconnect()
+                
         sentrpctime = get_time("publish rpc request (basic_publish)", pickletime)
         # Wait for the return value
         response = None
