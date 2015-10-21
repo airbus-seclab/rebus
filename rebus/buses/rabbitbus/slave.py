@@ -120,7 +120,7 @@ class RabbitBus(Bus):
                 else:
                     log.warning("An RPC returned with a wrong correlation ID")
             else:
-                self.connection.sleep(0.01)             
+                self.connection.sleep(0.001)
         get_time("got the returned value of RPC", sentrpctime)
         get_time("end SEND RPC", s)
         log.debug("=========================================================")
