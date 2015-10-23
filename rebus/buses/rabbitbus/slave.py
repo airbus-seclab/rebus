@@ -40,6 +40,7 @@ class RabbitBus(Bus):
             busaddr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         else:
             busaddr = busaddr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
+        self.busaddr = busaddr
         params = pika.URLParameters(busaddr)
         log.info("Connecting to rabbitmq server at: " + str(busaddr))
         try:
@@ -74,12 +75,33 @@ class RabbitBus(Bus):
         
     def reconnect(self):
         b = False
+        params = pika.URLParameters(self.busaddr)
         while not b:
             try:
-                self.connection = self.connection.connect()
+                log.info("Connecting to rabbitmq server at: " +
+                         str(self.busaddr))
+                self.connection = pika.BlockingConnection(params)
                 self.channel = self.connection.channel()
+                self.channel.queue_declare(queue="rebus_master_rpc_highprio",
+                                           auto_delete=True)
+                self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
+                                           auto_delete=True)
+
+                self.queue_ret = self.channel.queue_declare(self.return_queue)
+                self.return_queue = self.queue_ret.method.queue
+
+                self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
+                                                                 type='fanout')
+                self.ret_signal_queue = self.channel.queue_declare(exclusive=True)
+                self.signal_queue = self.ret_signal_queue.method.queue
+                self.channel.queue_bind(exchange='rebus_signals',
+                                        queue=self.signal_queue)
+                self.channel.basic_consume(self.signal_handler,
+                                           queue=self.signal_queue, no_ack=True)
                 b = True
             except pika.exceptions.ConnectionClosed:
+                log.info("Failed to reconnect to RabbitMQ. Retrying..")
+                time.sleep(0.5)
                 pass
                 
         
@@ -110,7 +132,11 @@ class RabbitBus(Bus):
         b = False
         log.debug("Waiting for the rpc answer")
         while not b:
-            meth, props, resp = self.channel.basic_get(self.return_queue)
+            try:
+                meth, props, resp = self.channel.basic_get(self.return_queue)
+            except pika.exceptions.ConnectionClosed:
+                log.info("Disconnected. Trying to reconnect")
+                self.reconnect()
             if meth:
                 if corr_id == props.correlation_id:
                     b = True
@@ -233,8 +259,8 @@ class RabbitBus(Bus):
 
         # Declare the registration queue and the rpc queue
         self.channel.queue_declare(queue="registration_queue", auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc_highprio", auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc_lowprio", auto_delete=True)
+        self.channel.queue_declare(queue="rebus_master_rpc_highprio")
+        self.channel.queue_declare(queue="rebus_master_rpc_lowprio")
 
         # Fetch an ID from the ID queue
         method = False

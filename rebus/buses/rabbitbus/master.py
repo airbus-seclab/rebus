@@ -80,10 +80,10 @@ class RabbitBusMaster():
         self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
         
         # Create the rpc queue
-        self.channel.queue_declare(queue='rebus_master_rpc_highprio', auto_delete=True)
+        self.channel.queue_declare(queue='rebus_master_rpc_highprio')
         self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
                                    arguments={'x-priority' : 1})
-        self.channel.queue_declare(queue='rebus_master_rpc_lowprio', auto_delete=True)
+        self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
         self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority' : 0})
 
