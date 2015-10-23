@@ -273,13 +273,18 @@ class RabbitBus(Bus):
         self.channel.basic_ack(delivery_tag = method.delivery_tag)
         
         # Declare RPC return queue
-        self.queue_ret = self.channel.queue_declare(exclusive=True)
+        ret_rpc_queue_name = "rpc_ret_" + str(self.agent_id)
+        self.queue_ret = self.channel.queue_declare(queue=ret_rpc_queue_name,
+                                                    exclusive=True)
         self.return_queue = self.queue_ret.method.queue
 
         # Declare the signal exchange and bind the signal queue on it
         self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
                                                              type='fanout')
-        self.ret_signal_queue = self.channel.queue_declare(exclusive=True)
+
+        signal_queue_name = "signal_" + str(self.agent_id)
+        self.ret_signal_queue = self.channel.queue_declare(queue=signal_queue_name,
+                                                           exclusive=True)
         self.signal_queue = self.ret_signal_queue.method.queue
         self.channel.queue_bind(exchange='rebus_signals',
                                 queue=self.signal_queue)
