@@ -277,7 +277,16 @@ class RabbitBus(Bus):
         # Declare RPC return queue
         self.queue_ret = self.channel.queue_declare(exclusive=True)
         self.return_queue = self.queue_ret.method.queue
-                
+
+        # Declare the signal exchange and bind the signal queue on it
+        self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
+                                                             type='fanout')
+        self.ret_signal_queue = self.channel.queue_declare(exclusive=True)
+        self.signal_queue = self.ret_signal_queue.method.queue
+        self.channel.queue_bind(exchange='rebus_signals',
+                                queue=self.signal_queue)
+
+        
         # Register into the bus
         self.rpc_register(self.agent_id, agent_domain, self.objpath,
                           self.agent.config_txt)
@@ -380,14 +389,10 @@ class RabbitBus(Bus):
             self.rpc_unregister(self.agent_id)
             return
         try:
-            # Declare the signal exchange and bind the signal queue on it
-            self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
-                                                                 type='fanout')
-            self.ret_signal_queue = self.channel.queue_declare(exclusive=True)
-            self.signal_queue = self.ret_signal_queue.method.queue
-            self.channel.queue_bind(exchange='rebus_signals', queue=self.signal_queue)
-            self.channel.basic_consume(self.signal_handler, queue=self.signal_queue, no_ack=True)
 
+            self.channel.basic_consume(self.signal_handler,
+                                       queue=self.signal_queue,
+                                       no_ack=True)
             log.info("Entering agent loop")
             self.channel.start_consuming()
         except (KeyboardInterrupt, SystemExit):
