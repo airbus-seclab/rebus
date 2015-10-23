@@ -17,15 +17,6 @@ import uuid
 
 log = logging.getLogger("rebus.bus")
 
-def get_time(message, start = None):
-    a = time.time()
-    if start is None:
-        log.debug("TIME: " + message + " current time: " + str(a))
-    else:
-        log.debug("TIME: " + message + " current time: " + str(a) + "  previously taken time: " + str(start) + "  delta: " + str(a - start))
-    return a
-        
-
 class RabbitBusMaster():
     def __init__(self, store, server_addr, heartbeat_interval=0):
         self.store = store
@@ -88,12 +79,10 @@ class RabbitBusMaster():
                                    arguments={'x-priority' : 0})
 
     def send_signal(self, signal_name, args):
-        s = get_time("begin of send signal")
         # Send a signal on the exchange
         body = {'signal_name' : signal_name, 'args' : args}
         body = pickle.dumps(body, protocol=2)
         self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body)
-        get_time("end of send signal", s)
 
     #TODO Check is the key is valid
     def call_rpc_func(self, name, args):
@@ -121,20 +110,15 @@ class RabbitBusMaster():
         return f[name](**args)
         
     def rpc_callback(self, ch, method, properties, body):
-        log.debug("============== TIME  RPC CALLBACK =======================")
-        s = get_time("start RPC_CALLBACK")
         # Parse the rpc request
         body = pickle.loads(body)
-        ep = get_time("pickle parsing of body done", s)
 
         func_name = body['func_name']
         args = body['args']
 
         # Call the function
         ret = self.call_rpc_func(func_name, args)
-        rpcfunctime = get_time("rpc_func done", ep)
         ret = pickle.dumps(ret, protocol=2)
-        rpcdumpret = get_time("pickle ret dumps done", rpcfunctime)
 
         # Push the result of the function on the return queue
         retpublish = ch.basic_publish(exchange='',
@@ -142,11 +126,7 @@ class RabbitBusMaster():
                                       body=ret,
                                       properties=pika.BasicProperties(correlation_id = \
                                                                       properties.correlation_id))
-        publishtime = get_time("basic publish time done", rpcdumpret)
         ch.basic_ack(delivery_tag = method.delivery_tag)
-        acktime = get_time("basic ack done", publishtime)
-        get_time("end RPC_CALLBACK", s)        
-        log.debug("=========================================================")
 
         
     def update_check_idle(self, agent_name, output_altering_options):

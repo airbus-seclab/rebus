@@ -17,15 +17,6 @@ import uuid
 
 log = logging.getLogger("rebus.bus.rabbitbus")
 
-def get_time(message, start = None):
-    a = time.time()
-    if start is None:
-        log.debug("TIME: " + message + " current time: " + str(a))
-    else:
-        log.debug("TIME: " + message + " current time: " + str(a) + "  previously taken time: " + str(start) + "  delta: " + str(a - start))
-    return a
-
-
 @Bus.register
 class RabbitBus(Bus):
     _name_ = "rabbitbus"
@@ -61,17 +52,12 @@ class RabbitBus(Bus):
 
     #TODO : check if key exists
     def signal_handler(self, ch, method, properties, body):
-        log.debug("============== SIGNAL HANDLER =======================")
-        s = get_time("start SIGNAL_HANDLER")
         f = { 'new_descriptor' : self.broadcast_wrapper,
               'targeted_descriptor' : self.targeted_wrapper,
               'bus_exit' : self.bus_exit_handler,
               'on_idle' : self.agent.on_idle}
         signal_type = pickle.loads(body)
-        pickletime = get_time("pickle loads done", s)
         f[signal_type['signal_name']](**signal_type['args'])
-        get_time("end SIGNAL_HANDLER", s)
-        log.debug("=========================================================")
         
     def reconnect(self):
         b = False
@@ -104,11 +90,8 @@ class RabbitBus(Bus):
                 
         
     def send_rpc(self, func_name, args, high_priority=True):
-        log.debug("============== SEND RPC =======================")
-        s = get_time("start SEND RPC")
         # Call the remote function
         body = pickle.dumps({'func_name' : func_name, 'args' : args}, protocol=2)
-        pickletime = get_time("pickle dumps done", s)
         corr_id = str(uuid.uuid4())
         routing_key = 'rebus_master_rpc_highprio' if high_priority else 'rebus_master_rpc_lowprio'
         b = False
@@ -124,11 +107,9 @@ class RabbitBus(Bus):
                 log.info("Disconnected. Trying to reconnect")
                 self.reconnect()
                 
-        sentrpctime = get_time("publish rpc request (basic_publish)", pickletime)
         # Wait for the return value
         response = None
         b = False
-        log.debug("Waiting for the rpc answer")
         while not b:
             try:
                 meth, props, resp = self.channel.basic_get(self.return_queue)
@@ -145,9 +126,6 @@ class RabbitBus(Bus):
                     log.warning("An RPC returned with a wrong correlation ID")
             else:
                 self.connection.sleep(0.001)
-        get_time("got the returned value of RPC", sentrpctime)
-        get_time("end SEND RPC", s)
-        log.debug("=========================================================")
         return response
 
     #TODO : use locals() or build the dictionary "a la mano"?
