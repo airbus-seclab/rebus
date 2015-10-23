@@ -82,10 +82,8 @@ class RabbitBus(Bus):
                          str(self.busaddr))
                 self.connection = pika.BlockingConnection(params)
                 self.channel = self.connection.channel()
-                self.channel.queue_declare(queue="rebus_master_rpc_highprio",
-                                           auto_delete=True)
-                self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
-                                           auto_delete=True)
+                self.channel.queue_declare(queue="rebus_master_rpc_highprio")
+                self.channel.queue_declare(queue="rebus_master_rpc_lowprio")
 
                 self.queue_ret = self.channel.queue_declare(self.return_queue)
                 self.return_queue = self.queue_ret.method.queue
