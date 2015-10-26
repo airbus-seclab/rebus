@@ -125,7 +125,7 @@ class RabbitBus(Bus):
                 else:
                     log.warning("An RPC returned with a wrong correlation ID")
             else:
-                self.connection.sleep(0.001)
+                time.sleep(0.001)
         return response
 
     #TODO : use locals() or build the dictionary "a la mano"?
