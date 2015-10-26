@@ -76,7 +76,7 @@ class RabbitBus(Bus):
 
                 self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
                                                                  type='fanout')
-                self.ret_signal_queue = self.channel.queue_declare(exclusive=True)
+                self.ret_signal_queue = self.channel.queue_declare(self.signal_queue)
                 self.signal_queue = self.ret_signal_queue.method.queue
                 self.channel.queue_bind(exchange='rebus_signals',
                                         queue=self.signal_queue)
