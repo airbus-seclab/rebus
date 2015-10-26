@@ -375,11 +375,14 @@ class RabbitBus(Bus):
                                        queue=self.signal_queue,
                                        no_ack=True)
             log.info("Entering agent loop")
-            try:
-                self.channel.start_consuming()
-            except pika.exceptions.ConnectionClosed:
-                log.info("Disconnected. Trying to reconnect")
-                self.reconnect()
+            b = False
+            while not b:
+                try:
+                    self.channel.start_consuming()
+                    b = True
+                except pika.exceptions.ConnectionClosed:
+                    log.info("Disconnected. Trying to reconnect")
+                    self.reconnect()
 
         except (KeyboardInterrupt, SystemExit):
             log.info('Exiting...')
