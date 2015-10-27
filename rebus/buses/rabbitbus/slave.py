@@ -380,7 +380,7 @@ class RabbitBus(Bus):
             while not b:
                 try:
                     while self.channel._consumer_infos:
-                        self.channel.connection.process_data_events(time_limit=0)
+                        self.channel.connection.process_data_events(time_limit=0.1)
                     b = True
                 except pika.exceptions.ConnectionClosed:
                     log.info("Disconnected. Trying to reconnect")
