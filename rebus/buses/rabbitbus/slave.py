@@ -76,7 +76,8 @@ class RabbitBus(Bus):
 
                 self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals',
                                                                  type='fanout')
-                self.ret_signal_queue = self.channel.queue_declare(self.signal_queue)
+                self.ret_signal_queue = self.channel.queue_declare(self.signal_queue,
+                                                                   durable=True)
                 self.signal_queue = self.ret_signal_queue.method.queue
                 self.channel.queue_bind(exchange='rebus_signals',
                                         queue=self.signal_queue)
@@ -261,7 +262,8 @@ class RabbitBus(Bus):
                                                              type='fanout')
 
         signal_queue_name = "signal_" + str(self.agent_id)
-        self.ret_signal_queue = self.channel.queue_declare(queue=signal_queue_name)
+        self.ret_signal_queue = self.channel.queue_declare(queue=signal_queue_name,
+                                                           durable=True)
         self.signal_queue = self.ret_signal_queue.method.queue
         self.channel.queue_bind(exchange='rebus_signals',
                                 queue=self.signal_queue)
@@ -377,7 +379,8 @@ class RabbitBus(Bus):
             b = False
             while not b:
                 try:
-                    self.channel.start_consuming()
+                    while self.channel._consumer_infos:
+                        self.channel.connection.process_data_events(time_limit=0)
                     b = True
                 except pika.exceptions.ConnectionClosed:
                     log.info("Disconnected. Trying to reconnect")

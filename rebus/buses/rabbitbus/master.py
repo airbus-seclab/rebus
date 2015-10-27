@@ -82,7 +82,8 @@ class RabbitBusMaster():
         # Send a signal on the exchange
         body = {'signal_name' : signal_name, 'args' : args}
         body = pickle.dumps(body, protocol=2)
-        self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body)
+        self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body,
+                                   properties=pika.BasicProperties(delivery_mode = 2,))
 
     #TODO Check is the key is valid
     def call_rpc_func(self, name, args):
