@@ -34,13 +34,18 @@ class RabbitBus(Bus):
         self.busaddr = busaddr
         params = pika.URLParameters(busaddr)
         log.info("Connecting to rabbitmq server at: " + str(busaddr))
-        try:
-            self.connection = pika.BlockingConnection(params)
-            self.channel = self.connection.channel()
-        except pika.exceptions.ConnectionClosed:
-            log.warning("Cannot connect to rabbitmq at: " + str(busaddr))
+        b = False
+        while not b:
+            try:
+                self.connection = pika.BlockingConnection(params)
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.warning("Cannot connect to rabbitmq at: " + str(busaddr) + ". Retrying..")
+                time.sleep(0.5)
             #TODO : quit here (failed to connect)
-        
+
+        self.channel = self.connection.channel() 
+       
         signal.signal(signal.SIGTERM, self.sigterm_handler)
         
         #: Contains agent instance. This Bus implementation accepts only one
@@ -87,7 +92,6 @@ class RabbitBus(Bus):
             except pika.exceptions.ConnectionClosed:
                 log.info("Failed to reconnect to RabbitMQ. Retrying..")
                 time.sleep(0.5)
-                pass
                 
         
     def send_rpc(self, func_name, args, high_priority=True):
