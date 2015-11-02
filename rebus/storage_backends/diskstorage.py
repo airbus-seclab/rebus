@@ -1,12 +1,25 @@
 import os
 import re
 import cPickle
+import threading
+import time
 from collections import defaultdict
 from collections import OrderedDict
 from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 from rebus.tools.config import get_output_altering_options
+
+
+class CheckpointThread(threading.Thread):
+    def __init__(self, storage):
+        threading.Thread.__init__(self)
+        self.storage = storage
+
+    def run(self):
+        while True:
+            time.sleep(5)
+            self.storage.store_state()
 
 
 @Storage.register
@@ -47,7 +60,13 @@ class DiskStorage(Storage):
         #: not all descriptors have been processed.
         #: Order is kept for find requests & co-maintainability of
         #: {RAM,Disk}storage implementations.
+        #: access to self.processed must be protected using self.processedlock
         self.processed = defaultdict(OrderedDict)
+
+        self.unsavedprocessed = False
+
+        #: protects access to self.processed
+        self.processedlock = threading.RLock()
 
         #: self.processable['domain']['/selector/%hash'] is a set of (agent
         #: name, configuration text) that are running in interactive mode, and
@@ -64,11 +83,19 @@ class DiskStorage(Storage):
         self.labels = defaultdict(lambda: defaultdict(str))
 
         # Enumerate existing files & dirs
-        self.discover('/')
+        with self.processedlock:
+            self.discover('/')
+
+        # start _processed flushing thread
+        self.checkpointThread = CheckpointThread(self)
+        self.checkpointThread.daemon = True
+        self.checkpointThread.start()
 
     def discover(self, relpath):
         """
         Recursively add existing files to storage.
+
+        self.processedlock must be acquired prior to calling this function
 
         :param relpath: starts and ends with a '/', relative to self.basepath
         """
@@ -138,6 +165,7 @@ class DiskStorage(Storage):
     def register_meta(self, desc):
         """
         :param desc: Descriptor instance
+        self.processedlock must be acquired prior to calling this function
         """
 
         domain = desc.domain
@@ -149,6 +177,7 @@ class DiskStorage(Storage):
         if selector not in self.processed[domain]:
             # If it has not been restored from processed.cfg
             self.processed[domain][selector] = set()
+            self.unsavedprocessed = True
         self.uuids[domain][desc.uuid].add(selector)
         if not self.labels[domain][desc.uuid] or not desc.precursors:
             # Heuristic for choosing uuid label : prefer label of a descriptor
@@ -279,8 +308,9 @@ class DiskStorage(Storage):
         Always returns serialized descriptors
         """
         result = set()
-        if selector not in self.processed[domain].keys():
-            return result
+        with self.processedlock:
+            if selector not in self.processed[domain].keys():
+                return result
         for child in self.edges[domain][selector]:
             result.add(self.get_descriptor(domain, child))
             if recurse:
@@ -338,16 +368,20 @@ class DiskStorage(Storage):
         with open(fname + '.value', 'wb') as fp:
             fp.write(serialized_value)
 
-        self.processed[domain][selector] = set()
+        with self.processedlock:
+            self.processed[domain][selector] = set()
+            self.unsavedprocessed = True
         return True
 
     def mark_processed(self, domain, selector, agent_name, config_txt):
         result = False
         key = (agent_name, config_txt)
         # Add to processed if not already there
-        if key not in self.processed[domain][selector]:
-            result = True
-            self.processed[domain][selector].add(key)
+        with self.processedlock:
+            if key not in self.processed[domain][selector]:
+                result = True
+                self.processed[domain][selector].add(key)
+                self.unsavedprocessed = True
         # Remove from processable
         if selector in self.processable[domain]:
             if key in self.processable[domain][selector]:
@@ -358,16 +392,18 @@ class DiskStorage(Storage):
     def mark_processable(self, domain, selector, agent_name, config_txt):
         result = False
         key = (agent_name, config_txt)
-        if key not in self.processable[domain][selector]:
-            self.processable[domain][selector].add((agent_name, config_txt))
-            if key not in self.processed[domain][selector]:
-                # avoid case where two instances of an agent run in different
-                # modes
-                result = True
+        with self.processedlock:
+            if key not in self.processable[domain][selector]:
+                self.processable[domain][selector].add((agent_name, config_txt))
+                if key not in self.processed[domain][selector]:
+                    # avoid case where two instances of an agent run in different
+                    # modes
+                    result = True
         return result
 
     def get_processed(self, domain, selector):
-        return self.processed[domain][selector]
+        with self.processedlock:
+            return self.processed[domain][selector]
 
     def get_processable(self, domain, selector):
         return self.processable[domain][selector]
@@ -378,7 +414,8 @@ class DiskStorage(Storage):
         and the total amount of selectors in this domain.
         """
         result = Counter()
-        processed = self.processed[domain]
+        with self.processedlock:
+            processed = self.processed[domain]
         for agentlist in processed.values():
             result.update([name for name, _ in agentlist])
         return result.items(), len(processed)
@@ -398,8 +435,11 @@ class DiskStorage(Storage):
             return fp.read()
 
     def store_state(self):
-        with open(self.basepath + '/_processed.cfg', 'wb') as fp:
-            cPickle.dump(self.processed, fp)
+        if self.unsavedprocessed:
+            with self.processedlock:
+                with open(self.basepath + '/_processed.cfg', 'wb') as fp:
+                    cPickle.dump(self.processed, fp)
+                self.unsavedprocessed = False
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
         res = []
@@ -417,10 +457,11 @@ class DiskStorage(Storage):
                 selectors.update(selset)
                 for sss in selset:
                     sel_to_uuid[sss].append(uuid)
-            for sel, name_confs in self.processed[domain].iteritems():
-                if agent_nameconf not in name_confs:
-                    continue
-                selectors.remove(sel)
+            with self.processedlock:
+                for sel, name_confs in self.processed[domain].iteritems():
+                    if agent_nameconf not in name_confs:
+                        continue
+                    selectors.remove(sel)
             # selectors now contains a list of selectors that have not been
             # processed by this agent_nameconf
 
