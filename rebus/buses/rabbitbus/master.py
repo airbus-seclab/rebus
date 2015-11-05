@@ -431,7 +431,7 @@ class RabbitBusMaster():
                     svc.channel.start_consuming()
                 except pika.exceptions.ConnectionClosed:
                     log.info("Disconnected (in run). Trying to reconnect")
-                    self.reconnect()
+                    cls.reconnect()
         except (KeyboardInterrupt, SystemExit):
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
@@ -448,7 +448,7 @@ class RabbitBusMaster():
                             svc.channel.start_consuming()
                         except pika.exceptions.ConnectionClosed:
                             log.info("Disconnected. Trying to reconnect")
-                            self.reconnect()
+                            cls.reconnect()
                 except (KeyboardInterrupt, SystemExit):
                     if len(svc.clients) > 0:
                         log.info("Not all agents have stopped, exiting")
