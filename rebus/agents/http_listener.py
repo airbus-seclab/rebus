@@ -72,7 +72,7 @@ class InjectHandler(tornado.web.RequestHandler):
         domain is optional - defaults to 'default'
         """
         start_time = time.time()
-        label = self.get_argument('label')
+        label = self.get_argument('label', 'defaultlabel')
         domain = self.get_argument('domain', 'default')
         value = self.request.body
         if selector == '/auto':

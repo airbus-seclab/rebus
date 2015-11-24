@@ -32,8 +32,12 @@ class Descriptor(object):
             self.hash = selector[(p + 1):]
         else:
             if self.agent and self.precursors:
+                if type(value) is unicode:
+                    strvalue = value.encode('utf-8')
+                else:
+                    strvalue = str(value)
                 v = str(self.agent) + str(self.precursors) + selector + \
-                    str(value)
+                    strvalue
             else:
                 if value is None:
                     # v should only be None when Descriptor is instanciated

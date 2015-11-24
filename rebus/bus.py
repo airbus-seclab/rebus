@@ -141,10 +141,10 @@ class Bus(object):
         """
         agent.call_process(*args, **kargs)
 
-    def sleep(self, time):
+    def sleep(self, t):
         """
         Call by the agent when it need to wait
         Used to reimplement the standard time.sleep() function
         :param time: The time to sleep.
         """
-        time.sleep(time)
+        time.sleep(t)

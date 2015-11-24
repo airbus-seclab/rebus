@@ -52,12 +52,16 @@ class RabbitBusMaster():
             server_addr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         else:
             server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
-        params = pika.URLParameters(server_addr)
-        try:
-            self.connection = pika.BlockingConnection(params)
-        except pika.exceptions.ConnectionClosed:
-            log.warning("Cannot connect to rabbitmq at: " + str(busaddr))
-            # TODO: quit here (failed to connect)
+        self.params = pika.URLParameters(server_addr)
+        
+        b = False
+        while not b:
+            try:
+                self.connection = pika.BlockingConnection(self.params)
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.warning("Cannot connect to rabbitmq at: " + str(busaddr) + ". Retrying..")
+                time.sleep(0.5)
 
         self.channel = self.connection.channel()
 
@@ -82,8 +86,17 @@ class RabbitBusMaster():
         # Send a signal on the exchange
         body = {'signal_name' : signal_name, 'args' : args}
         body = pickle.dumps(body, protocol=2)
-        self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body,
-                                   properties=pika.BasicProperties(delivery_mode = 2,))
+        b = False
+        while not b:
+            try:
+                self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body,
+                                           properties=pika.BasicProperties(delivery_mode = 2,))
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.info("Disconnected (in send_signal). Trying to reconnect..")
+                self.reconnect()
+                time.sleep(0.5)
+
 
     #TODO Check is the key is valid
     def call_rpc_func(self, name, args):
@@ -122,11 +135,19 @@ class RabbitBusMaster():
         ret = pickle.dumps(ret, protocol=2)
 
         # Push the result of the function on the return queue
-        retpublish = ch.basic_publish(exchange='',
-                                      routing_key=properties.reply_to,
-                                      body=ret,
-                                      properties=pika.BasicProperties(correlation_id = \
-                                                                      properties.correlation_id))
+        b = False
+        while not b:
+            try:
+                retpublish = ch.basic_publish(exchange='',
+                                              routing_key=properties.reply_to,
+                                              body=ret,
+                                              properties=pika.BasicProperties(correlation_id = \
+                                                                              properties.correlation_id))
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.info("Disconnected (in rpc_callback). Trying to reconnect")
+                self.reconnect()
+
         ch.basic_ack(delivery_tag = method.delivery_tag)
 
         
@@ -376,13 +397,41 @@ class RabbitBusMaster():
         args.pop('self', None)
         self.send_signal("on_idle", args)
 
+    def reconnect(self):
+        b = False
+        while not b:
+            try:
+                log.info("Connecting to rabbitmq server at: " +
+                         str(self.busaddr))
+                self.connection = pika.BlockingConnection(self.params)
+                self.channel = self.connection.channel()
+
+                self.channel.queue_declare(queue="registration_queue", auto_delete=True)
+                self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
+                self.channel.queue_declare(queue='rebus_master_rpc_highprio')
+                self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
+                                           arguments={'x-priority' : 1})
+                self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
+                self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
+                                           arguments={'x-priority' : 0})
+                b = True
+            except pika.exceptions.ConnectionClosed:
+                log.info("Failed to reconnect to RabbitMQ. Retrying..")
+                time.sleep(0.5)
+
+        
     @classmethod
     def run(cls, store, server_addr, heartbeat_interval=0):
         
         svc = cls(store, server_addr, heartbeat_interval)
         log.info("Entering main loop.")
         try:
-            svc.channel.start_consuming()
+            while True:
+                try:
+                    svc.channel.start_consuming()
+                except pika.exceptions.ConnectionClosed:
+                    log.info("Disconnected (in run). Trying to reconnect")
+                    cls.reconnect()
         except (KeyboardInterrupt, SystemExit):
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
@@ -394,7 +443,12 @@ class RabbitBusMaster():
                 svc.bus_exit(store.STORES_INTSTATE)
                 store.store_state()
                 try:
-                    svc.channel.start_consuming()
+                    while True:
+                        try:
+                            svc.channel.start_consuming()
+                        except pika.exceptions.ConnectionClosed:
+                            log.info("Disconnected. Trying to reconnect")
+                            cls.reconnect()
                 except (KeyboardInterrupt, SystemExit):
                     if len(svc.clients) > 0:
                         log.info("Not all agents have stopped, exiting")
