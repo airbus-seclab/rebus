@@ -27,8 +27,13 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
 
 
 def runBusMaster(busConfig, busaddr):
-    if busConfig.bus != 'dbus':
+    if busConfig.bus == 'localbus':
         return -1
+    if busConfig.bus == 'rabbitbus':
+        raise RuntimeError("Rabbit bus is not (yet) supported by rebus_infra")
+        # not supported yet
+        return -1
+    # dbus
     rebusMasterPid = os.fork()
     if (rebusMasterPid == 0):
         args = ['rebus_master_dbus']
@@ -45,10 +50,13 @@ def runBusMaster(busConfig, busaddr):
 def runStage(stageConfig, bus, busaddr, modules):
     agentsPid = []
     for agent in stageConfig['agents']:
+        # agents with no parameters - missing ":" at the end of line, fixing it
+        if type(agent) is str:
+            agent = {agent: {"params": ""}}
         for agentName, args in agent.iteritems():
             if type(args) is dict:
-                params = args['params']
-                verboseLevel = int(args['verbose_level'])
+                params = args.get('params', args)
+                verboseLevel = int(args.get('verbose_level', 0))
             else:
                 params = args
                 verboseLevel = 0
