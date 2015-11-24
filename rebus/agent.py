@@ -136,6 +136,8 @@ class Agent(object):
         """
         if self.config['operationmode'] != 'idle':
             return False
+        if len(self.for_idle) == 0:
+            return False
 
         self.log.info("START on_idle bulk processing %d descriptors",
                       len(self.for_idle))
