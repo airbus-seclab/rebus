@@ -61,6 +61,8 @@ def guess_selector(fname=None, buf=None, label=None):
     if 'ASCII text' in guess:
         if label and label.endswith('.eml'):
             return '/email/eml'
+        else:
+            return '/asciitext'
         # TODO peek at contents & grep headers to identify e-mail?
     if 'RFC 822 mail, ASCII text' in guess:
         return '/email/eml'
