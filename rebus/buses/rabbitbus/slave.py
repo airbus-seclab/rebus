@@ -181,9 +181,9 @@ class RabbitBus(Bus):
                 'selector_prefix' : selector_pref}
         return self.send_rpc("find_by_selector", args)
 
-    def rpc_find_by_value(self, agent_id, desc_domain, uuid):
+    def rpc_find_by_value(self, agent_id, desc_domain, selector_prefix, value_regex):
         args = {'agent_id' : agent_id, 'desc_domain' : desc_domain,
-                'uuid' : uuid}
+                'selector_prefix' : selector_prefix,'value_regex' : value_regex}
         return self.send_rpc("find_by_value", args)
 
     def rpc_mark_processed(self, agent_id, desc_domain, selector):
