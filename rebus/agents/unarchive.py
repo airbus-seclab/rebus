@@ -114,5 +114,5 @@ class Unarchive(Agent):
                               descriptor.domain, agent=self._name_)
             self.push(desc)
             self.declare_link(
-                descriptor, desc, "Unarchived", "\"%s\" has been unarchived "
+                descriptor, desc, "unarchived", "\"%s\" has been unarchived "
                 "from \"%s\"" % (fname, descriptor.label))
