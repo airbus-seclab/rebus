@@ -17,6 +17,8 @@ def guess_selector(fname=None, buf=None, label=None):
     else:
         raise Exception("Either fname or buffer must be set when calling "
                         "guess_selector.")
+
+    # Executable files
     if ".Net" in guess:
         return "/binary/net"
     if "ELF" in guess and ("sharedobject" in guess or "executable" in guess):
@@ -53,6 +55,10 @@ def guess_selector(fname=None, buf=None, label=None):
         return "/archive/zip"
     if "Microsoft Cabinet archive data" in guess:
         return "/archive/cab"
+    if "Java Jar file data" in guess:
+        return "/archive/jar"
+    if "RAR archive data" in guess:
+        return "/archive/rar"
 
     # E-mails
     if 'Composite Document File V2 Document' in guess:
@@ -97,7 +103,6 @@ def guess_selector(fname=None, buf=None, label=None):
             if label.endswith('.docx'):
                 return "/document/docx"
         return "/document/doc"
-
     return "/unknown"
 
 
