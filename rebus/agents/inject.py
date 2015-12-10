@@ -85,6 +85,8 @@ def guess_selector(fname=None, buf=None, label=None):
     if 'Microsoft PowerPoint 2007+' in guess:
         return "/document/pptx"
     if 'Composite Document File V2 Document' in guess:
+        if 'MSI Installer' in guess:
+            return "/binary/msi"
         if 'Microsoft Excel' in guess:
             return "/document/xls"
         if 'Microsoft PowerPoint' in guess:
@@ -103,6 +105,11 @@ def guess_selector(fname=None, buf=None, label=None):
             if label.endswith('.docx'):
                 return "/document/docx"
         return "/document/doc"
+
+    # ASCII text
+    if 'ASCII text' in guess:
+        return "/text/ascii"
+
     return "/unknown"
 
 
