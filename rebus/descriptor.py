@@ -101,7 +101,7 @@ class Descriptor(object):
                               uuid=self.uuid)
         return desc
 
-    def create_links(self, otherdesc, agentname, linktype, reason):
+    def create_links(self, otherdesc, agentname, linktype, reason, isSymmetric=False):
         """
         Creates and returns two /link/ descriptors
         Selector names for links: /link/agentname/linktype
@@ -109,6 +109,13 @@ class Descriptor(object):
         Value: dictionary containing origin selector, destination selector,
         reason for linking and destination descriptor's label
         """
+        if isSymmetric:
+            link1role = 'symmetric'
+            link2role = 'symmetric'
+        else:
+            link1role = 'src'
+            link2role = 'target'
+
         link1 = Descriptor(
             label=self.label,
             selector='/link/%s/%s' % (agentname, linktype),
@@ -116,6 +123,7 @@ class Descriptor(object):
                    'otherselector': otherdesc.selector,
                    'otherUUID': otherdesc.uuid,
                    'reason': reason,
+                   'linkrole': link1role,
                    'linktype': linktype,
                    'otherlabel': otherdesc.label},
             domain="default",
@@ -130,6 +138,7 @@ class Descriptor(object):
                    'otherselector': self.selector,
                    'otherUUID': self.uuid,
                    'reason': reason,
+                   'linkrole': link2role,
                    'linktype': linktype,
                    'otherlabel': self.label},
             domain="default",
