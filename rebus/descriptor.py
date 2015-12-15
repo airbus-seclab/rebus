@@ -107,7 +107,8 @@ class Descriptor(object):
         Selector names for links: /link/agentname/linktype
         One link is created in both self's and otherdesc's UUID
         Value: dictionary containing origin selector, destination selector,
-        reason for linking and destination descriptor's label
+        reason for linking, link role to give a src/target logic [src/target/symmetric]
+        and destination descriptor's label
         """
         if isSymmetric:
             link1role = 'symmetric'
