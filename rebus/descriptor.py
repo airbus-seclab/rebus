@@ -1,4 +1,3 @@
-import cPickle
 import hashlib
 import logging
 import os
@@ -148,37 +147,37 @@ class Descriptor(object):
             uuid=otherdesc.uuid)
         return link1, link2
 
-    def serialize(self):
-        return cPickle.dumps(
+    def serialize(self, serializer):
+        return serializer.dumps(
             {k: getattr(self, k) for k in dir(self)
              if k in ["label", "selector", "value", "domain", "agent",
                       "precursors", "version", "processing_time", "uuid"]})
 
-    def serialize_meta(self):
+    def serialize_meta(self, serializer):
         """
         Serialize descriptor, without its value.
         """
         # FIXME dumps may return non-ascii characters ("extended" ascii, "8-bit
         # ascii") which may result in invalid UTF-8, thus causing errors when
         # using dbus
-        return cPickle.dumps(
+        return serializer.dumps(
             {k: getattr(self, k) for k in dir(self)
              if k in ["label", "selector", "domain", "agent", "precursors",
                       "version", "processing_time", "uuid"]})
 
-    def serialize_value(self):
+    def serialize_value(self, serializer):
         """
         Serialize descriptor value.
         """
-        return cPickle.dumps(self.value)
+        return serializer.dumps(self.value)
 
     @staticmethod
-    def unserialize_value(s):
-        return cPickle.loads(s)
+    def unserialize_value(serializer, s):
+        return serializer.loads(s)
 
     @classmethod
-    def unserialize(cls, s, bus=None):
-        unserialized = cPickle.loads(s)
+    def unserialize(cls, serializer, s, bus=None):
+        unserialized = serializer.loads(s)
         if unserialized:
             return cls(bus=bus, **unserialized)
         else:
