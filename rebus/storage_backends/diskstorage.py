@@ -1,6 +1,5 @@
 import os
 import re
-import cPickle
 import threading
 import time
 from collections import defaultdict
@@ -9,7 +8,10 @@ from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 from rebus.tools.config import get_output_altering_options
-
+try:
+    import cPickle as serializer
+except ImportError:
+    import pickle as serializer
 
 class CheckpointThread(threading.Thread):
     def __init__(self, storage):
@@ -124,7 +126,7 @@ class DiskStorage(Storage):
                         raise Exception(
                             'Missing associated value for %s' % relname)
                     with open(name, 'rb') as fp:
-                        desc = Descriptor.unserialize(fp.read())
+                        desc = Descriptor.unserialize(serializer, fp.read())
                         fname_selector = relname.rsplit('.')[0]
                         # check consistency between file name and serialized
                         # metadata
@@ -149,7 +151,7 @@ class DiskStorage(Storage):
                     if elem == '_processed.cfg':
                         with open(name, 'rb') as fp:
                             # copy processed info to self.processed
-                            p = cPickle.load(fp)
+                            p = serializer.load(fp)
                             for dom in p.keys():
                                 for sel, val in p[dom].items():
                                     self.processed[dom][sel] = val
@@ -206,7 +208,7 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(
+                    contents = Descriptor.unserialize_value(serializer,
                         open(path + name, 'rb').read())
                     selector = path[len(self.basepath)+len(domain)+1:] +\
                         name.split('.')[0]
@@ -234,7 +236,7 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(
+                    contents = Descriptor.unserialize_value(serializer,
                         open(path + name, 'rb').read())
                     if re.match(value_regex, contents):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
@@ -301,7 +303,8 @@ class DiskStorage(Storage):
         if serialized:
             return open(fullpath, "rb").read()
         else:
-            return Descriptor.unserialize_value(open(fullpath, "rb").read())
+            return Descriptor.unserialize_value(serializer,
+                                                open(fullpath, "rb").read())
 
     def get_children(self, domain, selector, serialized=False, recurse=True):
         """
@@ -357,8 +360,9 @@ class DiskStorage(Storage):
 
         self.register_meta(descriptor)
 
-        serialized_meta = descriptor.serialize_meta()
-        serialized_value = descriptor.serialize_value()
+        ser_p2 = serializer.Pickler(protocol=2)
+        serialized_meta = descriptor.serialize_meta(ser_p2)
+        serialized_value = descriptor.serialize_value(ser_p2)
 
         # Write meta
         with open(fname + '.meta', 'wb') as fp:
@@ -438,7 +442,7 @@ class DiskStorage(Storage):
         if self.unsavedprocessed:
             with self.processedlock:
                 with open(self.basepath + '/_processed.cfg', 'wb') as fp:
-                    cPickle.dump(self.processed, fp)
+                    serializer.dump(self.processed, fp, protocol=2)
                 self.unsavedprocessed = False
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
