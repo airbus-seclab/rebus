@@ -3,7 +3,6 @@ import re
 from collections import defaultdict
 from collections import OrderedDict
 from collections import Counter
-from rebus.tools.config import get_output_altering_options
 
 
 @Storage.register

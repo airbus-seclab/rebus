@@ -100,14 +100,15 @@ class Descriptor(object):
                               uuid=self.uuid)
         return desc
 
-    def create_links(self, otherdesc, agentname, linktype, reason, isSymmetric=False):
+    def create_links(self, otherdesc, agentname, linktype, reason,
+                     isSymmetric=False):
         """
         Creates and returns two /link/ descriptors
         Selector names for links: /link/agentname/linktype
         One link is created in both self's and otherdesc's UUID
         Value: dictionary containing origin selector, destination selector,
-        reason for linking, link role to give a src/target logic [src/target/symmetric]
-        and destination descriptor's label
+        reason for linking, link role to give a src/target logic
+        [src/target/symmetric] and destination descriptor's label
         """
         if isSymmetric:
             link1role = 'symmetric'
