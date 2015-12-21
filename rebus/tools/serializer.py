@@ -14,9 +14,11 @@ def loads(string):
     return serializer.loads(string)
 
 def dumps(obj, protocol=2):
-    print "kikoo"
     l = serializer.dumps(obj, protocol)
-    print l
+    return l
+
+def dump(obj, fname, protocol=2):
+    l = serializer.dump(obj, fname, protocol)
     return l
 
 def load(fname):
@@ -36,8 +38,8 @@ class picklev2:
         return serializer.load(fname)
 
     @staticmethod
-    def dump(fname):
-        return serializer.dump(fname)
+    def dump(obj, fname):
+        return serializer.dump(obj, fname)
     
 class b64serializer:
     @staticmethod 
