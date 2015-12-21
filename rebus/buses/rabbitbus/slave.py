@@ -139,14 +139,14 @@ class RabbitBus(Bus):
     def rpc_unregister(self, agent_id):
         args = {'agent_id' : agent_id}
         return self.send_rpc("unregister", args)
-        
+
     def rpc_lock(self, agent_id, lockid, desc_domain, selector):
         args = {'agent_id' : agent_id, 'lockid' : lockid,
                 'desc_domain' : desc_domain, 'selector' : selector}
         return self.send_rpc("lock", args)
 
     def rpc_push(self, agent_id, descriptor):
-        args = {'agent_id' : agent_id, 'descriptor' : descriptor}
+        args = {'agent_id' : agent_id, 'serialized_descriptor' : descriptor}
         return self.send_rpc("push", args, False)
 
     def rpc_get(self, agent_id, desc_domain, selector):
