@@ -9,9 +9,9 @@ import logging
 from rebus.tools.config import get_output_altering_options
 import pika
 import rebus.tools.serializer as serializer
-import uuid
 
 log = logging.getLogger("rebus.bus")
+
 
 class RabbitBusMaster():
     def __init__(self, store, server_addr, heartbeat_interval=0):
@@ -49,7 +49,7 @@ class RabbitBusMaster():
         else:
             server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
         self.params = pika.URLParameters(server_addr)
-        
+
         b = False
         while not b:
             try:
@@ -65,60 +65,59 @@ class RabbitBusMaster():
         # TODO: publish a new ID when a new client register
         self.channel.queue_declare(queue="registration_queue", auto_delete=True)
         for id in range(10000):
-            self.channel.basic_publish(exchange = "", routing_key = "registration_queue",
-                                       body=str(id), properties=pika.BasicProperties(delivery_mode = 2,))
+            self.channel.basic_publish(exchange="", routing_key="registration_queue",
+                                       body=str(id), properties=pika.BasicProperties(delivery_mode=2,))
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
-        
+
         # Create the rpc queue
         self.channel.queue_declare(queue='rebus_master_rpc_highprio')
         self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
-                                   arguments={'x-priority' : 1})
+                                   arguments={'x-priority': 1})
         self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
         self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
-                                   arguments={'x-priority' : 0})
+                                   arguments={'x-priority': 0})
 
     def send_signal(self, signal_name, args):
         # Send a signal on the exchange
-        body = {'signal_name' : signal_name, 'args' : args}
+        body = {'signal_name': signal_name, 'args': args}
         body = serializer.dumps(body)
         b = False
         while not b:
             try:
                 self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body,
-                                           properties=pika.BasicProperties(delivery_mode = 2,))
+                                           properties=pika.BasicProperties(delivery_mode=2,))
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.info("Disconnected (in send_signal). Trying to reconnect..")
                 self.reconnect()
                 time.sleep(0.5)
 
-
-    #TODO Check is the key is valid
+    # TODO Check is the key is valid
     def call_rpc_func(self, name, args):
-        f = { 'register' : self.register,
-              'unregister' : self.unregister,
-              'lock' : self.lock,
-              'push' : self.push,
-              'get' : self.get,
-              'get_value' : self.get_value,
-              'list_uuids' : self.list_uuids,
-              'find' : self.find,
-              'find_by_uuid' : self.find_by_uuid,
-              'find_by_selector': self.find_by_selector,
-              'find_by_value' : self.find_by_value,
-              'mark_processed' : self.mark_processed,
-              'mark_processable' : self.mark_processable,
-              'get_processable' : self.get_processable,
-              'list_agents' : self.list_agents,
-              'processed_stats' : self.processed_stats,
-              'get_children' : self.get_children,
-              'store_internal_state' : self.store_internal_state,
-              'load_internal_state' : self.load_internal_state,
-              'request_processing' : self.request_processing,
-            }
+        f = {'register': self.register,
+             'unregister': self.unregister,
+             'lock': self.lock,
+             'push': self.push,
+             'get': self.get,
+             'get_value': self.get_value,
+             'list_uuids': self.list_uuids,
+             'find': self.find,
+             'find_by_uuid': self.find_by_uuid,
+             'find_by_selector': self.find_by_selector,
+             'find_by_value': self.find_by_value,
+             'mark_processed': self.mark_processed,
+             'mark_processable': self.mark_processable,
+             'get_processable': self.get_processable,
+             'list_agents': self.list_agents,
+             'processed_stats': self.processed_stats,
+             'get_children': self.get_children,
+             'store_internal_state': self.store_internal_state,
+             'load_internal_state': self.load_internal_state,
+             'request_processing': self.request_processing,
+             }
         return f[name](**args)
-        
+
     def rpc_callback(self, ch, method, properties, body):
         # Parse the rpc request
         body = serializer.loads(body)
@@ -137,16 +136,15 @@ class RabbitBusMaster():
                 retpublish = ch.basic_publish(exchange='',
                                               routing_key=properties.reply_to,
                                               body=ret,
-                                              properties=pika.BasicProperties(correlation_id = \
+                                              properties=pika.BasicProperties(correlation_id=\
                                                                               properties.correlation_id))
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.info("Disconnected (in rpc_callback). Trying to reconnect")
                 self.reconnect()
 
-        ch.basic_ack(delivery_tag = method.delivery_tag)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        
     def update_check_idle(self, agent_name, output_altering_options):
         """
         Increases the count of handled descriptors and checks
@@ -223,13 +221,13 @@ class RabbitBusMaster():
         processed.add(key)
         return True
 
-    def push(self, agent_id, descriptor):
-        unserialized_descriptor = Descriptor.unserialize(serializer,str(descriptor))
-        desc_domain = str(unserialized_descriptor.domain)
-        uuid = str(unserialized_descriptor.uuid)
-        selector = str(unserialized_descriptor.selector)
-        if self.store.add(unserialized_descriptor,
-                          serialized_descriptor=str(descriptor)):
+    def push(self, agent_id, serialized_descriptor):
+        descriptor = Descriptor.unserialize(serializer,
+                                            str(serialized_descriptor))
+        desc_domain = str(descriptor.domain)
+        uuid = str(descriptor.uuid)
+        selector = str(descriptor.selector)
+        if self.store.add(descriptor):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             self.new_descriptor(agent_id, desc_domain, uuid, selector)
@@ -241,13 +239,13 @@ class RabbitBusMaster():
 
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_descriptor(str(desc_domain), str(selector),
-                                         serializer=serializer)
+        desc = self.store.get_descriptor(str(desc_domain), str(selector))
+        return desc.serialize_meta(serializer)
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_value(str(desc_domain), str(selector), 
-                                    serializer=serializer)
+        value = self.store.get_value(str(desc_domain), str(selector))
+        return serializer.dumps(value)
 
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
@@ -261,21 +259,24 @@ class RabbitBusMaster():
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
-        return self.store.find_by_uuid(str(desc_domain), str(uuid),
-                                       serializer=serializer)
+        descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
         log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
                   selector_prefix)
-        return self.store.find_by_selector(str(desc_domain), str(selector_prefix),
-                                         serializer=serializer)
+        descs = self.store.find_by_selector(str(desc_domain),
+                                            str(selector_prefix))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
-        return self.store.find_by_value(str(desc_domain), str(selector_prefix),
-                                        str(value_regex), serializer=serializer)
+        descs = self.store.find_by_value(str(desc_domain),
+                                         str(selector_prefix),
+                                         str(value_regex))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
@@ -335,8 +336,7 @@ class RabbitBusMaster():
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
 
-        d = self.store.get_descriptor(str(desc_domain), str(selector),
-                                      serializer=None)
+        d = self.store.get_descriptor(str(desc_domain), str(selector))
         self.userrequestid += 1
 
         self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector,
@@ -346,7 +346,7 @@ class RabbitBusMaster():
         args = locals()
         args.pop('self', None)
         self.send_signal("new_descriptor", args)
-        
+
     def targeted_descriptor(self, sender_id, desc_domain, uuid, selector,
                             targets, user_request):
         """
@@ -371,7 +371,7 @@ class RabbitBusMaster():
         args = locals()
         args.pop('self', None)
         self.send_signal("targeted_descriptor", args)
-    
+
     def bus_exit(self, awaiting_internal_state):
         """
         Signal sent when the bus is exiting.
@@ -381,7 +381,7 @@ class RabbitBusMaster():
         args = locals()
         args.pop('self', None)
         self.send_signal("bus_exit", args)
-        
+
         self.exiting = True
         return
 
@@ -407,19 +407,18 @@ class RabbitBusMaster():
                 self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
                 self.channel.queue_declare(queue='rebus_master_rpc_highprio')
                 self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
-                                           arguments={'x-priority' : 1})
+                                           arguments={'x-priority': 1})
                 self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
                 self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
-                                           arguments={'x-priority' : 0})
+                                           arguments={'x-priority': 0})
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.info("Failed to reconnect to RabbitMQ. Retrying..")
                 time.sleep(0.5)
 
-        
     @classmethod
     def run(cls, store, server_addr, heartbeat_interval=0):
-        
+
         svc = cls(store, server_addr, heartbeat_interval)
         log.info("Entering main loop.")
         try:
@@ -433,7 +432,7 @@ class RabbitBusMaster():
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
                          "again to stop.")
-                #Ask slave agents to shutdown nicely & save internal state
+                # Ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
                 svc.channel.queue_delete(queue='registration_queue')

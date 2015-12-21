@@ -13,7 +13,7 @@ agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
 class LocalBus(Bus):
     _name_ = "localbus"
 
-    #TODO : find a way to remove the heartbeat_interval
+    # TODO : find a way to remove the heartbeat_interval
     def __init__(self, busaddr=None, heartbeat_interval=0):
         Bus.__init__(self)
         self.locks = defaultdict(set)
@@ -73,8 +73,7 @@ class LocalBus(Bus):
 
     def get(self, agent_id, desc_domain, selector):
         log.info("GET: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_descriptor(desc_domain, selector,
-                                         serialized=False)
+        return self.store.get_descriptor(desc_domain, selector)
 
     def get_value(self, agent_id, desc_domain, selector):
         log.info("GET: %s %s:%s", agent_id, desc_domain, selector)
@@ -91,20 +90,19 @@ class LocalBus(Bus):
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
-        return self.store.find_by_uuid(desc_domain, uuid, serialized=False)
+        return self.store.find_by_uuid(desc_domain, uuid)
 
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
         log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
                   selector_prefix)
-        return self.store.find_by_selector(desc_domain, selector_prefix,
-                                        serialized=False)
+        return self.store.find_by_selector(desc_domain, selector_prefix)
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
         return self.store.find_by_value(desc_domain, selector_prefix,
-                                        value_regex, serialized=False)
+                                        value_regex)
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
@@ -138,7 +136,7 @@ class LocalBus(Bus):
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
         log.info("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(desc_domain, selector,
-                                            recurse, serialized=False))
+                                            recurse))
 
     def store_internal_state(self, agent_id, state):
         log.debug("STORE_INTSTATE: %s", agent_id)
@@ -158,7 +156,7 @@ class LocalBus(Bus):
         log.debug("REQUEST_PROCESSING: %s %s:%s target %s", agent_id,
                   desc_domain, selector, targets)
         self.userrequestid += 1
-        d = self.store.get_descriptor(desc_domain, selector, serialized=False)
+        d = self.store.get_descriptor(desc_domain, selector)
         for agid in self.agents.keys():
             if self.agents[agid].name in targets:
                 try:

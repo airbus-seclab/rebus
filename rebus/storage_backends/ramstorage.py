@@ -19,10 +19,6 @@ class RAMStorage(Storage):
         #: self.dstore['domain']['/selector/%hash'] is a descriptor
         self.dstore = defaultdict(OrderedDict)
 
-        #: self.serialized_store['domain']['/selector/%hash'] is a serialized
-        #: descriptor
-        self.serialized_store = defaultdict(dict)
-
         #: self.version_cache['domain']['/selector/'][42] = /selector/%1234
         #: where 1234 is the hash of this selector's version 42
         self.version_cache = defaultdict(lambda: defaultdict(dict))
@@ -58,36 +54,26 @@ class RAMStorage(Storage):
                     return res
         return res
 
-    def find_by_uuid(self, domain, uuid, serialized=False):
+    def find_by_uuid(self, domain, uuid):
         result = []
         for selector, desc in self.dstore[domain].iteritems():
             if desc.uuid == uuid:
-                if serialized:
-                    result.append(self.serialized_store[domain][selector])
-                else:
-                    result.append(desc)
+                result.append(desc)
         return result
 
-    def find_by_selector(self, domain, selector_prefix, serialized=False):
+    def find_by_selector(self, domain, selector_prefix):
         result = []
         for selector, desc in self.dstore[domain].iteritems():
             if desc.selector.startswith(selector_prefix):
-                if serialized:
-                    result.append(self.serialized_store[domain][selector])
-                else:
-                    result.append(desc)
+                result.append(desc)
         return result
 
-    def find_by_value(self, domain, selector_prefix, value_regex,
-                      serialized=False):
+    def find_by_value(self, domain, selector_prefix, value_regex):
         result = []
         for selector, desc in self.dstore[domain].iteritems():
             if desc.selector.startswith(selector_prefix) and \
                     re.match(value_regex, desc.value):
-                if serialized:
-                    result.append(self.serialized_store[domain][selector])
-                else:
-                    result.append(desc)
+                result.append(desc)
         return result
 
     def list_uuids(self, domain):
@@ -99,7 +85,7 @@ class RAMStorage(Storage):
                 result[desc.uuid] = desc.label
         return result
 
-    def get_descriptor(self, domain, selector, serialized=False):
+    def _resolve_selector_version(self, domain, selector):
         # if version is specified, but no hash
         if '%' not in selector and '~' in selector:
             selprefix, version = selector.split('~')
@@ -113,41 +99,39 @@ class RAMStorage(Storage):
                 # ValueError: invalid version integer
                 # KeyError: unknown version
                 selector = None
+        return selector
+
+    def get_descriptor(self, domain, selector):
+        selector = self._resolve_selector_version(domain, selector)
 
         # Check whether domain & selector are known
         if domain not in self.dstore or selector not in self.dstore[domain]:
-            if serialized:
-                return "N."  # serialized None
-            else:
-                return None
-        if not serialized:
-            return self.dstore[domain][selector]
-        else:
-            desc = self.serialized_store[domain][selector]
-            if desc:
-                return desc
-            return self.dstore[domain][selector].serialize()
+            return None
+        return self.dstore[domain][selector]
 
-    def get_children(self, domain, selector, serialized=False, recurse=True):
+    def get_value(self, domain, selector):
+        selector = self._resolve_selector_version(domain, selector)
+
+        # Check whether domain & selector are known
+        if domain not in self.dstore or selector not in self.dstore[domain]:
+            return None
+        return self.dstore[domain][selector].value
+
+    def get_children(self, domain, selector, recurse=True):
         result = set()
         if selector not in self.dstore[domain]:
             return result
         for child in self.edges[domain][selector]:
-            if serialized:
-                result.add(self.serialized_store[domain][child])
-            else:
-                result.add(self.dstore[domain][child])
+            result.add(self.dstore[domain][child])
             if recurse:
-                result |= self.get_children(child, domain, serialized, recurse)
+                result |= self.get_children(child, domain, recurse)
         return result
 
-    def add(self, descriptor, serialized_descriptor=None):
+    def add(self, descriptor):
         selector = descriptor.selector
         domain = descriptor.domain
         if selector in self.dstore[domain]:
             return False
-        if serialized_descriptor is not None:
-            self.serialized_store[domain][selector] = serialized_descriptor
         self.dstore[domain][selector] = descriptor
         self.version_cache[domain][selector.split('%')[0]][descriptor.version]\
             = selector

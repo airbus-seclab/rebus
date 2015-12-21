@@ -10,6 +10,7 @@ from rebus.descriptor import Descriptor
 from rebus.tools.config import get_output_altering_options
 from rebus.tools.serializer import picklev2 as store_serializer
 
+
 class CheckpointThread(threading.Thread):
     def __init__(self, storage):
         threading.Thread.__init__(self)
@@ -195,7 +196,7 @@ class DiskStorage(Storage):
                     return res
         return res
 
-    def find_by_selector(self, domain, selector_prefix, serializer=None):
+    def find_by_selector(self, domain, selector_prefix):
         result = []
         # File paths to explore
         pathprefix = self.basepath + '/' + domain + selector_prefix
@@ -209,20 +210,18 @@ class DiskStorage(Storage):
                         open(path + name, 'rb').read())
                     selector = path[len(self.basepath)+len(domain)+1:] +\
                         name.split('.')[0]
-                    if serializer:
-                        desc = self.get_descriptor(domain, selector)
-                        result.append(desc)
+                    desc = self.get_descriptor(domain, selector)
+                    result.append(desc)
         return result
 
-    def find_by_uuid(self, domain, uuid, serializer=None):
+    def find_by_uuid(self, domain, uuid):
         result = []
         for selector in self.uuids[domain][uuid]:
-            desc = self.get_descriptor(domain, selector, serializer)
+            desc = self.get_descriptor(domain, selector)
             result.append(desc)
         return result
 
-    def find_by_value(self, domain, selector_prefix, value_regex,
-                      serializer=None):
+    def find_by_value(self, domain, selector_prefix, value_regex):
         result = []
         # File paths to explore
         pathprefix = self.basepath + '/' + domain + selector_prefix
@@ -237,7 +236,7 @@ class DiskStorage(Storage):
                     if re.match(value_regex, contents):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
                             name.split('.')[0]
-                        desc = self.get_descriptor(domain, selector, serializer)
+                        desc = self.get_descriptor(domain, selector)
                         result.append(desc)
         return result
 
@@ -269,50 +268,44 @@ class DiskStorage(Storage):
                 selector = None
         return selector
 
-    def get_descriptor(self, domain, selector, serializer=None):
+    def get_descriptor(self, domain, selector):
         """
         Returns descriptor metadata
         """
         selector = self.version_lookup(domain, selector)
         if not selector:
-            return serializer.dumps(None)
+            return None
 
         fullpath = self.pathFromSelector(domain, selector) + ".meta"
         if not os.path.isfile(fullpath):
-            return serializer.dumps(None)
-        if serializer:
-            return serializer.dumps(store_serializer.load(open(fullpath, "rb")))
-        else:
-            return store_serializer.load(open(fullpath, "rb"))
+            return None
+        return Descriptor.unserialize(store_serializer,
+                                      open(fullpath, "rb").read())
 
-    def get_value(self, domain, selector, serializer):
+    def get_value(self, domain, selector):
         """
         Returns descriptor value
         """
-        none_value = serializer.dumps(None) if serializer is not None else None
         selector = self.version_lookup(domain, selector)
         if not selector:
-            return none_value 
+            return None
 
         fullpath = self.pathFromSelector(domain, selector) + ".value"
         if not os.path.isfile(fullpath):
-            return none_value
-        desc =  Descriptor.unserialize_value(store_serializer,
-                                         open(fullpath, "rb").read())
-        if serializer:
-            return serializer.dumps(desc)
-        else:
-            return desc
+            return None
+        value = Descriptor.unserialize_value(store_serializer,
+                                             open(fullpath, "rb").read())
+        return value
 
-    def get_children(self, domain, selector, serializer=None, recurse=True):
+    def get_children(self, domain, selector, recurse=True):
         result = set()
         with self.processedlock:
             if selector not in self.processed[domain].keys():
                 return result
         for child in self.edges[domain][selector]:
-            result.add(self.get_descriptor(domain, child, serializer))
+            result.add(self.get_descriptor(domain, child))
             if recurse:
-                result |= self.get_children(child, domain, serializer, recurse)
+                result |= self.get_children(child, domain, recurse)
         return result
 
     def mkdirs(self, domain, selector):
