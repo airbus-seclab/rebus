@@ -10,6 +10,7 @@ from rebus.descriptor import Descriptor
 import gobject
 import logging
 from rebus.tools.config import get_output_altering_options
+from rebus.tools.serializer import b64serializer as serializer
 
 
 log = logging.getLogger("rebus.bus")
@@ -130,13 +131,13 @@ class DBusMaster(dbus.service.Object):
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='b')
-    def push(self, agent_id, descriptor):
-        unserialized_descriptor = Descriptor.unserialize(str(descriptor))
-        desc_domain = str(unserialized_descriptor.domain)
-        uuid = str(unserialized_descriptor.uuid)
-        selector = str(unserialized_descriptor.selector)
-        if self.store.add(unserialized_descriptor,
-                          serialized_descriptor=str(descriptor)):
+    def push(self, agent_id, serialized_descriptor):
+        descriptor = Descriptor.unserialize(serializer,
+                                            str(serialized_descriptor))
+        desc_domain = str(descriptor.domain)
+        uuid = str(descriptor.uuid)
+        selector = str(descriptor.selector)
+        if self.store.add(descriptor):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             self.new_descriptor(agent_id, desc_domain, uuid, selector)
@@ -150,14 +151,15 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sss', out_signature='s')
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_descriptor(str(desc_domain), str(selector),
-                                         serialized=True)
+        desc = self.store.get_descriptor(str(desc_domain), str(selector))
+        return desc.serialize_meta(serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='s')
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_value(str(desc_domain), str(selector), True)
+        value = self.store.get_value(str(desc_domain), str(selector))
+        return serializer.dumps(value)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a{ss}')
@@ -177,16 +179,17 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sss', out_signature='as')
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
-        return self.store.find_by_uuid(str(desc_domain), str(uuid),
-                                       serialized=True)
+        descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='as')
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
         log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
                   selector_prefix)
-        return self.store.find_by_selector(str(desc_domain), str(selector_prefix),
-                                           serialized=True)
+        descs = self.store.find_by_selector(str(desc_domain),
+                                            str(selector_prefix))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='as')
@@ -194,8 +197,10 @@ class DBusMaster(dbus.service.Object):
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
-        return self.store.find_by_value(str(desc_domain), str(selector_prefix),
-                                        str(value_regex), serialized=True)
+        descs = self.store.find_by_value(str(desc_domain),
+                                         str(selector_prefix),
+                                         str(value_regex))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
@@ -246,9 +251,9 @@ class DBusMaster(dbus.service.Object):
                          in_signature='sssb', out_signature='as')
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
-        return list(self.store.get_children(str(desc_domain), str(selector),
-                                            serialized=True,
-                                            recurse=bool(recurse)))
+        descs = self.store.get_children(str(desc_domain), str(selector),
+                                        recurse=bool(recurse))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='')
@@ -273,8 +278,7 @@ class DBusMaster(dbus.service.Object):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
 
-        d = self.store.get_descriptor(str(desc_domain), str(selector),
-                                      serialized=False)
+        d = self.store.get_descriptor(str(desc_domain), str(selector))
         self.userrequestid += 1
 
         self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector,

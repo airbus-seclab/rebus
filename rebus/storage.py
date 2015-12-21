@@ -37,10 +37,16 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def find_by_selector(self, domain, selec_pref, serialized=False):
+    def find_by_selector(self, domain, selector_prefix):
+        """
+        Return a list of descriptors whose selector starts with
+        selector_prefix.
+
+        Unspecified list order - may vary depending on the backend.
+        """
         raise NotImplementedError
 
-    def find_by_uuid(self, domain, uuid, serialized=False):
+    def find_by_uuid(self, domain, uuid):
         """
         Return a list of descriptors whose uuid match given parameter.
 
@@ -48,10 +54,9 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def find_by_value(self, domain, selector_prefix, value_regex,
-                      serialized=False):
+    def find_by_value(self, domain, selector_prefix, value_regex):
         """
-        Returns a list of matching descriptors:
+        Return a list of matching descriptors:
 
         * desc.domain == desc_domain
         * desc.selector.startswith(selector_prefix)
@@ -71,7 +76,7 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def get_descriptor(self, domain, selector, serialized=False):
+    def get_descriptor(self, domain, selector):
         """
         Get a single descriptor.
         /sel/ector/%hash
@@ -80,39 +85,35 @@ class Storage(object):
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: boolean, return serialized descriptors if True
         """
         raise NotImplementedError
 
-    def get_value(self, domain, selector, serialized):
+    def get_value(self, domain, selector):
         """
         Get a selector's value.
         /sel/ector/%hash
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: return serialized value if True
         """
         raise NotImplementedError
 
-    def get_children(self, domain, selector, serialized=False, recurse=True):
+    def get_children(self, domain, selector, recurse=True):
         """
         Return a set of children descriptors from given selector.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: boolean, return serialized descriptors if True
         :param recurse: boolean, recursively fetch children if True
         """
         raise NotImplementedError
 
-    def add(self, descriptor, serialized_descriptor=None):
+    def add(self, descriptor):
         """
-        Add new descriptor to storage
+        Add new descriptor to storage. Return False if descriptor was already
+        present, else False.
 
         :param descriptor: descriptor to be stored
-        :param serialized_descriptor: string, optionally contains a serialized
-            version of the descriptor
         """
         raise NotImplementedError
 
@@ -127,7 +128,7 @@ class Storage(object):
         :param domain: string, domain on which operations are performed
         :param selector: string
         :param agent_name: string, agent name
-        :param config_txt: string, JSON-serialized configuration of agent
+        :param config_txt: string, serialized configuration of agent
             describing output altering options
         """
         raise NotImplementedError
@@ -143,7 +144,7 @@ class Storage(object):
         :param domain: string, domain on which operations are performed
         :param selector: string
         :param agent_name: string, agent name
-        :param config_txt: string, JSON-serialized configuration of agent
+        :param config_txt: string, serialized configuration of agent
             describing output altering options
         """
         raise NotImplementedError
@@ -205,7 +206,7 @@ class Storage(object):
         by this agent, identified by its name.
 
         :param agent_name: string, agent name
-        :param config_txt: string, JSON-serialized configuration of agent
+        :param config_txt: string, serialized configuration of agent
             describing output altering options
         """
         return []

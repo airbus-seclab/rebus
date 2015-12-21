@@ -39,6 +39,9 @@ Dependencies:
 * python2-gobject
 * dbus-glib
 
+Optional dependencies:
+* pip install larch-pickle
+
 To install these dependencies on Arch Linux:
 
 .. sourcecode:: bash

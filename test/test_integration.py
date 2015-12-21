@@ -171,7 +171,7 @@ def test_master():
                                bufsize=0)
     # wait for master bus to be ready
     # TODO look into race condition. Another SIGINT handler?
-    time.sleep(0.3)
+    time.sleep(1)
     output = process.stderr.read(1)
     process.send_signal(signal.SIGINT)
     process.wait()
@@ -231,6 +231,12 @@ def test_inject(agent_set, agent_test, agent_inject):
 
     descriptors_uuid = bus_instance.find_by_uuid(agent_test.id, DEFAULT_DOMAIN,
                                                  descriptor.uuid)
+    # Find by selector
+    bysel = bus_instance.find_by_selector(agent_test.id, DEFAULT_DOMAIN,
+                                          '/binary')
+    assert len(bysel) == 1
+    assert bysel[0].value == descriptor.value
+
     # force fetching descriptor value
     assert descriptors_uuid[0].value == descriptor.value
     assert descriptors_uuid[0] == descriptor
