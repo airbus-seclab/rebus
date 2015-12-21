@@ -231,8 +231,9 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(store_serializer,
-                                            open(path + name, 'rb').read())
+                    contents = Descriptor.unserialize_value(
+                        store_serializer,
+                        open(path + name, 'rb').read())
                     if re.match(value_regex, contents):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
                             name.split('.')[0]
@@ -246,7 +247,7 @@ class DiskStorage(Storage):
             result[uuid] = self.labels[domain][uuid]
         return result
 
-    def version_lookup(self, domain, selector):
+    def _version_lookup(self, domain, selector):
         """
         :param selector: selector, containing either a version (/selector/~12)
         or a hash (/selector/%1234)
@@ -272,7 +273,7 @@ class DiskStorage(Storage):
         """
         Returns descriptor metadata
         """
-        selector = self.version_lookup(domain, selector)
+        selector = self._version_lookup(domain, selector)
         if not selector:
             return None
 
@@ -286,7 +287,7 @@ class DiskStorage(Storage):
         """
         Returns descriptor value
         """
-        selector = self.version_lookup(domain, selector)
+        selector = self._version_lookup(domain, selector)
         if not selector:
             return None
 

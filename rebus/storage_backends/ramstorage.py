@@ -85,7 +85,13 @@ class RAMStorage(Storage):
                 result[desc.uuid] = desc.label
         return result
 
-    def _resolve_selector_version(self, domain, selector):
+    def _version_lookup(self, domain, selector):
+        """
+        :param selector: selector, containing either a version (/selector/~12)
+        or a hash (/selector/%1234)
+        Perform version lookup if needed.
+        Returns a selector containing a hash value /selector/%1234
+        """
         # if version is specified, but no hash
         if '%' not in selector and '~' in selector:
             selprefix, version = selector.split('~')
@@ -102,7 +108,7 @@ class RAMStorage(Storage):
         return selector
 
     def get_descriptor(self, domain, selector):
-        selector = self._resolve_selector_version(domain, selector)
+        selector = self._version_lookup(domain, selector)
 
         # Check whether domain & selector are known
         if domain not in self.dstore or selector not in self.dstore[domain]:
@@ -110,7 +116,7 @@ class RAMStorage(Storage):
         return self.dstore[domain][selector]
 
     def get_value(self, domain, selector):
-        selector = self._resolve_selector_version(domain, selector)
+        selector = self._version_lookup(domain, selector)
 
         # Check whether domain & selector are known
         if domain not in self.dstore or selector not in self.dstore[domain]:
