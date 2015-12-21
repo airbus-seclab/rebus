@@ -246,7 +246,8 @@ class RabbitBusMaster():
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_value(str(desc_domain), str(selector), True)
+        return self.store.get_value(str(desc_domain), str(selector), 
+                                    serializer=serializer)
 
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)

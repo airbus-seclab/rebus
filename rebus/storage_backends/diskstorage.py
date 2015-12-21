@@ -281,9 +281,9 @@ class DiskStorage(Storage):
         if not os.path.isfile(fullpath):
             return serializer.dumps(None)
         if serializer:
-            return serializer.dumps(store_serializer.load(open(fullpath, "rb").read()))
+            return serializer.dumps(store_serializer.load(open(fullpath, "rb")))
         else:
-            return store_serializer.load(open(fullpath, "rb").read())
+            return store_serializer.load(open(fullpath, "rb"))
 
     def get_value(self, domain, selector, serializer):
         """
