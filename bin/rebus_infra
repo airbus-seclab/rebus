@@ -29,31 +29,28 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
 def runBusMaster(busConfig, busaddr):
     if busConfig.bus == 'localbus':
         return -1
-    if busConfig.bus == 'rabbitbus':
-        # rabbit
-        rebusMasterPid = os.fork()
-        if rebusMasterPid == 0:
-            args = ['rebus_master_rabbit']
-            if busConfig.logfile is not None:
-                args.extend(['-f', busConfig.logfile])
-            if busConfig.verboseLevel is not None:
-                nbv = int(busConfig.verboseLevel)
-                args.extend(['-v'] * nbv)
-            args.append(busConfig.storage)
-            os.execvp('rebus_master_rabbit', args)
-        return rebusMasterPid
-    elif busConfig.bus == 'dbus':
-        # dbus
-        rebusMasterPid = os.fork()
-        if rebusMasterPid == 0:
-            args = ['rebus_master_dbus']
-            if busConfig.logfile is not None:
-                args.extend(['-f', busConfig.logfile])
-            if busConfig.verboseLevel is not None:
-                nbv = int(busConfig.verboseLevel)
-                args.extend(['-v'] * nbv)
-            args.append(busConfig.storage)
-            os.execvp('rebus_master_dbus', args)
+    args = []
+    rebusMasterPid = os.fork()
+    if rebusMasterPid == 0:
+        if busConfig.bus == 'rabbitbus':
+            args.append('rebus_master_rabbit')
+            if busConfig.addr is not None:
+                args.extend(['--rabbitaddr', busConfig.addr])
+            if busConfig.heartbeat is not None:
+                args.extend(['--heartbeat', busConfig.heartbeat])
+
+        elif busConfig.bus == 'dbus':
+            args.append('rebus_master_dbus')
+
+        if busConfig.logfile is not None:
+            args.extend(['-f', busConfig.logfile])
+        if busConfig.verboseLevel is not None:
+            nbv = int(busConfig.verboseLevel)
+            args.extend(['-v'] * nbv)
+        args.append(busConfig.storage)
+        os.execvp(args[0], args)
+        raise RuntimeError
+    else:
         return rebusMasterPid
 
 
@@ -82,6 +79,8 @@ def getBusConfig(config):
     busConfig.logfile = None
     busConfig.verboseLevel = None
     busConfig.storage = 'ramstorage'
+    busConfig.addr = None
+    busConfig.heartbeat = None
 
     # Bus type
     if 'bus' in config:
@@ -101,6 +100,12 @@ def getBusConfig(config):
             raise ValueError(str(config['verbose_level']) +
                              ' is not a valid verbose level.')
         busConfig.verboseLevel = str(config['verbose_level'])
+
+    if busConfig.bus == 'rabbitbus':
+        if 'addr' in config:
+            busConfig.addr = config['addr']
+        if 'heartbeat' in config:
+            busConfig.heartbeat = str(config['heartbeat'])
 
     # Storage mode
     if 'storage' in config:
