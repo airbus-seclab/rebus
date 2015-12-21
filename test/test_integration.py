@@ -231,6 +231,12 @@ def test_inject(agent_set, agent_test, agent_inject):
 
     descriptors_uuid = bus_instance.find_by_uuid(agent_test.id, DEFAULT_DOMAIN,
                                                  descriptor.uuid)
+    # Find by selector
+    bysel = bus_instance.find_by_selector(agent_test.id, DEFAULT_DOMAIN,
+                                          '/binary')
+    assert len(bysel) == 1
+    assert bysel[0].value == descriptor.value
+
     # force fetching descriptor value
     assert descriptors_uuid[0].value == descriptor.value
     assert descriptors_uuid[0] == descriptor

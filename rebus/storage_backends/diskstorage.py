@@ -7,11 +7,14 @@ from collections import OrderedDict
 from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
-from rebus.tools.config import get_output_altering_options
 from rebus.tools.serializer import picklev2 as store_serializer
 
 
 class CheckpointThread(threading.Thread):
+    """
+    Calls store_state periodically to avoid losing it completely in case
+    diskstorage gets killed ungracefully.
+    """
     def __init__(self, storage):
         threading.Thread.__init__(self)
         self.storage = storage
@@ -124,7 +127,8 @@ class DiskStorage(Storage):
                         raise Exception(
                             'Missing associated value for %s' % relname)
                     with open(name, 'rb') as fp:
-                        desc = Descriptor.unserialize(store_serializer, fp.read())
+                        desc = Descriptor.unserialize(store_serializer,
+                                                      fp.read())
                         fname_selector = relname.rsplit('.')[0]
                         # check consistency between file name and serialized
                         # metadata
@@ -198,20 +202,10 @@ class DiskStorage(Storage):
 
     def find_by_selector(self, domain, selector_prefix):
         result = []
-        # File paths to explore
-        pathprefix = self.basepath + '/' + domain + selector_prefix
-        paths = [path for path in self.existing_paths if
-                 path.startswith(pathprefix)]
-        for path in paths:
-            # open and run re.match() on every file matching *.value
-            for name in os.listdir(path):
-                if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(store_serializer,
-                        open(path + name, 'rb').read())
-                    selector = path[len(self.basepath)+len(domain)+1:] +\
-                        name.split('.')[0]
-                    desc = self.get_descriptor(domain, selector)
-                    result.append(desc)
+        for selector in self.processed[domain].keys():
+            if selector.startswith(selector_prefix):
+                desc = self.get_descriptor(domain, selector)
+                result.append(desc)
         return result
 
     def find_by_uuid(self, domain, uuid):
@@ -336,7 +330,7 @@ class DiskStorage(Storage):
         path = os.path.join(self.basepath, domain, selector[1:])
         return path
 
-    def add(self, descriptor, serialized_descriptor=None):
+    def add(self, descriptor):
         """
         serialized_descriptor is not used by this backend.
         """
@@ -386,10 +380,11 @@ class DiskStorage(Storage):
         key = (agent_name, config_txt)
         with self.processedlock:
             if key not in self.processable[domain][selector]:
-                self.processable[domain][selector].add((agent_name, config_txt))
+                self.processable[domain][selector].add((agent_name,
+                                                        config_txt))
                 if key not in self.processed[domain][selector]:
-                    # avoid case where two instances of an agent run in different
-                    # modes
+                    # avoid case where two instances of an agent run in
+                    # different modes
                     result = True
         return result
 

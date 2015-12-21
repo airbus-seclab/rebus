@@ -37,7 +37,13 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def find_by_selector(self, domain, selec_pref):
+    def find_by_selector(self, domain, selector_prefix):
+        """
+        Return a list of descriptors whose selector starts with
+        selector_prefix.
+
+        Unspecified list order - may vary depending on the backend.
+        """
         raise NotImplementedError
 
     def find_by_uuid(self, domain, uuid):
@@ -50,7 +56,7 @@ class Storage(object):
 
     def find_by_value(self, domain, selector_prefix, value_regex):
         """
-        Returns a list of matching descriptors:
+        Return a list of matching descriptors:
 
         * desc.domain == desc_domain
         * desc.selector.startswith(selector_prefix)
