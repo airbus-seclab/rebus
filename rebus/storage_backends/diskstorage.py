@@ -8,10 +8,7 @@ from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 from rebus.tools.config import get_output_altering_options
-try:
-    import cPickle as serializer
-except ImportError:
-    import pickle as serializer
+from rebus.tools.serializer import picklev2 as serializer
 
 class CheckpointThread(threading.Thread):
     def __init__(self, storage):
@@ -360,9 +357,8 @@ class DiskStorage(Storage):
 
         self.register_meta(descriptor)
 
-        ser_p2 = serializer.Pickler(protocol=2)
-        serialized_meta = descriptor.serialize_meta(ser_p2)
-        serialized_value = descriptor.serialize_value(ser_p2)
+        serialized_meta = descriptor.serialize_meta(serializer)
+        serialized_value = descriptor.serialize_value(serializer)
 
         # Write meta
         with open(fname + '.meta', 'wb') as fp:
