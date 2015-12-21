@@ -22,13 +22,13 @@ class Storage(object):
 
     def find(self, domain, selector_regex, limit):
         """
-        Return list of selectors according to search constraints :
+        Return list of selectors according to search constraints:
 
         * domain
         * selector regular expression
         * limit (max number of entries to return)
 
-        :param domain: string, domain on which operations are performed
+        :param domain: string, domain in which the search is performed
         :param selector_regex: string, regex
         :param limit: int, max number of selectors to return. Unlimited if 0.
 
