@@ -8,7 +8,7 @@ from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 from rebus.tools.config import get_output_altering_options
-from rebus.tools.serializer import picklev2 as serializer
+from rebus.tools.serializer import picklev2 as store_serializer
 
 class CheckpointThread(threading.Thread):
     def __init__(self, storage):
@@ -123,7 +123,7 @@ class DiskStorage(Storage):
                         raise Exception(
                             'Missing associated value for %s' % relname)
                     with open(name, 'rb') as fp:
-                        desc = Descriptor.unserialize(serializer, fp.read())
+                        desc = Descriptor.unserialize(store_serializer, fp.read())
                         fname_selector = relname.rsplit('.')[0]
                         # check consistency between file name and serialized
                         # metadata
@@ -148,7 +148,7 @@ class DiskStorage(Storage):
                     if elem == '_processed.cfg':
                         with open(name, 'rb') as fp:
                             # copy processed info to self.processed
-                            p = serializer.load(fp)
+                            p = store_serializer.load(fp)
                             for dom in p.keys():
                                 for sel, val in p[dom].items():
                                     self.processed[dom][sel] = val
@@ -195,7 +195,7 @@ class DiskStorage(Storage):
                     return res
         return res
 
-    def find_by_selector(self, domain, selector_prefix, serialized=False):
+    def find_by_selector(self, domain, selector_prefix, serializer=None):
         result = []
         # File paths to explore
         pathprefix = self.basepath + '/' + domain + selector_prefix
@@ -205,25 +205,24 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(serializer,
+                    contents = Descriptor.unserialize_value(store_serializer,
                         open(path + name, 'rb').read())
                     selector = path[len(self.basepath)+len(domain)+1:] +\
                         name.split('.')[0]
-                    if serialized:
+                    if serializer:
                         desc = self.get_descriptor(domain, selector)
                         result.append(desc)
         return result
 
-    def find_by_uuid(self, domain, uuid, serialized=False):
+    def find_by_uuid(self, domain, uuid, serializer=None):
         result = []
         for selector in self.uuids[domain][uuid]:
-            desc = self.get_descriptor(domain, selector)
-            if serialized:
-                result.append(desc)
+            desc = self.get_descriptor(domain, selector, serializer)
+            result.append(desc)
         return result
 
     def find_by_value(self, domain, selector_prefix, value_regex,
-                      serialized=False):
+                      serializer=None):
         result = []
         # File paths to explore
         pathprefix = self.basepath + '/' + domain + selector_prefix
@@ -233,14 +232,13 @@ class DiskStorage(Storage):
             # open and run re.match() on every file matching *.value
             for name in os.listdir(path):
                 if os.path.isfile(path + name) and name.endswith('.value'):
-                    contents = Descriptor.unserialize_value(serializer,
-                        open(path + name, 'rb').read())
+                    contents = Descriptor.unserialize_value(store_serializer,
+                                            open(path + name, 'rb').read())
                     if re.match(value_regex, contents):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
                             name.split('.')[0]
-                        if serialized:
-                            desc = self.get_descriptor(domain, selector)
-                            result.append(desc)
+                        desc = self.get_descriptor(domain, selector, serializer)
+                        result.append(desc)
         return result
 
     def list_uuids(self, domain):
@@ -271,50 +269,50 @@ class DiskStorage(Storage):
                 selector = None
         return selector
 
-    def get_descriptor(self, domain, selector, serialized=False):
+    def get_descriptor(self, domain, selector, serializer=None):
         """
-        Returns serialized descriptor metadata
+        Returns descriptor metadata
         """
-        # TODO remove serialized, always return serialized objects
         selector = self.version_lookup(domain, selector)
         if not selector:
-            return "N."  # serialized None # TODO serialize None in bus
+            return serializer.dumps(None)
 
         fullpath = self.pathFromSelector(domain, selector) + ".meta"
         if not os.path.isfile(fullpath):
-            return "N."  # serialized None # TODO serialize in bus
-        return open(fullpath, "rb").read()
+            return serializer.dumps(None)
+        if serializer:
+            return serializer.dumps(store_serializer.load(open(fullpath, "rb").read()))
+        else:
+            return store_serializer.load(open(fullpath, "rb").read())
 
-    def get_value(self, domain, selector, serialized):
+    def get_value(self, domain, selector, serializer):
         """
-        Returns serialized descriptor value
+        Returns descriptor value
         """
-        none_value = "N." if serialized else None
+        none_value = serializer.dumps(None) if serializer is not None else None
         selector = self.version_lookup(domain, selector)
         if not selector:
-            return none_value  # serialized None # TODO serialize None in bus
+            return none_value 
 
         fullpath = self.pathFromSelector(domain, selector) + ".value"
         if not os.path.isfile(fullpath):
-            return none_value  # serialized None # TODO serialize in bus
-        if serialized:
-            return open(fullpath, "rb").read()
+            return none_value
+        desc =  Descriptor.unserialize_value(store_serializer,
+                                         open(fullpath, "rb").read())
+        if serializer:
+            return serializer.dumps(desc)
         else:
-            return Descriptor.unserialize_value(serializer,
-                                                open(fullpath, "rb").read())
+            return desc
 
-    def get_children(self, domain, selector, serialized=False, recurse=True):
-        """
-        Always returns serialized descriptors
-        """
+    def get_children(self, domain, selector, serializer=None, recurse=True):
         result = set()
         with self.processedlock:
             if selector not in self.processed[domain].keys():
                 return result
         for child in self.edges[domain][selector]:
-            result.add(self.get_descriptor(domain, child))
+            result.add(self.get_descriptor(domain, child, serializer))
             if recurse:
-                result |= self.get_children(child, domain, serialized, recurse)
+                result |= self.get_children(child, domain, serializer, recurse)
         return result
 
     def mkdirs(self, domain, selector):
@@ -357,8 +355,8 @@ class DiskStorage(Storage):
 
         self.register_meta(descriptor)
 
-        serialized_meta = descriptor.serialize_meta(serializer)
-        serialized_value = descriptor.serialize_value(serializer)
+        serialized_meta = descriptor.serialize_meta(store_serializer)
+        serialized_value = descriptor.serialize_value(store_serializer)
 
         # Write meta
         with open(fname + '.meta', 'wb') as fp:
@@ -438,7 +436,7 @@ class DiskStorage(Storage):
         if self.unsavedprocessed:
             with self.processedlock:
                 with open(self.basepath + '/_processed.cfg', 'wb') as fp:
-                    serializer.dump(self.processed, fp, protocol=2)
+                    store_serializer.dump(self.processed, fp)
                 self.unsavedprocessed = False
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):

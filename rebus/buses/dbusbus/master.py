@@ -152,13 +152,13 @@ class DBusMaster(dbus.service.Object):
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         return self.store.get_descriptor(str(desc_domain), str(selector),
-                                         serialized=True)
+                                         serializer=serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='s')
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
-        return self.store.get_value(str(desc_domain), str(selector), True)
+        return self.store.get_value(str(desc_domain), str(selector), serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='a{ss}')
@@ -179,7 +179,7 @@ class DBusMaster(dbus.service.Object):
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
         return self.store.find_by_uuid(str(desc_domain), str(uuid),
-                                       serialized=True)
+                                       serializer=serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='as')
@@ -187,7 +187,7 @@ class DBusMaster(dbus.service.Object):
         log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
                   selector_prefix)
         return self.store.find_by_selector(str(desc_domain), str(selector_prefix),
-                                           serialized=True)
+                                           serializer=serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='as')
@@ -196,7 +196,7 @@ class DBusMaster(dbus.service.Object):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
         return self.store.find_by_value(str(desc_domain), str(selector_prefix),
-                                        str(value_regex), serialized=True)
+                                        str(value_regex), serializer=serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
@@ -248,7 +248,7 @@ class DBusMaster(dbus.service.Object):
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
-                                            serialized=True,
+                                            serializer=serializer,
                                             recurse=bool(recurse)))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
