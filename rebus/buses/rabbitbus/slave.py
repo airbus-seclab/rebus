@@ -8,11 +8,8 @@ import pika
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
+import rebus.tools.serializer as serializer
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
 import uuid
 
 log = logging.getLogger("rebus.bus.rabbitbus")
@@ -61,7 +58,7 @@ class RabbitBus(Bus):
               'targeted_descriptor' : self.targeted_wrapper,
               'bus_exit' : self.bus_exit_handler,
               'on_idle' : self.agent.on_idle}
-        signal_type = pickle.loads(body)
+        signal_type = serializer.loads(body)
         f[signal_type['signal_name']](**signal_type['args'])
         
     def reconnect(self):
@@ -96,7 +93,7 @@ class RabbitBus(Bus):
         
     def send_rpc(self, func_name, args, high_priority=True):
         # Call the remote function
-        body = pickle.dumps({'func_name' : func_name, 'args' : args}, protocol=2)
+        body = serializer.dumps({'func_name' : func_name, 'args' : args} )
         corr_id = str(uuid.uuid4())
         routing_key = 'rebus_master_rpc_highprio' if high_priority else 'rebus_master_rpc_lowprio'
         b = False
@@ -125,7 +122,7 @@ class RabbitBus(Bus):
                 if corr_id == props.correlation_id:
                     b = True
                     response = str(resp)
-                    response = pickle.loads(response)
+                    response = serializer.loads(response)
                     self.channel.basic_ack(delivery_tag = meth.delivery_tag)
                 else:
                     log.warning("An RPC returned with a wrong correlation ID")
@@ -294,15 +291,15 @@ class RabbitBus(Bus):
             self.busthread_call(self._push, str(agent_id), descriptor)
         
     def _push(self, agent_id, descriptor):
-        sd = descriptor.serialize()
+        sd = descriptor.serialize(serializer)
         return bool(self.rpc_push(str(agent_id), sd))
 
     def get(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize(str(
+        return Descriptor.unserialize(serializer, str(
             self.rpc_get(str(agent_id), desc_domain, selector)), bus=self)
 
     def get_value(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize_value(str(
+        return Descriptor.unserialize_value(serializer, str(
             self.rpc_get_value(str(agent_id), desc_domain, selector)))
 
     def list_uuids(self, agent_id, desc_domain):
@@ -315,17 +312,17 @@ class RabbitBus(Bus):
                                 limit)]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.rpc_find_by_uuid(str(agent_id), desc_domain, uuid)]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.rpc_find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
 
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.rpc_find_by_selector(str(agent_id), desc_domain,
                                           selector_prefix)]
 
@@ -349,7 +346,7 @@ class RabbitBus(Bus):
         return [(str(k), int(v)) for k, v in stats], int(total)
 
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.rpc_get_children(str(agent_id), desc_domain, selector,
                                         recurse)]
 

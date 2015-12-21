@@ -8,11 +8,7 @@ from rebus.descriptor import Descriptor
 import logging
 from rebus.tools.config import get_output_altering_options
 import pika
-
-try:
-    import cPickle as pickle
-except:
-    import pickle
+import rebus.tools.serializer as serializer
 import uuid
 
 log = logging.getLogger("rebus.bus")
@@ -85,7 +81,7 @@ class RabbitBusMaster():
     def send_signal(self, signal_name, args):
         # Send a signal on the exchange
         body = {'signal_name' : signal_name, 'args' : args}
-        body = pickle.dumps(body, protocol=2)
+        body = serializer.dumps(body)
         b = False
         while not b:
             try:
@@ -125,14 +121,14 @@ class RabbitBusMaster():
         
     def rpc_callback(self, ch, method, properties, body):
         # Parse the rpc request
-        body = pickle.loads(body)
+        body = serializer.loads(body)
 
         func_name = body['func_name']
         args = body['args']
 
         # Call the function
         ret = self.call_rpc_func(func_name, args)
-        ret = pickle.dumps(ret, protocol=2)
+        ret = serializer.dumps(ret)
 
         # Push the result of the function on the return queue
         b = False
