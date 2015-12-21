@@ -13,14 +13,14 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
     if childPid == 0:
         args = ['rebus_agent']
         args.extend(['-v'] * verboseLevel)
-        if (bus is not None):
+        if bus is not None:
             args.extend(['--bus', str(bus)])
-        if (busaddr is not None):
+        if busaddr is not None:
             args.extend(['--busaddr', str(busaddr)])
         for module in modules:
             args.extend(['-m', module])
         args.append(str(agent))
-        if (agentArgs is not None):
+        if agentArgs is not None:
             args.extend(agentArgs.split())
         os.execvp('rebus_agent', args)
     return childPid
@@ -58,10 +58,10 @@ def runStage(stageConfig, bus, busaddr, modules):
     agentsPid = []
     for agent in stageConfig['agents']:
         # agents with no parameters - missing ":" at the end of line, fixing it
-        if type(agent) is str:
+        if isinstance(agent, str):
             agent = {agent: {"params": ""}}
         for agentName, args in agent.iteritems():
-            if type(args) is dict:
+            if isinstance(args, dict):
                 params = args.get('params', args)
                 verboseLevel = int(args.get('verbose_level', 0))
             else:
