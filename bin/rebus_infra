@@ -13,14 +13,14 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
     if childPid == 0:
         args = ['rebus_agent']
         args.extend(['-v'] * verboseLevel)
-        if (bus is not None):
+        if bus is not None:
             args.extend(['--bus', str(bus)])
-        if (busaddr is not None):
+        if busaddr is not None:
             args.extend(['--busaddr', str(busaddr)])
         for module in modules:
             args.extend(['-m', module])
         args.append(str(agent))
-        if (agentArgs is not None):
+        if agentArgs is not None:
             args.extend(agentArgs.split())
         os.execvp('rebus_agent', args)
     return childPid
@@ -29,32 +29,39 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
 def runBusMaster(busConfig, busaddr):
     if busConfig.bus == 'localbus':
         return -1
-    if busConfig.bus == 'rabbitbus':
-        raise RuntimeError("Rabbit bus is not (yet) supported by rebus_infra")
-        # not supported yet
-        return -1
-    # dbus
+    args = []
     rebusMasterPid = os.fork()
-    if (rebusMasterPid == 0):
-        args = ['rebus_master_dbus']
+    if rebusMasterPid == 0:
+        if busConfig.bus == 'rabbitbus':
+            args.append('rebus_master_rabbit')
+            if busConfig.addr is not None:
+                args.extend(['--rabbitaddr', busConfig.addr])
+            if busConfig.heartbeat is not None:
+                args.extend(['--heartbeat', busConfig.heartbeat])
+
+        elif busConfig.bus == 'dbus':
+            args.append('rebus_master_dbus')
+
         if busConfig.logfile is not None:
             args.extend(['-f', busConfig.logfile])
         if busConfig.verboseLevel is not None:
             nbv = int(busConfig.verboseLevel)
             args.extend(['-v'] * nbv)
         args.append(busConfig.storage)
-        os.execvp('rebus_master_dbus', args)
-    return rebusMasterPid
+        os.execvp(args[0], args)
+        raise RuntimeError
+    else:
+        return rebusMasterPid
 
 
 def runStage(stageConfig, bus, busaddr, modules):
     agentsPid = []
     for agent in stageConfig['agents']:
         # agents with no parameters - missing ":" at the end of line, fixing it
-        if type(agent) is str:
+        if isinstance(agent, str):
             agent = {agent: {"params": ""}}
         for agentName, args in agent.iteritems():
-            if type(args) is dict:
+            if isinstance(args, dict):
                 params = args.get('params', args)
                 verboseLevel = int(args.get('verbose_level', 0))
             else:
@@ -72,11 +79,13 @@ def getBusConfig(config):
     busConfig.logfile = None
     busConfig.verboseLevel = None
     busConfig.storage = 'ramstorage'
+    busConfig.addr = None
+    busConfig.heartbeat = None
 
     # Bus type
     if 'bus' in config:
         busConfig.bus = config['bus']
-        if busConfig.bus != 'dbus' and busConfig.bus != 'localbus':
+        if busConfig.bus not in ('dbus', 'localbus', 'rabbitbus'):
             raise ValueError(busConfig.bus + ' is not a valid bus choice.')
 
     # Log file path
@@ -91,6 +100,12 @@ def getBusConfig(config):
             raise ValueError(str(config['verbose_level']) +
                              ' is not a valid verbose level.')
         busConfig.verboseLevel = str(config['verbose_level'])
+
+    if busConfig.bus == 'rabbitbus':
+        if 'addr' in config:
+            busConfig.addr = config['addr']
+        if 'heartbeat' in config:
+            busConfig.heartbeat = str(config['heartbeat'])
 
     # Storage mode
     if 'storage' in config:

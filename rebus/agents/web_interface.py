@@ -541,7 +541,7 @@ class DescriptorGetHandler(tornado.web.RequestHandler):
         if download:
             self.set_header('Content-Disposition', 'attachment; filename=%s' %
                             tornado.escape.url_escape(desc.label))
-            self.finish(value)
+            self.finish(str(value))
 
         else:
             if type(value) is list:
