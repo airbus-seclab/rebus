@@ -242,7 +242,7 @@ class RabbitBusMaster():
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         return self.store.get_descriptor(str(desc_domain), str(selector),
-                                         serializer=serizalizer)
+                                         serializer=serializer)
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
@@ -261,20 +261,20 @@ class RabbitBusMaster():
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
         return self.store.find_by_uuid(str(desc_domain), str(uuid),
-                                       serializer=serizalizer)
+                                       serializer=serializer)
 
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
         log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
                   selector_prefix)
         return self.store.find_by_selector(str(desc_domain), str(selector_prefix),
-                                         serializer=serizalizer)
+                                         serializer=serializer)
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
         return self.store.find_by_value(str(desc_domain), str(selector_prefix),
-                                        str(value_regex), serializer=serizalizer)
+                                        str(value_regex), serializer=serializer)
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agentnames[agent_id]
@@ -314,7 +314,7 @@ class RabbitBusMaster():
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         return list(self.store.get_children(str(desc_domain), str(selector),
-                                            serializer=serizalizer,
+                                            serializer=serializer,
                                             recurse=bool(recurse)))
 
     def store_internal_state(self, agent_id, state):
