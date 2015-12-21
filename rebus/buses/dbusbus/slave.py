@@ -11,6 +11,7 @@ import time
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
+from rebus.tools.serializer import b64serializer as serializer
 log = logging.getLogger("rebus.bus.dbus")
 
 
@@ -97,7 +98,7 @@ class DBus(Bus):
             self.busthread_call(self._push, str(agent_id), descriptor)
 
     def _push(self, agent_id, descriptor):
-        sd = descriptor.serialize()
+        sd = descriptor.serialize(serializer)
         # Arbitrary size based on the true limit of 134217728 bytes
         # The true limit apply to the total size (message + header)
         #  -> I don't know the size of the message header
@@ -108,11 +109,11 @@ class DBus(Bus):
         return bool(self.iface.push(str(agent_id), sd))
 
     def get(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize(str(
+        return Descriptor.unserialize(serializer, str(
             self.iface.get(str(agent_id), desc_domain, selector)), bus=self)
 
     def get_value(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize_value(str(
+        return Descriptor.unserialize_value(serializer, str(
             self.iface.get_value(str(agent_id), desc_domain, selector)))
 
     def list_uuids(self, agent_id, desc_domain):
@@ -125,17 +126,17 @@ class DBus(Bus):
                                 limit)]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
 
     def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.find_by_selector(str(agent_id), desc_domain,
                                             selector_prefix)]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
 
@@ -159,7 +160,7 @@ class DBus(Bus):
         return [(str(k), int(v)) for k, v in stats], int(total)
 
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
-        return [Descriptor.unserialize(str(s), bus=self) for s in
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.get_children(str(agent_id), desc_domain, selector,
                                         recurse)]
 

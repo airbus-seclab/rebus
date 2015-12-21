@@ -10,6 +10,7 @@ from rebus.descriptor import Descriptor
 import gobject
 import logging
 from rebus.tools.config import get_output_altering_options
+from rebus.tools.serializer import b64serializer as serializer
 
 
 log = logging.getLogger("rebus.bus")
@@ -131,7 +132,7 @@ class DBusMaster(dbus.service.Object):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ss', out_signature='b')
     def push(self, agent_id, descriptor):
-        unserialized_descriptor = Descriptor.unserialize(str(descriptor))
+        unserialized_descriptor = Descriptor.unserialize(serializer, str(descriptor))
         desc_domain = str(unserialized_descriptor.domain)
         uuid = str(unserialized_descriptor.uuid)
         selector = str(unserialized_descriptor.selector)
