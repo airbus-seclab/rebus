@@ -224,7 +224,7 @@ class RabbitBusMaster():
         return True
 
     def push(self, agent_id, descriptor):
-        unserialized_descriptor = Descriptor.unserialize(str(descriptor))
+        unserialized_descriptor = Descriptor.unserialize(serializer,str(descriptor))
         desc_domain = str(unserialized_descriptor.domain)
         uuid = str(unserialized_descriptor.uuid)
         selector = str(unserialized_descriptor.selector)
