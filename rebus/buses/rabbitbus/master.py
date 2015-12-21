@@ -45,9 +45,9 @@ class RabbitBusMaster():
 
         # Connects to the rabbitmq server
         if server_addr is None:
-            server_addr = "amqp://localhost/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
-        else:
-            server_addr = server_addr + "/%2F?connection_attempts=200&heartbeat_interval=" + str(heartbeat_interval)
+            server_addr = "amqp://localhost"
+        server_addr += "/%2F?connection_attempts=200&heartbeat_interval=" +\
+            str(heartbeat_interval)
         self.params = pika.URLParameters(server_addr)
 
         b = False
@@ -56,26 +56,32 @@ class RabbitBusMaster():
                 self.connection = pika.BlockingConnection(self.params)
                 b = True
             except pika.exceptions.ConnectionClosed:
-                log.warning("Cannot connect to rabbitmq at: " + str(busaddr) + ". Retrying..")
+                log.warning("Cannot connect to rabbitmq at: %s. Retrying...",
+                            str(server_addr))
                 time.sleep(0.5)
 
         self.channel = self.connection.channel()
 
         # Create the registration queue and push 10000 UID in it
         # TODO: publish a new ID when a new client register
-        self.channel.queue_declare(queue="registration_queue", auto_delete=True)
+        self.channel.queue_declare(queue="registration_queue",
+                                   auto_delete=True)
         for id in range(10000):
-            self.channel.basic_publish(exchange="", routing_key="registration_queue",
-                                       body=str(id), properties=pika.BasicProperties(delivery_mode=2,))
+            self.channel.basic_publish(
+                exchange="", routing_key="registration_queue", body=str(id),
+                properties=pika.BasicProperties(delivery_mode=2,))
         # Create the exchange for signals publish(master)/subscribe(slave)
-        self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
+        self.signal_exchange = self.channel.exchange_declare(
+            exchange='rebus_signals', type='fanout')
 
         # Create the rpc queue
         self.channel.queue_declare(queue='rebus_master_rpc_highprio')
-        self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
+        self.channel.basic_consume(self.rpc_callback,
+                                   queue='rebus_master_rpc_highprio',
                                    arguments={'x-priority': 1})
         self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
-        self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
+        self.channel.basic_consume(self.rpc_callback,
+                                   queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority': 0})
 
     def send_signal(self, signal_name, args):
@@ -85,11 +91,13 @@ class RabbitBusMaster():
         b = False
         while not b:
             try:
-                self.channel.basic_publish(exchange='rebus_signals', routing_key='', body=body,
-                                           properties=pika.BasicProperties(delivery_mode=2,))
+                self.channel.basic_publish(
+                    exchange='rebus_signals', routing_key='', body=body,
+                    properties=pika.BasicProperties(delivery_mode=2,))
                 b = True
             except pika.exceptions.ConnectionClosed:
-                log.info("Disconnected (in send_signal). Trying to reconnect..")
+                log.info("Disconnected (in send_signal). "
+                         "Trying to reconnect...")
                 self.reconnect()
                 time.sleep(0.5)
 
@@ -133,11 +141,12 @@ class RabbitBusMaster():
         b = False
         while not b:
             try:
-                retpublish = ch.basic_publish(exchange='',
-                                              routing_key=properties.reply_to,
-                                              body=ret,
-                                              properties=pika.BasicProperties(correlation_id=\
-                                                                              properties.correlation_id))
+                retpublish = ch.basic_publish(
+                    exchange='',
+                    routing_key=properties.reply_to,
+                    body=ret,
+                    properties=pika.BasicProperties(
+                        correlation_id=properties.correlation_id))
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.info("Disconnected (in rpc_callback). Trying to reconnect")
@@ -403,14 +412,20 @@ class RabbitBusMaster():
                 self.connection = pika.BlockingConnection(self.params)
                 self.channel = self.connection.channel()
 
-                self.channel.queue_declare(queue="registration_queue", auto_delete=True)
-                self.signal_exchange = self.channel.exchange_declare(exchange='rebus_signals', type='fanout')
+                self.channel.queue_declare(queue="registration_queue",
+                                           auto_delete=True)
+                self.signal_exchange = self.channel.exchange_declare(
+                    exchange='rebus_signals', type='fanout')
                 self.channel.queue_declare(queue='rebus_master_rpc_highprio')
-                self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_highprio',
-                                           arguments={'x-priority': 1})
+                self.channel.basic_consume(
+                    self.rpc_callback,
+                    queue='rebus_master_rpc_highprio',
+                    arguments={'x-priority': 1})
                 self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
-                self.channel.basic_consume(self.rpc_callback, queue='rebus_master_rpc_lowprio',
-                                           arguments={'x-priority': 0})
+                self.channel.basic_consume(
+                    self.rpc_callback,
+                    queue='rebus_master_rpc_lowprio',
+                    arguments={'x-priority': 0})
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.info("Failed to reconnect to RabbitMQ. Retrying..")
