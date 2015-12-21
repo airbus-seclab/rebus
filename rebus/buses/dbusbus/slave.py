@@ -130,16 +130,16 @@ class DBus(Bus):
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
 
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.iface.find_by_selector(str(agent_id), desc_domain,
-                                            selector_prefix)]
-
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
                 self.iface.find_by_value(str(agent_id), desc_domain,
                                          selector_prefix, value_regex)]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
+                self.iface.find_by_selector(str(agent_id), desc_domain,
+                                            selector_prefix)]
 
     def mark_processed(self, agent_id, desc_domain, selector):
         self.iface.mark_processed(str(agent_id), desc_domain, selector)

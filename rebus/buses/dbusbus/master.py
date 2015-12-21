@@ -152,6 +152,8 @@ class DBusMaster(dbus.service.Object):
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
+        if desc is None:
+            return None
         return desc.serialize_meta(serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -159,6 +161,8 @@ class DBusMaster(dbus.service.Object):
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
         value = self.store.get_value(str(desc_domain), str(selector))
+        if value is None:
+            return None
         return serializer.dumps(value)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -183,15 +187,6 @@ class DBusMaster(dbus.service.Object):
         return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sss', out_signature='as')
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
-                  selector_prefix)
-        descs = self.store.find_by_selector(str(desc_domain),
-                                            str(selector_prefix))
-        return [desc.serialize_meta(serializer) for desc in descs]
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='as')
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
@@ -200,6 +195,15 @@ class DBusMaster(dbus.service.Object):
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
+        return [desc.serialize_meta(serializer) for desc in descs]
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sss', out_signature='as')
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
+                  selector_prefix)
+        descs = self.store.find_by_selector(str(desc_domain),
+                                            str(selector_prefix))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',

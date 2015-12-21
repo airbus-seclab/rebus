@@ -83,6 +83,8 @@ class Storage(object):
         /sel/ector/~version (where version is an integer. Negative values are
         evaluated from the most recent versions, counting backwards)
 
+        Returns None if descriptor could not be found.
+
         :param domain: string, domain on which operations are performed
         :param selector: string
         """
@@ -92,6 +94,8 @@ class Storage(object):
         """
         Get a selector's value.
         /sel/ector/%hash
+
+        Returns None if descriptor could not be found.
 
         :param domain: string, domain on which operations are performed
         :param selector: string

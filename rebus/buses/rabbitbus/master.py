@@ -249,11 +249,15 @@ class RabbitBusMaster():
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
+        if desc is None:
+            return None
         return desc.serialize_meta(serializer)
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
         value = self.store.get_value(str(desc_domain), str(selector))
+        if value is None:
+            return None
         return serializer.dumps(value)
 
     def list_uuids(self, agent_id, desc_domain):
@@ -271,13 +275,6 @@ class RabbitBusMaster():
         descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
         return [desc.serialize_meta(serializer) for desc in descs]
 
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
-                  selector_prefix)
-        descs = self.store.find_by_selector(str(desc_domain),
-                                            str(selector_prefix))
-        return [desc.serialize_meta(serializer) for desc in descs]
-
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
@@ -285,6 +282,13 @@ class RabbitBusMaster():
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
+        return [desc.serialize_meta(serializer) for desc in descs]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
+                  selector_prefix)
+        descs = self.store.find_by_selector(str(desc_domain),
+                                            str(selector_prefix))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     def mark_processed(self, agent_id, desc_domain, selector):

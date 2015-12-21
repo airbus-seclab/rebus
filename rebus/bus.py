@@ -22,7 +22,9 @@ class Bus(object):
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         """
-        Make an agent join the bus.
+        Makes an agent join the bus.
+
+        Returns the agentid (string), attributed by the bus.
 
         :param agent: the agent which is joining the bus
         :param agent_domain: the domain this agent is interested in; use
@@ -32,9 +34,11 @@ class Bus(object):
 
     def lock(self, agent_id, lockid, desc_domain, selector):
         """
-        Make sure no other agent having the same agent_id and lockid will also
+        Makes sure no other agent having the same agent_id and lockid will also
         process this descriptor. This is especially useful when several
         instances of the same agent are running as a load-balancing mechanism.
+
+        Returns True if the lock has been acquired.
 
         :param agent_id: current agent id
         :param lockid: lock string, typically built from the agent's name and
@@ -46,7 +50,7 @@ class Bus(object):
 
     def push(self, agent_id, descriptor):
         """
-        Push a descriptor to the bus.
+        Pushes a descriptor to the bus.
 
         :param descriptor: Descriptor object to be pushed to the bus
         :param agent_id: current agent id
@@ -55,7 +59,9 @@ class Bus(object):
 
     def get(self, agent_id, desc_domain, selector):
         """
-        Get a Descriptor object from the bus.
+        Gets a Descriptor object from the bus.
+
+        Returns None if the descriptor was not found.
 
         :param agent_id: current agent id
         :param desc_domain: domain the descriptor being fetched belongs to
@@ -63,20 +69,11 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        """
-        Return a list of all Descriptors whose selector match the provided
-        prefix, belonging to the specified domain.
-
-        :param agent_id: current agent id
-        :param desc_domain: domain the Descriptors being searched belong to
-        :param selector_prefix: search prefix for the Descriptors
-        """
-        raise NotImplementedError
-
     def get_value(self, agent_id, desc_domain, selector):
         """
-        Return a descriptor's value.
+        Returns a descriptor's value.
+
+        Returns None if the descriptor was not found.
 
         :param agent_id: current agent id
         :param desc_domain: domain the descriptor being fetched belongs to
@@ -86,7 +83,7 @@ class Bus(object):
 
     def list_uuids(self, agent_id, desc_domain):
         """
-        Return a dictionary mapping known UUIDs to corresponding labels.
+        Returns a dictionary mapping known UUIDs to corresponding labels.
 
         :param agent_id: current agent id
         :param desc_domain: domain from which UUID should be enumerated
@@ -95,7 +92,7 @@ class Bus(object):
 
     def find(self, agent_id, desc_domain, selector_regex, limit):
         """
-        Return a list of selectors according to search constraints:
+        Returns a list of selectors according to search constraints:
 
         * domain
         * selector regular expression
@@ -113,7 +110,7 @@ class Bus(object):
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         """
-        Return a list of descriptors whose uuid match given parameter.
+        Returns a list of descriptors whose uuid match given parameter.
         Unspecified list order - may vary depending on the backend.
 
         :param agent_id: current agent id
@@ -125,7 +122,7 @@ class Bus(object):
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
         """
-        Return a list of matching descriptors:
+        Returns a list of matching descriptors:
         * desc.domain == desc_domain
         * desc.selector.startswith(selector_prefix)
         * re.match(value_regex, desc.value)
@@ -134,6 +131,17 @@ class Bus(object):
         :param desc_domain: string, domain in which to look for descriptors
         :param selector_prefix: search prefix for the Descriptors
         :param value_regex: regex that the Descriptors' values should match
+        """
+        raise NotImplementedError
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
+        """
+        Returns a list of all Descriptors whose selector match the provided
+        prefix, belonging to the specified domain.
+
+        :param agent_id: current agent id
+        :param desc_domain: domain the Descriptors being searched belong to
+        :param selector_prefix: search prefix for the Descriptors
         """
         raise NotImplementedError
 
@@ -161,7 +169,7 @@ class Bus(object):
 
     def get_processable(self, agent_id, desc_domain, selector):
         """
-        Return a list of (agent, config_txt) running in interactive mode that
+        Returns a list of (agent, config_txt) running in interactive mode that
         could process this selector.
 
         :param agent_id: current agent id
@@ -172,7 +180,7 @@ class Bus(object):
 
     def list_agents(self, agent_id):
         """
-        Return a dictionary mapping agent names to number of currently
+        Returns a dictionary mapping agent names to number of currently
         running instances.
 
         :param agent_id: current agent id
@@ -181,7 +189,7 @@ class Bus(object):
 
     def processed_stats(self, agent_id, desc_domain):
         """
-        Return a list of couples, (agent names, number of processed selectors)
+        Returns a list of couples, (agent names, number of processed selectors)
         and the total amount of selectors in this domain.
 
         :param agent_id: current agent id
@@ -191,7 +199,7 @@ class Bus(object):
 
     def get_children(self, agent_id, desc_domain, selector, recurse=True):
         """
-        Return a set of children descriptors from given selector.
+        Returns a set of children descriptors from given selector.
 
         :param agent_id: current agent id
         :param desc_domain: string, domain for which stats should be retrieved
@@ -215,6 +223,7 @@ class Bus(object):
         """
         Called by agents to fetch their serialized internal state in order to
         restore it.
+        Returns a string.
 
         :param agent_id: current agent id
         """
@@ -222,7 +231,7 @@ class Bus(object):
 
     def request_processing(self, agent_id, desc_domain, selector, targets):
         """
-        Request that described descriptor (domain, selector) be processed by
+        Requests that described descriptor (domain, selector) be processed by
         agents whose name is in targets.
 
         :param agent_id: id of the requesting agent
@@ -237,7 +246,7 @@ class Bus(object):
 
     def busthread_call(self, method, **params):
         """
-        Request that method be called in the bus thread's context.
+        Requests that method be called in the bus thread's context.
 
         :param method: method to call
         :param **params: dictionary of parameters
@@ -252,14 +261,14 @@ class Bus(object):
 
     def agent_process(self, agent, *args, **kargs):
         """
-        Call agent's call_process method.
+        Calls agent's call_process method.
         Used to implement the "parallelize" feature in some buses.
         """
         agent.call_process(*args, **kargs)
 
     def sleep(self, t):
         """
-        Call by the agent when it need to wait
+        Called by the agents that need to sleep
         Used to reimplement the standard time.sleep() function
 
         :param time: The time to sleep (seconds).

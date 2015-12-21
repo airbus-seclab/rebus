@@ -265,7 +265,7 @@ class DiskStorage(Storage):
 
     def get_descriptor(self, domain, selector):
         """
-        Returns descriptor metadata
+        Returns descriptor metadata, None if descriptor was not found.
         """
         selector = self._version_lookup(domain, selector)
         if not selector:
@@ -279,7 +279,7 @@ class DiskStorage(Storage):
 
     def get_value(self, domain, selector):
         """
-        Returns descriptor value
+        Returns descriptor value, None if descriptor was not found.
         """
         selector = self._version_lookup(domain, selector)
         if not selector:
