@@ -37,10 +37,10 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def find_by_selector(self, domain, selec_pref, serialized=False):
+    def find_by_selector(self, domain, selec_pref, serializer=None):
         raise NotImplementedError
 
-    def find_by_uuid(self, domain, uuid, serialized=False):
+    def find_by_uuid(self, domain, uuid, serializer=None):
         """
         Return a list of descriptors whose uuid match given parameter.
 
@@ -49,7 +49,7 @@ class Storage(object):
         raise NotImplementedError
 
     def find_by_value(self, domain, selector_prefix, value_regex,
-                      serialized=False):
+                      serializer=None):
         """
         Returns a list of matching descriptors:
 
@@ -71,7 +71,7 @@ class Storage(object):
         """
         raise NotImplementedError
 
-    def get_descriptor(self, domain, selector, serialized=False):
+    def get_descriptor(self, domain, selector, serializer=None):
         """
         Get a single descriptor.
         /sel/ector/%hash
@@ -80,28 +80,28 @@ class Storage(object):
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: boolean, return serialized descriptors if True
+        :param serializer: object used to serialize (with dumps) if not None
         """
         raise NotImplementedError
 
-    def get_value(self, domain, selector, serialized):
+    def get_value(self, domain, selector, serializer):
         """
         Get a selector's value.
         /sel/ector/%hash
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: return serialized value if True
+        :param serializer: object used to serialize (with dumps) if not None
         """
         raise NotImplementedError
 
-    def get_children(self, domain, selector, serialized=False, recurse=True):
+    def get_children(self, domain, selector, serializer=None, recurse=True):
         """
         Return a set of children descriptors from given selector.
 
         :param domain: string, domain on which operations are performed
         :param selector: string
-        :param serialized: boolean, return serialized descriptors if True
+        :param serializer: object used to serialize (with dumps) if not None
         :param recurse: boolean, recursively fetch children if True
         """
         raise NotImplementedError
