@@ -1,6 +1,7 @@
 #! /usr/bin/python
 import argparse
 import logging
+import logging.handlers
 import rebus.storage_backends
 from rebus.storage import StorageRegistry
 

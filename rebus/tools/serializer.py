@@ -1,5 +1,8 @@
 import logging
+import logging.handlers
 from base64 import b64decode, b64encode
+
+log = logging.getLogger("rebus.serializer")
 
 try:
     import larch.pickle as serializer
@@ -8,7 +11,11 @@ except ImportError:
         import cPickle as serializer
     except ImportError:
         import pickle as serializer
-    logging.warning("Using cPickle/pickler as serializer, it's INSECURE ! Install larch.pickle to fix.")
+    ch = logging.StreamHandler()
+    log = logging.getLogger("rebus.serializer.initialization")
+    log.addHandler(ch)
+    log.warning("Using cPickle/pickler as serializer, it's INSECURE! "
+                "Install larch.pickle to fix.")
 
 def loads(string):
     return serializer.loads(string)

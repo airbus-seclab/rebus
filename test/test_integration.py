@@ -171,7 +171,7 @@ def test_master():
                                bufsize=0)
     # wait for master bus to be ready
     # TODO look into race condition. Another SIGINT handler?
-    time.sleep(0.3)
+    time.sleep(1)
     output = process.stderr.read(1)
     process.send_signal(signal.SIGINT)
     process.wait()
