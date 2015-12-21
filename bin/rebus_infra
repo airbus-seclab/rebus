@@ -30,21 +30,31 @@ def runBusMaster(busConfig, busaddr):
     if busConfig.bus == 'localbus':
         return -1
     if busConfig.bus == 'rabbitbus':
-        raise RuntimeError("Rabbit bus is not (yet) supported by rebus_infra")
-        # not supported yet
-        return -1
-    # dbus
-    rebusMasterPid = os.fork()
-    if (rebusMasterPid == 0):
-        args = ['rebus_master_dbus']
-        if busConfig.logfile is not None:
-            args.extend(['-f', busConfig.logfile])
-        if busConfig.verboseLevel is not None:
-            nbv = int(busConfig.verboseLevel)
-            args.extend(['-v'] * nbv)
-        args.append(busConfig.storage)
-        os.execvp('rebus_master_dbus', args)
-    return rebusMasterPid
+        # rabbit
+        rebusMasterPid = os.fork()
+        if rebusMasterPid == 0:
+            args = ['rebus_master_rabbit']
+            if busConfig.logfile is not None:
+                args.extend(['-f', busConfig.logfile])
+            if busConfig.verboseLevel is not None:
+                nbv = int(busConfig.verboseLevel)
+                args.extend(['-v'] * nbv)
+            args.append(busConfig.storage)
+            os.execvp('rebus_master_rabbit', args)
+        return rebusMasterPid
+    elif busConfig.bus == 'dbus':
+        # dbus
+        rebusMasterPid = os.fork()
+        if rebusMasterPid == 0:
+            args = ['rebus_master_dbus']
+            if busConfig.logfile is not None:
+                args.extend(['-f', busConfig.logfile])
+            if busConfig.verboseLevel is not None:
+                nbv = int(busConfig.verboseLevel)
+                args.extend(['-v'] * nbv)
+            args.append(busConfig.storage)
+            os.execvp('rebus_master_dbus', args)
+        return rebusMasterPid
 
 
 def runStage(stageConfig, bus, busaddr, modules):
@@ -76,7 +86,7 @@ def getBusConfig(config):
     # Bus type
     if 'bus' in config:
         busConfig.bus = config['bus']
-        if busConfig.bus != 'dbus' and busConfig.bus != 'localbus':
+        if busConfig.bus not in ('dbus', 'localbus', 'rabbitbus'):
             raise ValueError(busConfig.bus + ' is not a valid bus choice.')
 
     # Log file path
