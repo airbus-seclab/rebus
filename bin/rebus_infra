@@ -29,24 +29,26 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
 def runBusMaster(busConfig, busaddr):
     if busConfig.bus == 'localbus':
         return -1
-    args = []
+    args = ['rebus_master']
     rebusMasterPid = os.fork()
     if rebusMasterPid == 0:
-        if busConfig.bus == 'rabbitbus':
-            args.append('rebus_master_rabbit')
-            if busConfig.addr is not None:
-                args.extend(['--rabbitaddr', busConfig.addr])
-            if busConfig.heartbeat is not None:
-                args.extend(['--heartbeat', busConfig.heartbeat])
-
-        elif busConfig.bus == 'dbus':
-            args.append('rebus_master_dbus')
 
         if busConfig.logfile is not None:
             args.extend(['-f', busConfig.logfile])
         if busConfig.verboseLevel is not None:
             nbv = int(busConfig.verboseLevel)
             args.extend(['-v'] * nbv)
+
+        if busConfig.bus == 'rabbit':
+            args.append('rabbit')
+            if busConfig.addr is not None:
+                args.extend(['--rabbitaddr', busConfig.addr])
+            if busConfig.heartbeat is not None:
+                args.extend(['--heartbeat', busConfig.heartbeat])
+
+        elif busConfig.bus == 'dbus':
+            args.append('dbus')
+
         args.append(busConfig.storage)
         os.execvp(args[0], args)
         raise RuntimeError
@@ -85,8 +87,12 @@ def getBusConfig(config):
     # Bus type
     if 'bus' in config:
         busConfig.bus = config['bus']
-        if busConfig.bus not in ('dbus', 'localbus', 'rabbitbus'):
-            raise ValueError(busConfig.bus + ' is not a valid bus choice.')
+        buslist = ('dbus', 'localbus', 'rabbit')
+        if busConfig.bus not in buslist:
+            raise ValueError(
+                busConfig.bus +
+                ' is not a valid bus choice.  Choose amongst %s.' % ', '.join(
+                    buslist))
 
     # Log file path
     if 'logfile' in config:
@@ -101,7 +107,7 @@ def getBusConfig(config):
                              ' is not a valid verbose level.')
         busConfig.verboseLevel = str(config['verbose_level'])
 
-    if busConfig.bus == 'rabbitbus':
+    if busConfig.bus == 'rabbit':
         if 'addr' in config:
             busConfig.addr = config['addr']
         if 'heartbeat' in config:

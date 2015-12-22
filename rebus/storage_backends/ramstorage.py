@@ -14,7 +14,7 @@ class RAMStorage(Storage):
     _name_ = "ramstorage"
     STORES_INTSTATE = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, options=None):
         #: self.dstore['domain']['/selector/%hash'] is a descriptor
         self.dstore = defaultdict(OrderedDict)
 

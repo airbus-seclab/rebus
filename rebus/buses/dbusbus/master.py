@@ -11,12 +11,17 @@ import gobject
 import logging
 from rebus.tools.config import get_output_altering_options
 from rebus.tools.serializer import b64serializer as serializer
+from rebus.busmaster import BusMaster
 
 
 log = logging.getLogger("rebus.bus")
 
 
-class DBusMaster(dbus.service.Object):
+@BusMaster.register
+class DBusMaster(dbus.service.Object, BusMaster):
+    _name_ = "dbus"
+    _desc_ = "Use RabbitMQ to exchange messages"
+
     def __init__(self, bus, objpath, store):
         dbus.service.Object.__init__(self, bus, objpath)
         self.store = store
@@ -339,7 +344,7 @@ class DBusMaster(dbus.service.Object):
         pass
 
     @classmethod
-    def run(cls, store):
+    def run(cls, store, master_options):
         gobject.threads_init()
         dbus.glib.init_threads()
         DBusGMainLoop(set_as_default=True)
@@ -373,3 +378,9 @@ class DBusMaster(dbus.service.Object):
     def sigterm_handler(sig, frame):
         # Try to exit cleanly the first time; if that does not work, exit.
         sys.exit(0)
+
+    @staticmethod
+    def add_arguments(subparser):
+        # TODO allow specifying dbus address? Currently specified by local dbus
+        # configuration file
+        pass

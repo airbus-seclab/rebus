@@ -1,0 +1,85 @@
+#! /usr/bin/python
+import argparse
+import logging
+import rebus.buses
+import rebus.storage_backends
+from rebus.storage import StorageRegistry
+from rebus.busmaster import BusMasterRegistry
+
+log = logging.getLogger("rebus.master.main")
+
+
+def main():
+    rebus.storage_backends.import_all()
+    rebus.buses.import_all()
+    busmasterlist = BusMasterRegistry.get_all()
+    storagelist = StorageRegistry.get_all()
+
+    #: 1st parser for general options, as well as storage
+    parser = argparse.ArgumentParser(description='Rebus Master',
+                                     epilog='Uses the ramstorage backend if\
+                                     none is specified.')
+    parser.add_argument('-f', '--logfile', help="Destination log file")
+    parser.add_argument("--verbose", "-v", action="count", default=3,
+                        help="be more verbose (can be used many times)")
+    parser.add_argument("--quiet", "-q", action="count", default=0,
+                        help="be more quiet (can be used many times)")
+
+    parser.add_argument(
+        'busmaster', nargs=argparse.REMAINDER,
+        help="available bus masters: %s. Use -h after busmaster name to see "
+        "its options." % ', '.join(busmasterlist.keys()))
+
+    options = parser.parse_args()
+    options.verbosity = max(1, 50+10*(options.quiet-options.verbose))
+    logging.basicConfig(format="%(levelname)-5s: %(message)s",
+                        level=options.verbosity, filename=options.logfile)
+
+    #: 2nd parser for busmaster options, separates remaining arguments
+    #: (busmaster)
+    parser_master = argparse.ArgumentParser()
+
+    subparsers_master = parser_master.add_subparsers(help='Bus Master',
+                                                     dest='busmaster')
+
+    #: helper parser
+    parser_storage1 = argparse.ArgumentParser(add_help=False)
+
+    parser_storage1.add_argument(
+        'storage', nargs=argparse.REMAINDER,
+        help="available storage backends: %s. Use -h after storage name to "
+        "see its options." % ', '.join(storagelist.keys()))
+
+    for master, cls in BusMasterRegistry.iteritems():
+        subparser = subparsers_master.add_parser(master,
+                                                 parents=[parser_storage1])
+        cls.add_arguments(subparser)
+
+    master_options = parser_master.parse_args(options.busmaster)
+
+    #: 3rd parser for storage options
+    parser_storage2 = argparse.ArgumentParser()
+
+    subparsers_storage = parser_storage2.add_subparsers(
+        help='Storage backends', dest='storage_backend')
+
+    for backend, cls in StorageRegistry.iteritems():
+        subparser = subparsers_storage.add_parser(backend)
+        cls.add_arguments(subparser)
+
+    # default to ramstorage
+    if not master_options.storage:
+        master_options.storage = ["ramstorage"]
+    options_storage = parser_storage2.parse_args(master_options.storage)
+
+    log.info("Initializing storage backend %s",
+             options_storage.storage_backend)
+    storage_class = StorageRegistry.get(options_storage.storage_backend)
+    storage = storage_class(options_storage)
+    log.info("Storage initialized")
+    busmaster_class = BusMasterRegistry.get(master_options.busmaster)
+    log.info("Running Bus master")
+    busmaster_class.run(storage, master_options)
+
+if __name__ == "__main__":
+    main()

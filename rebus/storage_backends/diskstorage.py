@@ -36,8 +36,8 @@ class DiskStorage(Storage):
     selector_regex = re.compile('^[a-zA-Z0-9~%/_-]*$')
     domain_regex = re.compile('^[a-zA-Z0-9-]*$')
 
-    def __init__(self, **kwargs):
-        self.basepath = kwargs['path'].rstrip('/')
+    def __init__(self, options):
+        self.basepath = options.path.rstrip('/')
 
         if not os.path.isdir(self.basepath):
             raise IOError('Directory %s does not exist' % self.basepath)
@@ -459,6 +459,6 @@ class DiskStorage(Storage):
 
     @staticmethod
     def add_arguments(subparser):
-        subparser.add_argument("--path", help="Disk storage path (defaults to\
-                               /tmp/rebus)",
-                               default="/tmp/rebus")
+        subparser.add_argument(
+            "--path", help="Disk storage path (defaults to /tmp/rebus)",
+            default="/tmp/rebus")

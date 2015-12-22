@@ -76,7 +76,7 @@ Quick installation & test:
   # Then run all commands in separate screen tabs.
   $ dbus-launch screen
   # run the bus master in terminal 1
-  $ rebus_master_dbus
+  $ rebus_master dbus
 
   # run a few agents, run each command in separate terminals
   $ rebus_agent --bus dbus web_interface

@@ -417,6 +417,10 @@ class Agent(object):
 
     @classmethod
     def add_agent_arguments(cls, subparser):
+        """
+        Method to add operation modes to the list of agent options. Should not
+        be overridden, called by rebus_agent.
+        """
         if len(cls._operationmodes_) > 1:
             subparser.add_argument('--mode', default=cls._operationmodes_[0],
                                    dest='operationmode',
@@ -427,5 +431,8 @@ class Agent(object):
     def add_arguments(cls, subparser):
         """
         Overridden by agents that have configuration parameters
+
+        Receives an argparse._SubParsersAction object; call its add_parser()
+        method to add options.
         """
         pass
