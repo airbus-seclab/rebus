@@ -17,7 +17,7 @@ log = logging.getLogger("rebus.bus.rabbitbus")
 
 @Bus.register
 class RabbitBus(Bus):
-    _name_ = "rabbitbus"
+    _name_ = "rabbit"
     _desc_ = "Use RabbitMQ to exchange messages by connecting to REbus master"
 
     # Bus methods implementations - same order as in bus.py

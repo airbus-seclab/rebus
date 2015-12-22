@@ -17,7 +17,10 @@ class Storage(object):
     def register(f):
         return StorageRegistry.register_ref(f, key="_name_")
 
-    def __init__(self, **kwargs):
+    def __init__(self, options=None):
+        """
+        :param options: argparse.Namespace containing storage option
+        """
         pass
 
     def find(self, domain, selector_regex, limit):

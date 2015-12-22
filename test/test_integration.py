@@ -61,7 +61,7 @@ def bus(request, storage):
     if request.param == 'dbus':
         check_master_not_running()
         # launch rebus master
-        process = subprocess.Popen(['rebus_master_dbus']+storageparams,
+        process = subprocess.Popen(['rebus_master', 'dbus'] + storageparams,
                                    stderr=subprocess.PIPE)
         # wait for master bus to be ready - TODO look into & fix race
         time.sleep(0.5)
@@ -88,7 +88,8 @@ def bus(request, storage):
 
 def check_master_not_running():
     # 'rebus_master_dbus' is too long - gets truncated
-    running = any(['rebus_master' in p.name() for p in psutil.process_iter()])
+    running = any([('rebus_master' in p.name() and
+                    'dbus' in p.cmdline()) for p in psutil.process_iter()])
     assert running is False, "rebus_master_dbus is already running"
 
 

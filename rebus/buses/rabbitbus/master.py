@@ -9,11 +9,16 @@ import logging
 from rebus.tools.config import get_output_altering_options
 import pika
 import rebus.tools.serializer as serializer
+from rebus.busmaster import BusMaster
 
 log = logging.getLogger("rebus.bus")
 
 
-class RabbitBusMaster():
+@BusMaster.register
+class RabbitBusMaster(BusMaster):
+    _name_ = "rabbit"
+    _desc_ = "Use RabbitMQ to exchange messages"
+
     def __init__(self, store, server_addr, heartbeat_interval=0):
         self.store = store
         #: maps agentid (ex. inject-:1.234) to object path (ex:
@@ -436,8 +441,10 @@ class RabbitBusMaster():
                 time.sleep(0.5)
 
     @classmethod
-    def run(cls, store, server_addr, heartbeat_interval=0):
+    def run(cls, store, master_options):
 
+        server_addr = master_options.rabbitaddr
+        heartbeat_interval = master_options.heartbeat
         svc = cls(store, server_addr, heartbeat_interval)
         log.info("Entering main loop.")
         try:
@@ -479,3 +486,12 @@ class RabbitBusMaster():
     def sigterm_handler(sig, frame):
         # Try to exit cleanly the first time; if that does not work, exit.
         sys.exit(0)
+
+    @staticmethod
+    def add_arguments(subparser):
+        subparser.add_argument(
+            "--rabbitaddr", help="URL of the rabbitmq server",
+            default=None)
+        subparser.add_argument(
+            "--heartbeat", help="Rabbitmq heartbeat interval",
+            default=0)
