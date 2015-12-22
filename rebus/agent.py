@@ -319,6 +319,7 @@ class Agent(object):
         if state or self._process_slots_:
             complete_state = (state, self.process_slots)
             self.log.info("Save internal state %r" % (complete_state,))
+            # TODO move serialization to bus
             self.bus.store_internal_state(self.id,
                                           cPickle.dumps(complete_state))
 
@@ -329,6 +330,7 @@ class Agent(object):
         state_ps = self.bus.load_internal_state(self.id)
         self.log.info("Restore state: %r" % state_ps)
         if state_ps:
+            # TODO move serialization to bus
             state, ps = cPickle.loads(state_ps)
             if self._process_slots_:
                 self.log.info("Restore process slot state: %r" % ps)
