@@ -434,7 +434,6 @@ class Agent(object):
         """
         Overridden by agents that have configuration parameters
 
-        Receives an argparse._SubParsersAction object; call its add_parser()
-        method to add options.
+        Call add_argument on the received object to add options.
         """
         pass

@@ -21,11 +21,12 @@ class DBus(Bus):
     _desc_ = "Use DBus to exchange messages by connecting to REbus master"
 
     # Bus methods implementations - same order as in bus.py
-    def __init__(self, busaddr=None, heartbeat_interval=0):
+    def __init__(self, options):
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         Bus.__init__(self)
+        busaddr = options.busaddr
         self.bus = dbus.SessionBus() if busaddr is None else \
             dbus.bus.BusConnection(busaddr)
         counter = 20
@@ -235,3 +236,9 @@ class DBus(Bus):
             thread.start_new_thread(self.agent.call_process, args, kargs)
         else:
             self.agent.call_process(*args, **kargs)
+
+    @staticmethod
+    def add_arguments(subparser):
+        subparser.add_argument(
+            "--busaddr", help="URL of the dbus server",
+            default=None)

@@ -28,11 +28,8 @@ def main():
         if hasattr(mod, "import_all"):
             mod.import_all()
 
-    # bus options
+    #: parser for bus options
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bus", choices=buslist.keys(), default="localbus",
-                        help="choose bus")
-    parser.add_argument("--busaddr", help="Address of the bus")
     parser.add_argument("--list-agents", action="store_true",
                         help="list available agents")
     parser.add_argument("--log-file",
@@ -47,13 +44,21 @@ def main():
                         help="Increase verbosity")
     parser.add_argument("--module", "-m", action="append", default=[])
     parser.add_argument(
+        "--bus", choices=buslist.keys(), default="localbus",
+        help="choose bus (--list-bus-options to list bus options)")
+    parser.add_argument("--list-bus-options", help="display bus options",
+        action='store_true')
+    parser.add_argument(
         "agents", nargs=argparse.REMAINDER, help="available agents: %s. Use -h"
         " after agent name to see agent's options."
         % ', '.join(AgentRegistry.iterkeys()))
-    #TODO : Find a cleaner way to configure the heartbeat (rabbitMQ only)
-    parser.add_argument('--heartbeat', help="The rabbitmq heartbeat interval",
-                        default=0)
-    global_options = parser.parse_args()
+    global_options, remain = parser.parse_known_args()
+    # bus options may be in remain (given before --bus) or in options.agents
+    bus_agents_args = remain + global_options.agents
+    # look for bus options first
+    bus_parser = argparse.ArgumentParser()
+    BusRegistry.get(global_options.bus).add_arguments(bus_parser)
+    bus_options, agent_args = bus_parser.parse_known_args(bus_agents_args)
 
     # subparser (agents) options
     # optional subparser options are only supported in python3
@@ -65,12 +70,19 @@ def main():
         p = agent_parser.add_parser(agent._name_, help=agent._desc_)
         agent.add_agent_arguments(p)
 
+    if global_options.list_bus_options:
+        print "Bus %s requires the following options:" % global_options.bus
+        print bus_parser.format_help()
+        # XXX display only optionals - create a new instance of ArgumentParser
+        # + custom formatter?
+        return
+
     if global_options.list_agents:
         for agent in AgentRegistry.itervalues():
             print("{0._name_: <20}: {0._desc_}".format(agent))
         return
 
-    remain = global_options.agents
+    remain = agent_args
     remain.append("--")
     #: list of lists of (agent name, options namespace)
     stages = list()
@@ -118,8 +130,7 @@ def main():
 
     try:
         bus_class = BusRegistry.get(global_options.bus)
-        bus = bus_class(busaddr=global_options.busaddr,
-                        heartbeat_interval=global_options.heartbeat)
+        bus = bus_class(bus_options)
         for stage in stages:
             log.info("Starting stage %d", stages.index(stage))
             for agent_name, arguments in stage:

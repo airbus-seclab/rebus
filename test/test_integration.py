@@ -74,14 +74,21 @@ def bus(request, storage):
             assert process.returncode == 0, output + process.stderr.read()
 
         request.addfinalizer(fin)
-        return_bus = rebus.bus.BusRegistry.get(request.param)
+
+        def return_bus():
+            bus_options = argparse.Namespace(busaddr=None)
+            busclass = rebus.bus.BusRegistry.get(request.param)
+            # busclass.add_arguments(bus_options)
+            return busclass(bus_options)
     elif request.param == 'localbus':
         # always return the same bus instance
         if storagetype == 'diskstorage':
             pytest.skip("diskstorage is not supported by localbus")
         instance = BusRegistry.get(request.param)()
+        print instance
 
         def return_bus():
+            print "instance", instance
             return instance
     return (request.param, storagetype, return_bus)
 

@@ -16,8 +16,7 @@ class Bus(object):
     def register(f):
         return BusRegistry.register_ref(f, key="_name_")
 
-    # TODO: find a way to remove the heartbeat_interval
-    def __init__(self, busaddr=None, heartbeat_interval=0):
+    def __init__(self, options=None):
         pass
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):
@@ -274,3 +273,13 @@ class Bus(object):
         :param time: The time to sleep (seconds).
         """
         time.sleep(t)
+
+    @classmethod
+    def add_arguments(cls, subparser):
+        """
+        Overridden by Buses that have configuration parameters.
+
+        Call add_argument on the received object to add options.
+        Do not use any positional arguments.
+        """
+        pass
