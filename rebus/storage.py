@@ -118,7 +118,7 @@ class Storage(object):
     def add(self, descriptor):
         """
         Add new descriptor to storage. Return False if descriptor was already
-        present, else False.
+        present, else True.
 
         :param descriptor: descriptor to be stored
         """

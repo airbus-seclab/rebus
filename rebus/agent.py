@@ -79,8 +79,9 @@ class Agent(object):
         if descriptor.processing_time == -1:
             descriptor.processing_time = time.time()-self.processing_start_time
         result = self.bus.push(self.id, descriptor)
-        self.log.debug("pushed {0}, already present: {1}".format(descriptor,
-                                                                 not result))
+        self.log.debug(
+            "pushed {0}, not already present: {1}".format(descriptor,
+                                                          not result))
         return result
 
     def get(self, desc_domain, selector):
