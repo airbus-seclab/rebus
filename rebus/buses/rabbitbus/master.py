@@ -49,8 +49,6 @@ class RabbitBusMaster(BusMaster):
         self.uniq_conf_clients = defaultdict(list)
 
         # Connects to the rabbitmq server
-        if server_addr is None:
-            server_addr = "amqp://localhost"
         server_addr += "/%2F?connection_attempts=200&heartbeat_interval=" +\
             str(heartbeat_interval)
         self.params = pika.URLParameters(server_addr)
@@ -490,8 +488,8 @@ class RabbitBusMaster(BusMaster):
     @staticmethod
     def add_arguments(subparser):
         subparser.add_argument(
-            "--rabbitaddr", help="URL of the rabbitmq server",
-            default=None)
+            "--rabbitaddr", default="amqp://localhost",
+            help="URL prefix (scheme+authority) of the rabbitmq server")
         subparser.add_argument(
-            "--heartbeat", help="Rabbitmq heartbeat interval",
+            "--heartbeat", help="Rabbitmq heartbeat interval, in seconds",
             default=0)

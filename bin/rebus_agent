@@ -10,6 +10,29 @@ import rebus.tools.daemon
 import argparse
 
 
+class ArgumentOnlyHelpFormatter(
+        argparse.ArgumentDefaultsHelpFormatter):
+    """
+    Formatter for generating usage messages and argument help strings.
+
+    Only displays optional arguments, without header.
+    """
+
+    def start_section(self, heading):
+        """
+        Suppresses section headers
+        """
+        self._indent()
+        section = self._Section(self, self._current_section,
+                                heading=argparse.SUPPRESS)
+        self._add_item(section.format_help, [])
+        self._current_section = section
+
+    def end_section(self):
+        self._current_section = self._current_section.parent
+        self._dedent()
+
+
 def main():
     logging.basicConfig()
     rebus.agents.import_all()
@@ -18,7 +41,9 @@ def main():
 
     # pre-parser to preload modules before real argument parser
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--module", "-m", action="append", default=[])
+    parser.add_argument(
+        "--module", "-m", action="append", default=[],
+        help="python module containing agents to load")
     modoptions, other = parser.parse_known_args()
     for m in modoptions.module:
         imp = pkgutil.get_loader(m)
@@ -29,7 +54,8 @@ def main():
             mod.import_all()
 
     #: parser for bus options
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--list-agents", action="store_true",
                         help="list available agents")
     parser.add_argument("--log-file",
@@ -39,15 +65,19 @@ def main():
     parser.add_argument("--domain", "-d", default=DEFAULT_DOMAIN,
                         help="Work in DOMAIN")
     parser.add_argument("--daemon", "-D", action="store_true",
-                        help="run as a daemon ; logs go to syslog by default")
-    parser.add_argument("--verbose", "-v", action="count", default=0,
-                        help="Increase verbosity")
-    parser.add_argument("--module", "-m", action="append", default=[])
+                        help="run as a daemon; logs go to syslog by default")
+    parser.add_argument(
+        "--verbose", "-v", action="count", default=0,
+        help="Be more verbose (can be used several times).")
+    # module added here for help message only, has already been parsed
+    parser.add_argument(
+        "--module", "-m", action="append", default=[],
+        help="python module containing agents to load")
     parser.add_argument(
         "--bus", choices=buslist.keys(), default="localbus",
         help="choose bus (--list-bus-options to list bus options)")
-    parser.add_argument("--list-bus-options", help="display bus options",
-        action='store_true')
+    parser.add_argument(
+        "--list-bus-options", help="display bus options", action='store_true')
     parser.add_argument(
         "agents", nargs=argparse.REMAINDER, help="available agents: %s. Use -h"
         " after agent name to see agent's options."
@@ -56,7 +86,9 @@ def main():
     # bus options may be in remain (given before --bus) or in options.agents
     bus_agents_args = remain + global_options.agents
     # look for bus options first
-    bus_parser = argparse.ArgumentParser()
+    bus_parser = argparse.ArgumentParser(
+        usage=argparse.SUPPRESS,
+        add_help=False, formatter_class=ArgumentOnlyHelpFormatter)
     BusRegistry.get(global_options.bus).add_arguments(bus_parser)
     bus_options, agent_args = bus_parser.parse_known_args(bus_agents_args)
 
@@ -64,17 +96,18 @@ def main():
     # optional subparser options are only supported in python3
     # http://bugs.python.org/issue9253
     # so, we use another parser for agents' options
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     agent_parser = parser.add_subparsers(dest="agent_name", help="Agents")
     for agent in AgentRegistry.itervalues():
-        p = agent_parser.add_parser(agent._name_, help=agent._desc_)
+        p = agent_parser.add_parser(
+            agent._name_, help=agent._desc_,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         agent.add_agent_arguments(p)
 
     if global_options.list_bus_options:
-        print "Bus %s requires the following options:" % global_options.bus
+        print "Bus %s accepts the following options:" % global_options.bus
         print bus_parser.format_help()
-        # XXX display only optionals - create a new instance of ArgumentParser
-        # + custom formatter?
         return
 
     if global_options.list_agents:
@@ -115,12 +148,14 @@ def main():
             logging.root.removeHandler(h)
         if global_options.syslog:
             syslog = logging.handlers.SysLogHandler(address="/dev/log")
-            formatter = logging.Formatter('REbus agent: %(name)s: %(levelname)s: %(message)s')
+            formatter = logging.Formatter(
+                'REbus agent: %(name)s: %(levelname)s: %(message)s')
             syslog.setFormatter(formatter)
             logging.root.addHandler(syslog)
         if global_options.log_file:
             logfile = logging.FileHandler(global_options.log_file)
-            formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)s: %(message)s')
+            formatter = logging.Formatter(
+                '%(asctime)s %(name)s: %(levelname)s: %(message)s')
             logfile.setFormatter(formatter)
             logging.root.addHandler(logfile)
 

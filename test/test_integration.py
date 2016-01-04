@@ -76,8 +76,9 @@ def bus(request, storage):
         request.addfinalizer(fin)
 
         def return_bus():
-            bus_options = argparse.Namespace(busaddr=None)
             busclass = rebus.bus.BusRegistry.get(request.param)
+            bus_options = argparse.Namespace(
+                busaddr=rebus.buses.dbusbus.slave.DEFAULT_BUS)
             # busclass.add_arguments(bus_options)
             return busclass(bus_options)
     elif request.param == 'localbus':

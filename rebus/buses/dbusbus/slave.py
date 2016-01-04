@@ -13,6 +13,7 @@ from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
 from rebus.tools.serializer import b64serializer as serializer
 log = logging.getLogger("rebus.bus.dbus")
+DEFAULT_BUS = "(local dbus instance)"
 
 
 @Bus.register
@@ -27,7 +28,7 @@ class DBus(Bus):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         Bus.__init__(self)
         busaddr = options.busaddr
-        self.bus = dbus.SessionBus() if busaddr is None else \
+        self.bus = dbus.SessionBus() if busaddr == DEFAULT_BUS else \
             dbus.bus.BusConnection(busaddr)
         counter = 20
         while not (counter == 0):
@@ -241,4 +242,4 @@ class DBus(Bus):
     def add_arguments(subparser):
         subparser.add_argument(
             "--busaddr", help="URL of the dbus server",
-            default=None)
+            default=DEFAULT_BUS)

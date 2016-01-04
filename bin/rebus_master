@@ -16,18 +16,21 @@ def main():
     storagelist = StorageRegistry.get_all()
 
     #: 1st parser for general options, as well as storage
-    parser = argparse.ArgumentParser(description='Rebus Master',
-                                     epilog='Uses the ramstorage backend if\
-                                     none is specified.')
+    parser = argparse.ArgumentParser(
+        description='Rebus Master',
+        epilog='Uses the ramstorage backend if none is specified.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-f', '--logfile', help="Destination log file")
-    parser.add_argument("--verbose", "-v", action="count", default=3,
-                        help="be more verbose (can be used many times)")
-    parser.add_argument("--quiet", "-q", action="count", default=0,
-                        help="be more quiet (can be used many times)")
+    parser.add_argument(
+        "--verbose", "-v", action="count", default=3,
+        help="Be more verbose (can be used several times)")
+    parser.add_argument(
+        "--quiet", "-q", action="count", default=0,
+        help="Be more quiet (can be used several times)")
 
     parser.add_argument(
         'busmaster', nargs=argparse.REMAINDER,
-        help="available bus masters: %s. Use -h after busmaster name to see "
+        help="Available bus masters: %s. Use -h after busmaster name to see "
         "its options." % ', '.join(busmasterlist.keys()))
 
     options = parser.parse_args()
@@ -37,13 +40,15 @@ def main():
 
     #: 2nd parser for busmaster options, separates remaining arguments
     #: (busmaster)
-    parser_master = argparse.ArgumentParser()
+    parser_master = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers_master = parser_master.add_subparsers(help='Bus Master',
                                                      dest='busmaster')
 
     #: helper parser
-    parser_storage1 = argparse.ArgumentParser(add_help=False)
+    parser_storage1 = argparse.ArgumentParser(
+        add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser_storage1.add_argument(
         'storage', nargs=argparse.REMAINDER,
@@ -58,7 +63,8 @@ def main():
     master_options = parser_master.parse_args(options.busmaster)
 
     #: 3rd parser for storage options
-    parser_storage2 = argparse.ArgumentParser()
+    parser_storage2 = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers_storage = parser_storage2.add_subparsers(
         help='Storage backends', dest='storage_backend')

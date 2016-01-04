@@ -13,6 +13,7 @@ import rebus.tools.serializer as serializer
 import uuid
 
 log = logging.getLogger("rebus.bus.rabbitbus")
+DEFAULT_BUS = "(local dbus instance)"
 
 
 @Bus.register
@@ -27,8 +28,6 @@ class RabbitBus(Bus):
         busaddr = options.rabbitaddr
 
         # Connects to the rabbitmq server
-        if busaddr is None:
-            busaddr = "amqp://localhost"
         busaddr += "/%2F?connection_attempts=200&heartbeat_interval=" +\
             str(options.heartbeat)
         self.busaddr = busaddr
@@ -436,8 +435,8 @@ class RabbitBus(Bus):
     @staticmethod
     def add_arguments(subparser):
         subparser.add_argument(
-            "--rabbitaddr", help="URL of the rabbitmq server",
-            default=None)
+            "--rabbitaddr", default="amqp://localhost",
+            help="URL prefix (scheme+authority) of the rabbitmq server")
         subparser.add_argument(
-            "--heartbeat", help="Rabbitmq heartbeat interval",
+            "--heartbeat", help="Rabbitmq heartbeat interval, in seconds",
             default=0)

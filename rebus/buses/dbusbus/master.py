@@ -382,5 +382,5 @@ class DBusMaster(dbus.service.Object, BusMaster):
     @staticmethod
     def add_arguments(subparser):
         # TODO allow specifying dbus address? Currently specified by local dbus
-        # configuration file
+        # configuration file or environment variable
         pass
