@@ -315,23 +315,22 @@ Here is an example of a configuration file for 'rebus_infra'
            - ls:
                params: "/binary/elf"
                verbose_level: 3
-           - inject: /bin/bash
 
 .. sourcecode:: bash
 
    $ rebus_infra -f /etc/rebus/rebus-infra-config-example.yaml
   INFO:rebus:Starting stage 0
-  INFO:rebus.bus.dbus:Agent inject registered with id inject-:1.165 on domain default
-  INFO:rebus.agent:[inject-:1.165] Agent inject registered on bus dbus with id inject-:1.165
-  INFO:rebus.agent:[inject-:1.165] Restore state: ''
-  DEBUG:rebus.agent:[inject-:1.165] pushed default:/binary/elf/%6e152ac57f5d5cf5d52411d8f558658482e025b18eff10db813071855e038ae1(bash)=[2306587]['\x7fELF\x02\x01\x01\x...], already present: True
-  DEBUG:rebus.agent:[inject-:1.165] pushed default:/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c(ls)=[358061]['\x7fELF\x02\x01\x01\x...], already present: True
+  INFO:rebus.bus.dbus:Agent inject registered with id inject-:1.149 on domain default
+  INFO:rebus.agent:[inject-:1.149] Agent inject registered on bus dbus with id inject-:1.149
+  INFO:rebus.agent:[inject-:1.149] Restore state: ''
+  DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c(bash)=[2307233]['\x7fELF\x02\x01\x01\x...], not already present: True
+  DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c(ls)=[358061]['\x7fELF\x02\x01\x01\x...], not already present: True
   INFO:rebus:Starting stage 0
-  INFO:rebus.bus.dbus:Agent ls registered with id ls-:1.166 on domain default
-  INFO:rebus.agent:[ls-:1.166] Agent ls registered on bus dbus with id ls-:1.166
-  INFO:rebus.agent:[ls-:1.166] Restore state: ''
+  INFO:rebus.bus.dbus:Agent ls registered with id ls-:1.150 on domain default
+  INFO:rebus.agent:[ls-:1.150] Agent ls registered on bus dbus with id ls-:1.150
+  INFO:rebus.agent:[ls-:1.150] Restore state: ''
   /binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c
-  /binary/elf/%6e152ac57f5d5cf5d52411d8f558658482e025b18eff10db813071855e038ae1
+  /binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c
   /binary/elf/%258f4cde050970ecbc039c0f250ac30d97d8b966dab029bfd135090b0101ac16
 
 
