@@ -281,7 +281,7 @@ class Agent(object):
     def config_txt(self):
         return json.dumps(self.config, sort_keys=True)
 
-    def declare_link(self, desc1, desc2, linktype, reason):
+    def declare_link(self, desc1, desc2, linktype, reason, isSymmetric=False):
         """
         Helper function.
         Requests two new /link/ descriptors, then pushes them.
@@ -290,6 +290,7 @@ class Agent(object):
         :param linktype: word describing the type of the link, that will be
           part of the selector
         :param reason: Text description of the link reason
+        :param isSymmetric: indicates whether the relationship is symmetric
         """
         link1, link2 = desc1.create_links(desc2, self.name, linktype, reason)
         self.push(link1)
