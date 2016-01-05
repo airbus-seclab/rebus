@@ -1,0 +1,16 @@
+2016-01-05: v0.2:
+* New Bus implementation: RabbitBus based on RabbitMQ. A few rough edges left,
+  but generally reliable.
+* Bug fixes across the board: DBusBus reconnection attempts, thread-related
+  issue in web interface
+* Improvements to rebus_infra, rebus_master and rebus_agent launch scripts.
+* Support for more file types.
+* Support for more secure serialization mechanisms.
+* Helper function to run external programs in isolated namespaces, using
+  firejail (see example in dotrenderer agent).
+
+---
+2015-09-01: v0.1:
+* Initial release
+* 2 Bus implementations: LocalBus and DBusBus
+* 2 Storage implementations: DiskStorage and RAMStorage

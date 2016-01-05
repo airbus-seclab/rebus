@@ -183,6 +183,8 @@ Agents may be run remotely, by connecting to a remote DBus server.
 
 This bus allows using the web interface.
 
+This implementation does not support messages over ~134MB.
+
 RabbitBus
 '''''''''
 This bus implementation uses RabbitMQ as a communication mechanism between the *bus master* and the agents.
