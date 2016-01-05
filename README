@@ -145,10 +145,15 @@ The Bus API performs the following duties:
 * allows several instances of one agent may run simultaneously
 * conveys requests through the storage API
 
-Two communication buses have been implemented:
+Three communication buses have been implemented:
 
 * **LocalBus**: combine *n* agents to create a new composite command-line tool
-* **DBusBus**: more interactive use, web interface, multi-process
+* **DBusBus**: sends messages over DBus.
+* **RabbitBus**: sends messages over RabbitMQ.
+
+When using any of the last two buses, agents are not stopped as soon as
+processing is finished, which enables user to interact with the bus (ex. use
+the web interface, inject descriptors interactively)
 
 LocalBus
 ''''''''
@@ -166,13 +171,37 @@ non-thread-safe C bindings...), you might want to refrain from using several
 
 DBusBus
 '''''''
+This bus implementation uses DBus as a communication mechanism between the *bus
+master* and the agents, to send messages bus and perform remote procedure
+calls.
+
 This bus implementation runs Agents as separate processes.
 
 The bus exits when the *bus master* process gets stopped by the user.
 
-Agents may be run remotely, by connecting to a remote DBus.
+Agents may be run remotely, by connecting to a remote DBus server.
 
 This bus allows using the web interface.
+
+RabbitBus
+'''''''''
+This bus implementation uses RabbitMQ as a communication mechanism between the *bus master* and the agents.
+
+This bus implementation runs Agents as separate processes.
+
+The bus exits when the *bus master* process gets stopped by the user.
+
+This implementation as a few rough edges (known bugs):
+
+* Queues must not exist, or be empty before the bus master and agents is
+  launched. Leftover messages from previous runs cause bugs.
+* Only 10000 agents may connect to the bus master during its lifetime.
+* At shutdown, depending on how it was initiated, the *bus master* and/or
+  agents sometimes enter an infinite loop and must be killed.
+
+These bugs should be resolved in future versions. Nevertheless, this bus
+implementation is deemed reliable.
+
 
 
 Storage
@@ -209,7 +238,7 @@ Bus`_ according to the Operation Mode this agent is in.
 
 By default, agents support all operation modes. The list of supported operation
 modes as well as the default operation mode can be overridden by defining the
-_operationmodes_ attribute in an Agent.
+*_operationmodes_* attribute in an Agent.
 
 Automatic operation mode
 ````````````````````````
