@@ -85,7 +85,8 @@ def bus(request, storage):
         # always return the same bus instance
         if storagetype == 'diskstorage':
             pytest.skip("diskstorage is not supported by localbus")
-        instance = BusRegistry.get(request.param)()
+        bus_options = argparse.Namespace()
+        instance = BusRegistry.get(request.param)(bus_options)
 
         def return_bus():
             return instance

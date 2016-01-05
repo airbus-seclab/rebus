@@ -4,6 +4,7 @@ from rebus.storage_backends.ramstorage import RAMStorage
 import logging
 import threading
 from rebus.tools.config import get_output_altering_options
+from rebus.storage import StorageRegistry
 
 log = logging.getLogger("rebus.localbus")
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
@@ -13,8 +14,7 @@ agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
 class LocalBus(Bus):
     _name_ = "localbus"
 
-    # TODO : find a way to remove the heartbeat_interval
-    def __init__(self, busaddr=None, heartbeat_interval=0):
+    def __init__(self, options):
         Bus.__init__(self)
         self.locks = defaultdict(set)
         #: Next available agent id. Never decreases.
