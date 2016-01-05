@@ -43,8 +43,8 @@ def main():
     parser_master = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    subparsers_master = parser_master.add_subparsers(help='Bus Master',
-                                                     dest='busmaster')
+    subparsers_master = parser_master.add_subparsers(
+        help='Bus Master', dest='busmaster')
 
     #: helper parser
     parser_storage1 = argparse.ArgumentParser(
@@ -53,17 +53,24 @@ def main():
     parser_storage1.add_argument(
         'storage', nargs=argparse.REMAINDER,
         help="available storage backends: %s. Use -h after storage name to "
-        "see its options." % ', '.join(storagelist.keys()))
+        "see its options." % ', '.join(storagelist.keys()),
+        default="ramstorage")
+
+    # ArgumentDefaultsHelpFormatter is not used here (why?), defaults are not
+    # displayed
 
     for master, cls in BusMasterRegistry.iteritems():
-        subparser = subparsers_master.add_parser(master,
-                                                 parents=[parser_storage1])
+        subparser = subparsers_master.add_parser(
+            master,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            parents=[parser_storage1])
         cls.add_arguments(subparser)
 
     master_options = parser_master.parse_args(options.busmaster)
 
     #: 3rd parser for storage options
     parser_storage2 = argparse.ArgumentParser(
+        usage='%(prog)s ' + master_options.busmaster,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers_storage = parser_storage2.add_subparsers(
