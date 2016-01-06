@@ -23,7 +23,6 @@ class RabbitBus(Bus):
 
     # Bus methods implementations - same order as in bus.py
     def __init__(self, options):
-        print "received options:", options
         Bus.__init__(self)
         busaddr = options.rabbitaddr
 

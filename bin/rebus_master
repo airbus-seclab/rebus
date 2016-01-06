@@ -70,7 +70,7 @@ def main():
 
     #: 3rd parser for storage options
     parser_storage2 = argparse.ArgumentParser(
-        usage='%(prog)s ' + master_options.busmaster,
+        usage='%(prog)s ' + master_options.busmaster + ' [bus options]',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers_storage = parser_storage2.add_subparsers(
