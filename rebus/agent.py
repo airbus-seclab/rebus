@@ -292,7 +292,9 @@ class Agent(object):
         :param reason: Text description of the link reason
         :param isSymmetric: indicates whether the relationship is symmetric
         """
-        link1, link2 = desc1.create_links(desc2, self.name, linktype, reason)
+        link1, link2 = desc1.create_links(
+            desc2, self.name, linktype, reason, isSymmetric
+        )
         self.push(link1)
         self.push(link2)
 
