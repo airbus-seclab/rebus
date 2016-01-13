@@ -8,7 +8,7 @@ import logging.handlers
 from collections import namedtuple
 
 
-def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
+def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, domain, modules):
     childPid = os.fork()
     if childPid == 0:
         args = ['rebus_agent']
@@ -19,6 +19,8 @@ def runAgent(agent, verboseLevel, bus, busaddr, agentArgs, modules):
             args.extend(['--busaddr', str(busaddr)])
         for module in modules:
             args.extend(['-m', module])
+        if domain is not None:
+            args.extend(['--domain', str(domain)])
         args.append(str(agent))
         if agentArgs is not None:
             args.extend(agentArgs.split())
@@ -66,11 +68,16 @@ def runStage(stageConfig, bus, busaddr, modules):
             if isinstance(args, dict):
                 params = args.get('params', args)
                 verboseLevel = int(args.get('verbose_level', 0))
+                if "domain" in args.keys() and args["domain"].strip() != "":
+                    domain = args['domain'].strip()
+                else:
+                    domain = None
             else:
                 params = args
                 verboseLevel = 0
+                domain = None
             agentsPid.append(runAgent(agentName, verboseLevel, bus, busaddr,
-                                      params, modules))
+                                      params, domain, modules))
     for pid in agentsPid:
         os.waitpid(pid, 0)
 
