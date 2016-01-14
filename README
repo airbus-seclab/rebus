@@ -300,7 +300,7 @@ Those two sections contain the following attributes:
 
 * **Master Section**
 
-  - **bus** : 'localbus' or 'dbus'
+  - **bus** : 'localbus', 'dbus' or 'rabbit'
   - **logfile** : The logfile's path
   - **verbose_level** : Verbosity level for this agent, between 0 and 3
   - **storage** : 'ramstorage' or 'diskstorage'
