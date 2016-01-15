@@ -40,7 +40,9 @@ Dependencies:
 * dbus-glib
 
 Optional dependencies:
+
 * pip install larch-pickle
+* python2-pika (when rabbitmq bus is used)
 
 To install these dependencies on Arch Linux:
 
