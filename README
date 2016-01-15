@@ -42,7 +42,7 @@ Dependencies:
 Optional dependencies:
 
 * pip install larch-pickle
-* python2-pika (when rabbitmq bus is used)
+* python2-pika (when rabbitmq bus is used) - version 0.10 at least
 
 To install these dependencies on Arch Linux:
 
