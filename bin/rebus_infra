@@ -64,20 +64,20 @@ def runStage(stageConfig, bus, busaddr, modules):
         # agents with no parameters - missing ":" at the end of line, fixing it
         if isinstance(agent, str):
             agent = {agent: {"params": ""}}
-        for agentName, args in agent.iteritems():
-            if isinstance(args, dict):
-                params = args.get('params', args)
-                verboseLevel = int(args.get('verbose_level', 0))
-                if "domain" in args.keys() and args["domain"].strip() != "":
-                    domain = args['domain'].strip()
-                else:
-                    domain = None
+        agentName, args = agent.items()[0]
+        if isinstance(args, dict):
+            params = args.get('params', "")
+            verboseLevel = int(args.get('verbose_level', 0))
+            if "domain" in args.keys() and args["domain"].strip() != "":
+                domain = args['domain'].strip()
             else:
-                params = args
-                verboseLevel = 0
                 domain = None
-            agentsPid.append(runAgent(agentName, verboseLevel, bus, busaddr,
-                                      params, domain, modules))
+        else:
+            params = args
+            verboseLevel = 0
+            domain = None
+        agentsPid.append(runAgent(agentName, verboseLevel, bus, busaddr,
+                                  params, domain, modules))
     for pid in agentsPid:
         os.waitpid(pid, 0)
 
