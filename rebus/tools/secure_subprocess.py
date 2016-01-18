@@ -49,7 +49,7 @@ def make_firejail_cmdline(flags, cmd):
 
     return full_cmd
 
-def check_output(flags, cmd, *args, **kwargs):
+def check_output(cmd, flags=None, *args, **kwargs):
     full_cmd = make_firejail_cmdline(flags, cmd)
     return subprocess.check_output(full_cmd, *args, **kwargs)
 
