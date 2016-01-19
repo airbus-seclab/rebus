@@ -40,7 +40,9 @@ Dependencies:
 * dbus-glib
 
 Optional dependencies:
+
 * pip install larch-pickle
+* python2-pika (when rabbitmq bus is used) - version 0.10 at least
 
 To install these dependencies on Arch Linux:
 
@@ -300,7 +302,7 @@ Those two sections contain the following attributes:
 
 * **Master Section**
 
-  - **bus** : 'localbus' or 'dbus'
+  - **bus** : 'localbus', 'dbus' or 'rabbit'
   - **logfile** : The logfile's path
   - **verbose_level** : Verbosity level for this agent, between 0 and 3
   - **storage** : 'ramstorage' or 'diskstorage'

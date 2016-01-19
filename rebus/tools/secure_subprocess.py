@@ -31,6 +31,9 @@ def make_firejail_cmdline(flags, cmd):
 
     secres = list(secure)
 
+    # TODO : check if binary is in homedir, in that case
+    # add it to --private-home
+
     if flags&FS == FS:
         # TODO: find a way to specify specific files
         secres.remove("--private")
