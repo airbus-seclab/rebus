@@ -56,6 +56,6 @@ def check_output(cmd, flags=None, *args, **kwargs):
     full_cmd = make_firejail_cmdline(flags, cmd)
     return subprocess.check_output(full_cmd, *args, **kwargs)
 
-def Popen(flags, cmd, *args, **kwargs):
+def Popen(cmd, flags=None, *args, **kwargs):
     full_cmd = make_firejail_cmdline(flags, cmd)
     return subprocess.Popen(full_cmd, *args, **kwargs)
