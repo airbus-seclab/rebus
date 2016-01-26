@@ -204,7 +204,7 @@ class Descriptor(object):
         v = repr(self.value)
         if len(v) > 30:
             v = "[%i][%s...]" % (len(v), v[:22])
-        return "%s:%s(%s)=%s" % (self.domain, self.selector, self.label, v)
+        return "%s:%s(%s)=%s" % (self.domain, self.selector, self.label.encode('utf-8'), v)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

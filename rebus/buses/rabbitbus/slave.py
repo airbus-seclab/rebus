@@ -309,7 +309,7 @@ class RabbitBus(Bus):
             self.rpc_get_value(str(agent_id), desc_domain, selector)))
 
     def list_uuids(self, agent_id, desc_domain):
-        return {str(k): str(v) for k, v in
+        return {str(k): v.encode('utf-8') for k, v in
                 self.rpc_list_uuids(str(agent_id), desc_domain).items()}
 
     def find(self, agent_id, desc_domain, selector_regex, limit):
