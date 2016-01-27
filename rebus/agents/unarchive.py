@@ -83,9 +83,12 @@ class Unarchive(Agent):
         if "/archive/zip" in selector:
             from zipfile import ZipFile
             fzip = ZipFile(file=StringIO(descriptor.value))
-            for fname in fzip.namelist():
-                unarchived.append((fname, descriptor.label + ':' + fname,
-                                   fzip.read(fname)))
+            try:
+                for fname in fzip.namelist():
+                    unarchived.append((fname, descriptor.label + ':' + fname,
+                                       fzip.read(fname)))
+            except RuntimeError as e:
+                self.log.error(e)
 
         if "/archive/cab" in selector and self.cabextract:
             try:
