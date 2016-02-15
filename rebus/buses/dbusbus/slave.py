@@ -112,12 +112,17 @@ class DBus(Bus):
         return bool(self.iface.push(str(agent_id), sd))
 
     def get(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize(serializer, str(
-            self.iface.get(str(agent_id), desc_domain, selector)), bus=self)
+        result = str(self.iface.get(str(agent_id), desc_domain, selector))
+        if result == "":
+            return None
+        return Descriptor.unserialize(serializer, str(result), bus=self)
 
     def get_value(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize_value(serializer, str(
-            self.iface.get_value(str(agent_id), desc_domain, selector)))
+        result = str(self.iface.get_value(str(agent_id), desc_domain,
+                                          selector))
+        if result == "":
+            return None
+        return Descriptor.unserialize_value(serializer, result)
 
     def list_uuids(self, agent_id, desc_domain):
         return {str(k): str(v) for k, v in

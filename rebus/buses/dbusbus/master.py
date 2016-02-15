@@ -158,7 +158,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
         if desc is None:
-            return None
+            return ""
         return desc.serialize_meta(serializer)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -167,7 +167,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
         value = self.store.get_value(str(desc_domain), str(selector))
         if value is None:
-            return None
+            return ""
         return serializer.dumps(value)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',

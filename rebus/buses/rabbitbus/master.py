@@ -253,14 +253,14 @@ class RabbitBusMaster(BusMaster):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
         if desc is None:
-            return None
+            return ""
         return desc.serialize_meta(serializer)
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
         value = self.store.get_value(str(desc_domain), str(selector))
         if value is None:
-            return None
+            return ""
         return serializer.dumps(value)
 
     def list_uuids(self, agent_id, desc_domain):

@@ -301,12 +301,16 @@ class RabbitBus(Bus):
         return bool(self.rpc_push(str(agent_id), sd))
 
     def get(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize(serializer, str(
-            self.rpc_get(str(agent_id), desc_domain, selector)), bus=self)
+        result = str(self.rpc_get(str(agent_id), desc_domain, selector))
+        if result == "":
+            return None
+        return Descriptor.unserialize(serializer, result, bus=self)
 
     def get_value(self, agent_id, desc_domain, selector):
-        return Descriptor.unserialize_value(serializer, str(
-            self.rpc_get_value(str(agent_id), desc_domain, selector)))
+        result = str(self.rpc_get_value(str(agent_id), desc_domain, selector))
+        if result == "":
+            return None
+        return Descriptor.unserialize_value(serializer, result)
 
     def list_uuids(self, agent_id, desc_domain):
         return {str(k): v.encode('utf-8') for k, v in

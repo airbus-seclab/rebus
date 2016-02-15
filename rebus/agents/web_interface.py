@@ -55,8 +55,9 @@ class AsyncProxy(object):
         is read.
         """
         desc = self._agent.bus.get(self._agent, *args)
-        # force value retrieval
-        value = desc.value
+        if desc:
+            # force value retrieval
+            value = desc.value
         self._agent.ioloop.add_callback(callback, desc)
         return False
 
