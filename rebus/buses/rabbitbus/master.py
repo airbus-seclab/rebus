@@ -466,6 +466,8 @@ class RabbitBusMaster(BusMaster):
                     while True:
                         try:
                             svc.channel.start_consuming()
+                            if len(svc.clients) == 0:
+                                break
                         except pika.exceptions.ConnectionClosed:
                             log.info("Disconnected. Trying to reconnect")
                             cls.reconnect()
