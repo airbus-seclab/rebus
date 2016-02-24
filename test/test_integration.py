@@ -1,6 +1,5 @@
 import argparse
 import psutil
-import pytest
 import signal
 import subprocess
 import threading
@@ -8,6 +7,8 @@ import time
 import uuid
 import tempfile
 import shutil
+import pytest
+import os
 
 from rebus.agent import Agent, AgentRegistry
 from rebus.bus import BusRegistry, DEFAULT_DOMAIN
@@ -52,7 +53,7 @@ def storage(request):
     return (request.param, args)
 
 
-@pytest.fixture(scope='function', params=['localbus', 'dbus'])
+@pytest.fixture(scope='function', params=['localbus', 'dbus', 'rabbit'])
 def bus(request, storage):
     """
     Returns fixture parameters and a function that returns a bus instance.
@@ -77,9 +78,35 @@ def bus(request, storage):
 
         def return_bus():
             busclass = rebus.bus.BusRegistry.get(request.param)
-            bus_options = argparse.Namespace(
-                busaddr=rebus.buses.dbusbus.slave.DEFAULT_BUS)
-            # busclass.add_arguments(bus_options)
+            bus_parser = argparse.ArgumentParser()
+            busclass.add_arguments(bus_parser)
+            bus_options = bus_parser.parse_args([])
+            return busclass(bus_options)
+    elif request.param == 'rabbit':
+        check_master_not_running()
+        # launch rebus master
+        args = "rebus_master -v rabbit".split(' ')
+        process = subprocess.Popen(args + storageparams,
+                                   stderr=subprocess.PIPE)
+        # wait for master bus to be ready - TODO look into & fix race
+
+        # TODO check queues are empty or empty them
+        # until then: run the following commands to empty queues
+        # rabbitmqctl stop_app; rabbitmqctl reset; rabbitmqctl start_app
+        time.sleep(1)
+
+        def fin():
+            os.kill(process.pid, signal.SIGINT)
+            process.wait()
+            assert process.returncode == 0, process.stderr.read()
+
+        request.addfinalizer(fin)
+
+        def return_bus():
+            busclass = rebus.bus.BusRegistry.get(request.param)
+            bus_parser = argparse.ArgumentParser()
+            busclass.add_arguments(bus_parser)
+            bus_options = bus_parser.parse_args([])
             return busclass(bus_options)
     elif request.param == 'localbus':
         # always return the same bus instance
@@ -94,9 +121,8 @@ def bus(request, storage):
 
 
 def check_master_not_running():
-    # 'rebus_master_dbus' is too long - gets truncated
-    running = any([('rebus_master' in p.name() and
-                    'dbus' in p.cmdline()) for p in psutil.process_iter()])
+    # 'rebus_master' is too long - gets truncated
+    running = any(['rebus_master' in p.name() for p in psutil.process_iter()])
     assert running is False, "rebus_master_dbus is already running"
 
 
@@ -150,7 +176,7 @@ def agent_inject(bus, request):
         agent = agent_class(bus=bus_instance, domain='default',
                             options=namespace)
         return agent
-    elif bustype == 'dbus':
+    elif bustype in ('rabbit', 'dbus'):
         # Running two DBUS agents in the same process does not work yet -
         # dbus signal handler related problem
         returncode = subprocess.call(('rebus_agent', '--bus', bustype,
@@ -169,17 +195,18 @@ def agent_set(bus):
     pass
 
 
-def test_master():
+@pytest.mark.parametrize('busname', ['dbus', 'rabbit'])
+def test_master(busname):
     """
     Run, then stop rebus_master_dbus
     """
     check_master_not_running()
 
-    process = subprocess.Popen('rebus_master_dbus', stderr=subprocess.PIPE,
-                               bufsize=0)
+    process = subprocess.Popen(['rebus_master', busname],
+                               stderr=subprocess.PIPE, bufsize=0)
     # wait for master bus to be ready
     # TODO look into race condition. Another SIGINT handler?
-    time.sleep(1)
+    time.sleep(2)
     output = process.stderr.read(1)
     process.send_signal(signal.SIGINT)
     process.wait()
