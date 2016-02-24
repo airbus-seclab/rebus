@@ -3,9 +3,10 @@ import os
 import distutils.spawn
 import logging
 
-TMP = 1 # Writable access to system wide /tmp
-UNIX = 1 << 1 # Unix sockets
-FS = 1 << 2 # full filesystem
+NOACCESS = 0
+TMP = 1  # Writable access to system wide /tmp
+UNIX = 1 << 1  # Unix sockets
+FS = 1 << 2  # full filesystem
 
 log = logging.getLogger("rebus.secure_subprocess")
 
@@ -19,8 +20,10 @@ if firejail is None:
 else:
     secure.append(firejail)
     # TODO add private-etc
-    secure.extend(["--noprofile", "--quiet", "--nosound", "--private-dev", "--env=TMPDIR="+os.environ['HOME'],
-                  "--private", "--seccomp", ])
+    secure.extend(
+        ["--noprofile", "--quiet", "--nosound", "--private-dev",
+         "--env=TMPDIR="+os.environ['HOME'], "--private", "--seccomp", ])
+
 
 def make_firejail_cmdline(flags, cmd):
     if secure == []:
@@ -34,16 +37,16 @@ def make_firejail_cmdline(flags, cmd):
     # TODO : check if binary is in homedir, in that case
     # add it to --private-home
 
-    if flags&FS == FS:
+    if flags & FS == FS:
         # TODO: find a way to specify specific files
         secres.remove("--private")
-    elif flags&TMP == TMP:
+    elif flags & TMP == TMP:
         # TODO be more restrictive
         pass
     else:
         secres.append("--read-only=/*")
 
-    if flags&UNIX == UNIX:
+    if flags & UNIX == UNIX:
         secres.append("--net=unix")
     else:
         secres.append("--net=none")
@@ -52,10 +55,12 @@ def make_firejail_cmdline(flags, cmd):
 
     return full_cmd
 
-def check_output(cmd, flags=None, *args, **kwargs):
+
+def check_output(cmd, flags=NOACCESS, *args, **kwargs):
     full_cmd = make_firejail_cmdline(flags, cmd)
     return subprocess.check_output(full_cmd, *args, **kwargs)
 
-def Popen(cmd, flags=None, *args, **kwargs):
+
+def Popen(cmd, flags=NOACCESS, *args, **kwargs):
     full_cmd = make_firejail_cmdline(flags, cmd)
     return subprocess.Popen(full_cmd, *args, **kwargs)
