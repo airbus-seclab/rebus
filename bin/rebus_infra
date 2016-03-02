@@ -52,6 +52,8 @@ def runBusMaster(busConfig, busaddr):
             args.append('dbus')
 
         args.append(busConfig.storage)
+        if busConfig.storageOptions:
+            args.append(busConfig.storageOptions)
         os.execvp(args[0], args)
         raise RuntimeError
     else:
@@ -83,13 +85,15 @@ def runStage(stageConfig, bus, busaddr, modules):
 
 
 def getBusConfig(config):
-    busConfig = namedtuple('busConfig', 'bus logfile verboseLevel storage')
+    busConfig = namedtuple(
+        'busConfig', 'bus logfile verboseLevel storage storageOptions')
     busConfig.bus = 'localbus'
     busConfig.logfile = None
     busConfig.verboseLevel = None
     busConfig.storage = 'ramstorage'
     busConfig.addr = None
     busConfig.heartbeat = None
+    busConfig.storageOptions = ''
 
     # Bus type
     if 'bus' in config:
@@ -127,6 +131,8 @@ def getBusConfig(config):
                 'diskstorage':
             raise ValueError(busConfig.storage +
                              ' is not a valid storage choice.')
+        if 'storage_options' in config:
+            busConfig.storageOptions = config['storage_options']
     return busConfig
 
 
