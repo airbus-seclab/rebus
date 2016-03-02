@@ -71,8 +71,10 @@ class RabbitBus(Bus):
                          str(self.busaddr))
                 self.connection = pika.BlockingConnection(params)
                 self.channel = self.connection.channel()
-                self.channel.queue_declare(queue="rebus_master_rpc_highprio")
-                self.channel.queue_declare(queue="rebus_master_rpc_lowprio")
+                self.channel.queue_declare(queue="rebus_master_rpc_highprio",
+                                           auto_delete=True)
+                self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
+                                           auto_delete=True)
 
                 self.queue_ret = self.channel.queue_declare(self.return_queue)
                 self.return_queue = self.queue_ret.method.queue
@@ -81,8 +83,7 @@ class RabbitBus(Bus):
                     exchange='rebus_signals',
                     type='fanout')
                 self.ret_signal_queue = self.channel.queue_declare(
-                    self.signal_queue,
-                    durable=True)
+                    self.signal_queue, exclusive=True)
                 self.signal_queue = self.ret_signal_queue.method.queue
                 self.channel.queue_bind(exchange='rebus_signals',
                                         queue=self.signal_queue)
@@ -129,6 +130,7 @@ class RabbitBus(Bus):
                     response = str(resp)
                     response = serializer.loads(response)
                     self.channel.basic_ack(delivery_tag=meth.delivery_tag)
+                    # TODO try/reconnect + break if basic_ack impossible
                 else:
                     log.warning("An RPC returned with a wrong correlation ID")
             else:
@@ -242,8 +244,10 @@ class RabbitBus(Bus):
         # Declare the registration queue and the rpc queue
         self.channel.queue_declare(queue="registration_queue",
                                    auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc_highprio")
-        self.channel.queue_declare(queue="rebus_master_rpc_lowprio")
+        self.channel.queue_declare(queue="rebus_master_rpc_highprio",
+                                   auto_delete=True)
+        self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
+                                   auto_delete=True)
 
         # Fetch an ID from the ID queue
         method = False
@@ -260,19 +264,17 @@ class RabbitBus(Bus):
 
         # Declare RPC return queue
         ret_rpc_queue_name = "rpc_ret_" + str(self.agent_id)
-        self.queue_ret = self.channel.queue_declare(queue=ret_rpc_queue_name,
-                                                    exclusive=True)
+        self.queue_ret = self.channel.queue_declare(
+            queue=ret_rpc_queue_name, exclusive=True)
         self.return_queue = self.queue_ret.method.queue
 
         # Declare the signal exchange and bind the signal queue on it
         self.signal_exchange = self.channel.exchange_declare(
-            exchange='rebus_signals',
-            type='fanout')
+            exchange='rebus_signals', type='fanout', auto_delete=True)
 
         signal_queue_name = "signal_" + str(self.agent_id)
         self.ret_signal_queue = self.channel.queue_declare(
-            queue=signal_queue_name,
-            durable=True)
+            queue=signal_queue_name, exclusive=True)
         self.signal_queue = self.ret_signal_queue.method.queue
         self.channel.queue_bind(exchange='rebus_signals',
                                 queue=self.signal_queue)
@@ -375,11 +377,19 @@ class RabbitBus(Bus):
         self.connection.add_timeout(0, f)
 
     def run_agents(self):
+        self._run_agents()
+        # Unregister the agent before quitting
+        log.debug("Unregistering...")
+        self.rpc_unregister(self.agent_id)
+        self.agent.save_internal_state()
+        self.channel.close()
+        self.connection.close()
+
+    def _run_agents(self):
         self.agent.run_and_catch_exc()
         if self.agent.__class__.run != Agent.run:
             # the run() method has been overridden - agent will run on his own
             # then quit
-            self.rpc_unregister(self.agent_id)
             return
         try:
 
@@ -400,13 +410,6 @@ class RabbitBus(Bus):
 
         except (KeyboardInterrupt, SystemExit):
             log.info('Exiting...')
-
-        # Unregister the agent before quit
-        log.debug("Unregistring...")
-        self.rpc_unregister(self.agent_id)
-        self.agent.save_internal_state()
-        self.channel.close()
-        self.connection.close()
 
     def broadcast_wrapper(self, sender_id, desc_domain, uuid, selector):
         self.agent.on_new_descriptor(str(sender_id), str(desc_domain),

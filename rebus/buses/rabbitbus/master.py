@@ -75,14 +75,16 @@ class RabbitBusMaster(BusMaster):
                 properties=pika.BasicProperties(delivery_mode=2,))
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(
-            exchange='rebus_signals', type='fanout')
+            exchange='rebus_signals', type='fanout', auto_delete=True)
 
         # Create the rpc queue
-        self.channel.queue_declare(queue='rebus_master_rpc_highprio')
+        self.channel.queue_declare(queue='rebus_master_rpc_highprio',
+                                   auto_delete=True)
         self.channel.basic_consume(self.rpc_callback,
                                    queue='rebus_master_rpc_highprio',
                                    arguments={'x-priority': 1})
-        self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
+        self.channel.queue_declare(queue='rebus_master_rpc_lowprio',
+                                   auto_delete=True)
         self.channel.basic_consume(self.rpc_callback,
                                    queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority': 0})
@@ -423,12 +425,14 @@ class RabbitBusMaster(BusMaster):
                                            auto_delete=True)
                 self.signal_exchange = self.channel.exchange_declare(
                     exchange='rebus_signals', type='fanout')
-                self.channel.queue_declare(queue='rebus_master_rpc_highprio')
+                self.channel.queue_declare(queue='rebus_master_rpc_highprio',
+                                           auto_delete=True)
                 self.channel.basic_consume(
                     self.rpc_callback,
                     queue='rebus_master_rpc_highprio',
                     arguments={'x-priority': 1})
-                self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
+                self.channel.queue_declare(queue='rebus_master_rpc_lowprio',
+                                           auto_delete=True)
                 self.channel.basic_consume(
                     self.rpc_callback,
                     queue='rebus_master_rpc_lowprio',
@@ -453,13 +457,14 @@ class RabbitBusMaster(BusMaster):
                     log.info("Disconnected (in run). Trying to reconnect")
                     cls.reconnect()
         except (KeyboardInterrupt, SystemExit):
+            log.info("Received SIGINT or Ctrl-C, exiting")
+            svc.channel.queue_delete(queue='registration_queue')
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
                          "again to stop.")
                 # Ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
-                svc.channel.queue_delete(queue='registration_queue')
                 svc.bus_exit(store.STORES_INTSTATE)
                 store.store_state()
                 try:
