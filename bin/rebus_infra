@@ -53,7 +53,7 @@ def runBusMaster(busConfig, busaddr):
 
         args.append(busConfig.storage)
         if busConfig.storageOptions:
-            args.append(busConfig.storageOptions)
+            args.extend(busConfig.storageOptions)
         os.execvp(args[0], args)
         raise RuntimeError
     else:
@@ -132,7 +132,7 @@ def getBusConfig(config):
             raise ValueError(busConfig.storage +
                              ' is not a valid storage choice.')
         if 'storage_options' in config:
-            busConfig.storageOptions = config['storage_options']
+            busConfig.storageOptions = config['storage_options'].split(' ')
     return busConfig
 
 
