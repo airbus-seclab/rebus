@@ -170,20 +170,24 @@ class RabbitBus(Bus):
         args = {'agent_id': agent_id, 'desc_domain': desc_domain}
         return self.send_rpc("list_uuids", args)
 
-    def rpc_find(self, agent_id, desc_domain, selector_regex, limit):
+    def rpc_find(self, agent_id, desc_domain, selector_regex, limit=0,
+                 offset=0):
         args = {'agent_id': agent_id, 'desc_domain': desc_domain,
-                'selector_regex': selector_regex, 'limit': limit}
+                'selector_regex': selector_regex, 'limit': limit, 'offset':
+                offset}
         return self.send_rpc("find", args)
+
+    def rpc_find_by_selector(self, agent_id, desc_domain, selector_pref,
+                             limit=0, offset=0):
+        args = {'agent_id': agent_id, 'desc_domain': desc_domain,
+                'selector_prefix': selector_pref, 'limit': limit, 'offset':
+                offset}
+        return self.send_rpc("find_by_selector", args)
 
     def rpc_find_by_uuid(self, agent_id, desc_domain, uuid):
         args = {'agent_id': agent_id, 'desc_domain': desc_domain,
                 'uuid': uuid}
         return self.send_rpc("find_by_uuid", args)
-
-    def rpc_find_by_selector(self, agent_id, desc_domain, selector_pref):
-        args = {'agent_id': agent_id, 'desc_domain': desc_domain,
-                'selector_prefix': selector_pref}
-        return self.send_rpc("find_by_selector", args)
 
     def rpc_find_by_value(self, agent_id, desc_domain, selector_prefix,
                           value_regex):
@@ -318,25 +322,29 @@ class RabbitBus(Bus):
         return {str(k): v.encode('utf-8') for k, v in
                 self.rpc_list_uuids(str(agent_id), desc_domain).items()}
 
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        return [str(i) for i in
-                self.rpc_find(str(agent_id), desc_domain, selector_regex,
-                              limit)]
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
+        slist = self.rpc_find(str(agent_id), desc_domain, selector_regex,
+                              limit, offset)
+        return [str(i) for i in slist]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        dlist = self.rpc_find_by_selector(
+            str(agent_id), desc_domain, selector_prefix, limit, offset)
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
+                dlist]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
+        dlist = self.rpc_find_by_uuid(str(agent_id), desc_domain, uuid)
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.rpc_find_by_uuid(str(agent_id), desc_domain, uuid)]
+                dlist]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
+        dlist = self.rpc_find_by_value(
+            str(agent_id), desc_domain, selector_prefix, value_regex)
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.rpc_find_by_value(str(agent_id), desc_domain,
-                                       selector_prefix, value_regex)]
-
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.rpc_find_by_selector(str(agent_id), desc_domain,
-                                          selector_prefix)]
+                dlist]
 
     def mark_processed(self, agent_id, desc_domain, selector):
         self.rpc_mark_processed(str(agent_id), desc_domain, selector)

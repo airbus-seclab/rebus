@@ -83,10 +83,17 @@ class LocalBus(Bus):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         return self.store.list_uuids(desc_domain)
 
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
-                  limit)
-        return self.store.find(desc_domain, selector_regex, limit)
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
+        log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
+                  selector_regex, limit, offset)
+        return self.store.find(desc_domain, selector_regex, limit, offset)
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        log.debug("FINDBYVALUE: %s %s %s (max %d skip %d)", agent_id,
+                  desc_domain, selector_prefix, limit, offset)
+        return self.store.find_by_selector(desc_domain, selector_prefix, limit,
+                                           offset)
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
@@ -98,11 +105,6 @@ class LocalBus(Bus):
                   selector_prefix, value_regex)
         return self.store.find_by_value(desc_domain, selector_prefix,
                                         value_regex)
-
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
-                  selector_prefix)
-        return self.store.find_by_selector(desc_domain, selector_prefix)
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name

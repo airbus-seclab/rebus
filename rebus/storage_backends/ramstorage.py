@@ -41,35 +41,44 @@ class RAMStorage(Storage):
         #: internal state of agents
         self.internal_state = {}
 
-    def find(self, domain, selector_regex, limit):
+    def find(self, domain, selector_regex, limit=0, offset=0):
         regex = re.compile(selector_regex)
         sel_list = reversed(self.processed[domain].keys())
-        res = []
+        result = []
 
         for k in sel_list:
             if regex.match(k):
-                res.append(k)
-                if limit != 0 and len(res) >= limit:
-                    return res
-        return res
+                if offset > 0:
+                    offset -= 1
+                    continue
+                result.append(k)
+                if limit != 0 and len(result) >= limit:
+                    return result
+        return result
+
+    def find_by_selector(self, domain, selector_prefix, limit=0, offset=0):
+        result = []
+        for selector in self.processed[domain].keys():
+            if selector.startswith(selector_prefix):
+                if offset > 0:
+                    offset -= 1
+                    continue
+                desc = self.dstore[domain][selector]
+                result.append(desc)
+                if limit != 0 and len(result) >= limit:
+                    return result
+        return result
 
     def find_by_uuid(self, domain, uuid):
         result = []
-        for selector, desc in self.dstore[domain].iteritems():
+        for _, desc in self.dstore[domain].iteritems():
             if desc.uuid == uuid:
-                result.append(desc)
-        return result
-
-    def find_by_selector(self, domain, selector_prefix):
-        result = []
-        for selector, desc in self.dstore[domain].iteritems():
-            if desc.selector.startswith(selector_prefix):
                 result.append(desc)
         return result
 
     def find_by_value(self, domain, selector_prefix, value_regex):
         result = []
-        for selector, desc in self.dstore[domain].iteritems():
+        for _, desc in self.dstore[domain].iteritems():
             if desc.selector.startswith(selector_prefix) and \
                     re.match(value_regex, desc.value):
                 result.append(desc)
@@ -188,7 +197,7 @@ class RAMStorage(Storage):
         return result.items(), len(processed)
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
-        res = []
+        result = []
         for domain in self.dstore.keys():
             selectors = set(self.dstore[domain].keys())
             processed_selectors = set([sel for sel, name_confs in
@@ -196,9 +205,9 @@ class RAMStorage(Storage):
                                        (agent_name, config_txt) in
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
-            res.extend([(domain, self.dstore[domain][sel].uuid, sel)
+            result.extend([(domain, self.dstore[domain][sel].uuid, sel)
                         for sel in unprocessed_sels])
-        return res
+        return result
 
     def store_agent_state(self, agent_id, state):
         self.internal_state[agent_id] = state

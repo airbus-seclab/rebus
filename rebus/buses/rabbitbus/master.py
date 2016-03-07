@@ -269,11 +269,19 @@ class RabbitBusMaster(BusMaster):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         return self.store.list_uuids(str(desc_domain))
 
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
-                  limit)
-        return self.store.find(str(desc_domain), str(selector_regex),
-                               str(limit))
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
+        log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
+                  selector_regex, limit, offset)
+        return self.store.find(
+            str(desc_domain), str(selector_regex), int(limit), int(offset))
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        log.debug("FINDBYSELECTOR: %s %s %s (max %d skip %d)", agent_id,
+                  desc_domain, selector_prefix, limit, offset)
+        descs = self.store.find_by_selector(
+            str(desc_domain), str(selector_prefix), int(limit), int(offset))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
@@ -287,13 +295,6 @@ class RabbitBusMaster(BusMaster):
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
-        return [desc.serialize_meta(serializer) for desc in descs]
-
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        log.debug("FINDBYSELECTOR: %s %s %s", agent_id, desc_domain,
-                  selector_prefix)
-        descs = self.store.find_by_selector(str(desc_domain),
-                                            str(selector_prefix))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     def mark_processed(self, agent_id, desc_domain, selector):

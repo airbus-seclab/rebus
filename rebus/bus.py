@@ -89,7 +89,7 @@ class Bus(object):
         """
         raise NotImplementedError
 
-    def find(self, agent_id, desc_domain, selector_regex, limit):
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
         """
         Returns a list of selectors according to search constraints:
 
@@ -100,10 +100,27 @@ class Bus(object):
         :param agent_id: current agent id
         :param desc_domain: string, domain in which the search is performed
         :param selector_regex: string, regex
-        :param limit: int, max number of selectors to return. Unlimited if 0.
+        :param limit: int, max number of matching selectors to return.
+            Unlimited if 0.
+        :param offset: int, number of selectors to skip.
 
         Only selectors of *limit* most recently added descriptors will be
         returned, from most recent to oldest.
+        """
+        raise NotImplementedError
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        """
+        Returns a list of Descriptors whose selector matches the provided
+        prefix, belonging to the specified domain.
+
+        :param agent_id: current agent id
+        :param desc_domain: domain the Descriptors being searched belong to
+        :param selector_prefix: search prefix for the Descriptors
+        :param limit: int, max number of matching descriptors to return.
+            Unlimited if 0.
+        :param offset: int, number of descriptors to skip.
         """
         raise NotImplementedError
 
@@ -130,17 +147,6 @@ class Bus(object):
         :param desc_domain: string, domain in which to look for descriptors
         :param selector_prefix: search prefix for the Descriptors
         :param value_regex: regex that the Descriptors' values should match
-        """
-        raise NotImplementedError
-
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        """
-        Returns a list of all Descriptors whose selector match the provided
-        prefix, belonging to the specified domain.
-
-        :param agent_id: current agent id
-        :param desc_domain: domain the Descriptors being searched belong to
-        :param selector_prefix: search prefix for the Descriptors
         """
         raise NotImplementedError
 

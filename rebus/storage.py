@@ -23,35 +23,44 @@ class Storage(object):
         """
         pass
 
-    def find(self, domain, selector_regex, limit):
+    def find(self, domain, selector_regex, limit=0, offset=0):
         """
         Return list of selectors according to search constraints:
 
-        * domain
-        * selector regular expression
-        * limit (max number of entries to return)
-
         :param domain: string, domain in which the search is performed
         :param selector_regex: string, regex
-        :param limit: int, max number of selectors to return. Unlimited if 0.
+        :param limit: int, max number of matching selectors to return.
+            Unlimited if 0.
+        :param offset: int, number of selectors to skip.
 
         Only selectors of *limit* most recently added descriptors will be
         returned, from most recent to oldest.
         """
         raise NotImplementedError
 
-    def find_by_selector(self, domain, selector_prefix):
+    def find_by_selector(self, domain, selector_prefix, limit=0, offset=0):
         """
         Return a list of descriptors whose selector starts with
         selector_prefix.
 
-        Unspecified list order - may vary depending on the backend.
+        :param domain: string, domain in which the search is performed
+        :param selector_prefix: string
+        :param limit: int, max number of matching descriptors to return.
+            Unlimited if 0.
+        :param offset: int, number of matching descriptors to skip.
+
+        The returned list is sorted, from oldest to newest.
         """
         raise NotImplementedError
 
     def find_by_uuid(self, domain, uuid):
         """
         Return a list of descriptors whose uuid match given parameter.
+
+        :param domain: string, domain in which the search is performed
+        :param uuid: string, uuid in which the search is performed
+        :param offset: int, number of selectors to skip.
+        :param limit: int, max number of selectors to return. Unlimited if 0.
 
         Unspecified list order - may vary depending on the backend.
         """
@@ -64,6 +73,12 @@ class Storage(object):
         * desc.domain == desc_domain
         * desc.selector.startswith(selector_prefix)
         * re.match(value_regex, desc.value)
+
+        :param domain: string, domain in which the search is performed
+        :param selector_prefix: string
+        :param value_regex: string, regex
+        :param offset: int, number of selectors to skip.
+        :param limit: int, max number of selectors to return. Unlimited if 0.
 
         Unspecified list order - may vary depending on the backend.
         """

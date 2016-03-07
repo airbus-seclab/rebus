@@ -188,24 +188,32 @@ class DiskStorage(Storage):
             # that has no precursor
             self.labels[domain][desc.uuid] = desc.label
 
-    def find(self, domain, selector_regex, limit):
+    def find(self, domain, selector_regex, limit=0, offset=0):
         regex = re.compile(selector_regex)
         sel_list = reversed(self.processed[domain].keys())
-        res = []
+        result = []
 
         for k in sel_list:
             if regex.match(k):
-                res.append(k)
-                if limit != 0 and len(res) >= limit:
-                    return res
-        return res
+                if offset > 0:
+                    offset -= 1
+                    continue
+                result.append(k)
+                if limit != 0 and len(result) >= limit:
+                    return result
+        return result
 
-    def find_by_selector(self, domain, selector_prefix):
+    def find_by_selector(self, domain, selector_prefix, limit=0, offset=0):
         result = []
         for selector in self.processed[domain].keys():
             if selector.startswith(selector_prefix):
+                if offset > 0:
+                    offset -= 1
+                    continue
                 desc = self.get_descriptor(domain, selector)
                 result.append(desc)
+                if limit != 0 and len(result) >= limit:
+                    return result
         return result
 
     def find_by_uuid(self, domain, uuid):
@@ -429,7 +437,7 @@ class DiskStorage(Storage):
                 self.unsavedprocessed = False
 
     def list_unprocessed_by_agent(self, agent_name, config_txt):
-        res = []
+        result = []
         agent_nameconf = (agent_name, config_txt)
         for domain in self.version_cache.keys():
 
@@ -454,8 +462,8 @@ class DiskStorage(Storage):
 
             for sel in selectors:
                 for uuid in sel_to_uuid[sel]:
-                    res.append((domain, uuid, sel))
-        return res
+                    result.append((domain, uuid, sel))
+        return result
 
     @staticmethod
     def add_arguments(subparser):

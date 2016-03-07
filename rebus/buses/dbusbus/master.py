@@ -177,12 +177,23 @@ class DBusMaster(dbus.service.Object, BusMaster):
         return self.store.list_uuids(str(desc_domain))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sssu', out_signature='as')
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        log.debug("FIND: %s %s:%s (%d)", agent_id, desc_domain, selector_regex,
-                  limit)
-        return self.store.find(str(desc_domain), str(selector_regex),
-                               str(limit))
+                         in_signature='sssuu', out_signature='as')
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
+        log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
+                  selector_regex, limit, offset)
+        selectors = self.store.find(
+            str(desc_domain), str(selector_regex), str(limit), int(offset))
+        return [str(s) for s in selectors]
+
+    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
+                         in_signature='sssuu', out_signature='as')
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        log.debug("FINDBYVALUE: %s %s %s (max %d skip %d)", agent_id,
+                  desc_domain, selector_prefix, limit, offset)
+        descs = self.store.find_by_selector(
+            str(desc_domain), str(selector_prefix), int(limit), int(offset))
+        return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='as')
@@ -200,15 +211,6 @@ class DBusMaster(dbus.service.Object, BusMaster):
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
-        return [desc.serialize_meta(serializer) for desc in descs]
-
-    @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='sss', out_signature='as')
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        log.debug("FINDBYVALUE: %s %s %s", agent_id, desc_domain,
-                  selector_prefix)
-        descs = self.store.find_by_selector(str(desc_domain),
-                                            str(selector_prefix))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',

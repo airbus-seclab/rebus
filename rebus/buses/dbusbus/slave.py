@@ -128,25 +128,29 @@ class DBus(Bus):
         return {str(k): str(v) for k, v in
                 self.iface.list_uuids(str(agent_id), desc_domain).items()}
 
-    def find(self, agent_id, desc_domain, selector_regex, limit):
-        return [str(i) for i in
-                self.iface.find(str(agent_id), desc_domain, selector_regex,
-                                limit)]
+    def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
+        slist = self.iface.find(
+            str(agent_id), desc_domain, selector_regex, limit, offset)
+        return [str(i) for i in slist]
+
+    def find_by_selector(self, agent_id, desc_domain, selector_prefix, limit=0,
+                         offset=0):
+        dlist = self.iface.find_by_selector(
+            str(agent_id), desc_domain, selector_prefix, limit, offset)
+        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
+                dlist]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
+        dlist = self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.iface.find_by_uuid(str(agent_id), desc_domain, uuid)]
+                dlist]
 
     def find_by_value(self, agent_id, desc_domain, selector_prefix,
                       value_regex):
+        dlist = self.iface.find_by_value(
+            str(agent_id), desc_domain, selector_prefix, value_regex)
         return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.iface.find_by_value(str(agent_id), desc_domain,
-                                         selector_prefix, value_regex)]
-
-    def find_by_selector(self, agent_id, desc_domain, selector_prefix):
-        return [Descriptor.unserialize(serializer, str(s), bus=self) for s in
-                self.iface.find_by_selector(str(agent_id), desc_domain,
-                                            selector_prefix)]
+                dlist]
 
     def mark_processed(self, agent_id, desc_domain, selector):
         self.iface.mark_processed(str(agent_id), desc_domain, selector)
