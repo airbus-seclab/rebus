@@ -1,3 +1,12 @@
+2016-03-09: v0.3:
+* Support for running external processes in separate namespaces using firejail.
+* Bug fixes in rabbitbus: clean-up resources at agent exit. When a lot of
+  short-lived agents were used (ex. inject), rabbitmq ended up using 100% CPU.
+* rebus_infra: fix bugs in parameters parsing, add support for domains
+* New rabbitmq integration tests
+* Various bug fixes
+
+---
 2016-01-05: v0.2:
 * New Bus implementation: RabbitBus based on RabbitMQ. A few rough edges left,
   but generally reliable.
