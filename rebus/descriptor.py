@@ -193,8 +193,9 @@ class Descriptor(object):
                 self._value = self.bus.get_value(self.agent, self.domain,
                                                  self.selector)
                 return self._value
-        raise Exception('Trying to get unobtainable descriptor value - no '
-                        'reference to bus nor value')
+            else:
+                # The value was really None
+                return None
 
     @value.setter
     def value(self, value):
