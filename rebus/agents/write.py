@@ -1,6 +1,7 @@
-import sys,os
-from rebus.agent import Agent
+import os
 import re
+from rebus.agent import Agent
+
 
 @Agent.register
 class Return(Agent):
@@ -11,9 +12,9 @@ class Return(Agent):
     @classmethod
     def add_arguments(cls, subparser):
         subparser.add_argument(
-            "selectors", nargs="+", 
+            "selectors", nargs="+",
             help="Dump selector values on stdout. Selectors can be regexes")
-        subparser.add_argument("--flat", action="store_true", 
+        subparser.add_argument("--flat", action="store_true",
                                help="Does not create one folder per UUID")
         subparser.add_argument("--target-dir", default=".",
                                help="Target folder")
@@ -23,7 +24,7 @@ class Return(Agent):
             if re.search(selregex, selector):
                 return True
         return False
-    
+
     def process(self, descriptor, sender_id):
         target = self.config['target_dir']
         if not self.config['flat']:
