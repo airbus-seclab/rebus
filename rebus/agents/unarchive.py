@@ -20,6 +20,7 @@ class Unarchive(Agent):
 
     def init_agent(self):
         self.cabextract = distutils.spawn.find_executable("cabextract")
+        self.passwords = set([''] + self.config['passwords'].split(','))
         if self.cabextract is None:
             self.log.warning("cabextract executable not found - cab archives "
                              "will not be extracted")
@@ -27,6 +28,13 @@ class Unarchive(Agent):
     def selector_filter(self, selector):
         return selector.startswith("/archive/") or\
             selector.startswith("/compressed/")
+
+    @classmethod
+    def add_arguments(cls, subparser):
+        subparser.add_argument(
+            '--passwords', type=str, default='',
+            help="comma-separated list of passwords to try when decompressing "
+            "an archive")
 
     def process(self, descriptor, sender_id):
         import tarfile
@@ -84,9 +92,24 @@ class Unarchive(Agent):
             from zipfile import ZipFile
             fzip = ZipFile(file=StringIO(descriptor.value))
             try:
-                for fname in fzip.namelist():
-                    unarchived.append((fname, descriptor.label + ':' + fname,
-                                       fzip.read(fname)))
+                for zfileinfo in fzip.filelist:
+                    fname = zfileinfo.filename
+                    zfile = None
+                    for pwd in self.passwords:
+                        try:
+                            zfile = fzip.open(fname, pwd=pwd)
+                            break
+                        except RuntimeError:
+                            # incorrect password
+                            continue
+                    if zfile:
+                        unarchived.append(
+                            (fname, descriptor.label + ':' + fname,
+                             zfile.read()))
+                    else:
+                        self.log.warning(
+                            "Could not extract %s from %s "
+                            "(incorrect password)", fname, descriptor.label)
             except RuntimeError as e:
                 self.log.error(e)
 
