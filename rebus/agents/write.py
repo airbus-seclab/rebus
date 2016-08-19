@@ -37,4 +37,4 @@ class Return(Agent):
         while os.path.exists(target + nb):
             i += 1
             nb = "."+str(i)
-        open(target+nb, "w").write(descriptor.value)
+        open(target+nb, "w").write(str(descriptor.value))
