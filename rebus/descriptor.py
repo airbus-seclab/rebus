@@ -17,6 +17,21 @@ class Descriptor(object):
                  agent=None, precursors=None, version=0, processing_time=-1,
                  uuid=None, bus=None):
         self.label = label
+        """
+        :param label: descriptor's label. Usually a file name, or
+            human-understandable handle
+        :param selector: descriptor's selector
+        :param value: descriptor's value
+        :param domain: descriptor's domain
+        :param agent: descriptor's agent
+        :param precursors: descriptor's precursors
+        :param version: descriptor's version
+        :param processing_time: descriptor's processing_time (automatically set
+            in most cases)
+        :param uuid: descriptor's uuid
+        :param bus: descriptor's bus. None iif the value must be fetched from
+            the bus
+        """
 
         #: contains a list of parent descriptors' selectors. Typically contains
         #: 0 (ex. injected binaries), or (version+1) values
@@ -48,7 +63,8 @@ class Descriptor(object):
         self.selector = ''.join([c for c in selector if c in
                                  Descriptor.allowed_selector_chars])
         self.selector = selector
-        self.value = value
+        if self.bus is None:
+            self.value = value
         self.domain = ''.join([c for c in domain if c in
                                Descriptor.allowed_domain_chars])
         self.version = version
@@ -186,16 +202,13 @@ class Descriptor(object):
 
     @property
     def value(self):
-        if self._value is not None:
+        if self.bus is None:
             return self._value
         else:
-            if self.bus:
-                self._value = self.bus.get_value(self.agent, self.domain,
-                                                 self.selector)
-                return self._value
-            else:
-                # The value was really None
-                return None
+            self._value = self.bus.get_value(self.agent, self.domain,
+                                             self.selector)
+            self.bus = None
+            return self._value
 
     @value.setter
     def value(self, value):
