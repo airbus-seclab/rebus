@@ -106,6 +106,7 @@ class Descriptor(object):
 
         :param label: will use self's label if unset
         :param processing_time: agent.push() will set properly if equal to -1
+        :param newprecursor: selector of new precursor
         """
         desc = self.__class__(label, self.selector.split('%')[0],
                               value, self.domain,
