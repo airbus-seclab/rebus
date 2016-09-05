@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import threading
@@ -8,6 +9,7 @@ from collections import Counter
 from rebus.storage import Storage
 from rebus.descriptor import Descriptor
 from rebus.tools.serializer import picklev2 as store_serializer
+log = logging.getLogger("rebus.storage.diskstorage")
 
 
 class CheckpointThread(threading.Thread):
@@ -127,8 +129,14 @@ class DiskStorage(Storage):
                         raise Exception(
                             'Missing associated value for %s' % relname)
                     with open(name, 'rb') as fp:
-                        desc = Descriptor.unserialize(store_serializer,
-                                                      fp.read())
+                        try:
+                            desc = Descriptor.unserialize(store_serializer,
+                                                          fp.read())
+                        except:
+                            log.error(
+                                "Could not unserialize metadata from file %s",
+                                name)
+                            raise
                         fname_selector = relname.rsplit('.')[0]
                         # check consistency between file name and serialized
                         # metadata
@@ -296,8 +304,12 @@ class DiskStorage(Storage):
         fullpath = self.pathFromSelector(domain, selector) + ".value"
         if not os.path.isfile(fullpath):
             return None
-        value = Descriptor.unserialize_value(store_serializer,
-                                             open(fullpath, "rb").read())
+        try:
+            value = Descriptor.unserialize_value(store_serializer,
+                                                 open(fullpath, "rb").read())
+        except:
+            log.error("Could not unserialize value from file %s", fullpath)
+            raise
         return value
 
     def get_children(self, domain, selector, recurse=True):
