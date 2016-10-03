@@ -8,7 +8,7 @@ import tornado.autoreload
 import tornado.ioloop
 import tornado.web
 import tornado.template
-import rebus.agents.inject
+from rebus.tools.selectors import guess_selector
 from rebus.descriptor import Descriptor
 import re
 import json
@@ -564,8 +564,7 @@ class InjectHandler(tornado.web.RequestHandler):
         self.filename = self.f['filename']
         value = self.f['body']
         agentname = 'web_interface_inject'
-        selector = rebus.agents.inject.guess_selector(buf=value,
-                                                      label=self.filename)
+        selector = guess_selector(buf=value, label=self.filename)
         domain = "default"  # TODO allow user to specify domain
         processing_time = time.time() - t1
         filedesc = Descriptor(self.filename, selector, value, domain,

@@ -2,7 +2,7 @@
 
 from rebus.agent import Agent
 from rebus.descriptor import Descriptor
-from rebus.agents.inject import guess_selector
+from rebus.tools.selectors import guess_selector
 from StringIO import StringIO
 from tempfile import mkdtemp, NamedTemporaryFile
 import distutils.spawn
