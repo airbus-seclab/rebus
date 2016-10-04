@@ -1,0 +1,24 @@
+# example provided in rebus/README
+# =================== Bus Master =============================
+
+master:
+  bus: dbus
+  logfile: /tmp/rebus_master.log
+  verbose_level: 0
+
+# ===================  Agents ===============================
+
+agents:
+  #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
+  modules:
+  #rebus_demo.agents
+  stages:
+    - agents:
+        - inject:
+            params: /bin/bash /bin/ls
+            verbose_level: 3
+        - inject: /bin/cp
+    - agents:
+        - ls:
+            params: "/binary/elf"
+            verbose_level: 3
