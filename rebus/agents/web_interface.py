@@ -559,25 +559,26 @@ class InjectHandler(tornado.web.RequestHandler):
     Injects a file to the bus.
     """
     def post(self, *args, **kwargs):
-        t1 = time.time()
+        t0 = time.time()
         self.f = self.request.files['file'][0]
         self.filename = self.f['filename']
         value = self.f['body']
         agentname = 'web_interface_inject'
         selector = guess_selector(buf=value, label=self.filename)
         domain = "default"  # TODO allow user to specify domain
-        processing_time = time.time() - t1
+        t1 = time.time()
         filedesc = Descriptor(self.filename, selector, value, domain,
-                              agent=agentname, processing_time=processing_time)
+                              agent=agentname, processing_time=t1-t0)
         self.uuid = filedesc.uuid
         self.desc = filedesc
         self.application.async.async_push(self.process_inject_results,
                                           self.desc)
         submission_data = {'filename': self.filename,
                            'date': datetime.datetime.now().isoformat()}
+        t2 = time.time()
         submdesc = filedesc.spawn_descriptor('/submission/',
                                              submission_data,
-                                             agentname)
+                                             agentname, processing_time=t2-t1)
         self.desc = submdesc
         self.application.async.async_push(self.process_inject_results,
                                           submdesc)
