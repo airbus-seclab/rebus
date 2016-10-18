@@ -85,6 +85,9 @@ class WebInterface(Agent):
         subparser.add_argument(
             '--autoreload', action='store_true',
             help='Auto reload static files - use for development')
+        subparser.add_argument(
+            '-p', '--port', type=int, default=8080,
+            help='Specify alternate port')
 
     def init_agent(self):
         # Build list of async methods, to be used from the tornado thread
@@ -94,7 +97,7 @@ class WebInterface(Agent):
         self.ioloop = tornado.ioloop.IOLoop.instance()
         self.gui = Application(self.dstore, self.async_proxy, self.ioloop,
                                autoreload=self.config['autoreload'])
-        self.gui.listen(8080)
+        self.gui.listen(self.config['port'])
         t = threading.Thread(target=self.ioloop.start)
         t.daemon = True
         t.start()
