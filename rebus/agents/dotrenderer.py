@@ -9,8 +9,6 @@ class DotRenderer(Agent):
     _desc_ = "Render dot graphs as SVG files using graphviz"
     _operationmodes_ = ('automatic', 'interactive')
 
-    screen = None
-
     def selector_filter(self, selector):
         return selector.startswith("/graph/dot/")
 
