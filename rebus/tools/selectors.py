@@ -138,31 +138,31 @@ def _default_guess(fname=None, buf=None, label=None, magic_txt=""):
     if 'Rich Text Format' in magic_txt:
         return "/document/rtf"
     if 'Microsoft Word 2007+' in magic_txt:
-        return "/document/docx"
+        return "/document/msoffice/docx"
     if 'Microsoft Excel 2007+' in magic_txt:
-        return "/document/xlsx"
+        return "/document/msoffice/xlsx"
     if 'Microsoft PowerPoint 2007+' in magic_txt:
-        return "/document/pptx"
+        return "/document/msoffice/pptx"
     if 'Composite Document File V2 Document' in magic_txt:
         if 'MSI Installer' in magic_txt:
             return "/binary/msi"
         if 'Microsoft Excel' in magic_txt:
-            return "/document/xls"
+            return "/document/msoffice/xls"
         if 'Microsoft PowerPoint' in magic_txt:
-            return "/document/ppt"
+            return "/document/msoffice/ppt"
         if label:
             if label.endswith('.ppt'):
-                return "/document/ppt"
+                return "/document/msoffice/ppt"
             if label.endswith('.pptx'):
-                return "/document/pptx"
+                return "/document/msoffice/pptx"
             if label.endswith('.xls'):
-                return "/document/xls"
+                return "/document/msoffice/xls"
             if label.endswith('.xlsx'):
-                return "/document/xlsx"
+                return "/document/msoffice/xlsx"
             if label.endswith('.doc'):
-                return "/document/doc"
+                return "/document/msoffice/doc"
             if label.endswith('.docx'):
-                return "/document/docx"
+                return "/document/msoffice/docx"
         return "/document/doc"
 
     # ASCII text
