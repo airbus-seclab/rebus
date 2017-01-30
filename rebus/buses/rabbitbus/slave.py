@@ -137,7 +137,6 @@ class RabbitBus(Bus):
                 time.sleep(0.001)
         return response
 
-    # TODO: use locals() or build the dictionary "a la mano"?
     def rpc_register(self, agent_id, agent_domain, pth, config_txt):
         args = {'agent_id': agent_id, 'agent_domain': agent_domain,
                 'pth': pth, 'config_txt': config_txt}

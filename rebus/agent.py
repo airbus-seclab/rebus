@@ -343,7 +343,7 @@ class Agent(object):
                 self.log.info("Restore internal state: %r" % state)
                 self.set_internal_state(state)
 
-    # These are the main methods that any agent might want to overload
+    # These are the main methods that agents may overload
     def init_agent(self):
         """
         Called to initialize the agent, after it has joined the bus.
