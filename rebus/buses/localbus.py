@@ -16,6 +16,7 @@ class LocalBus(Bus):
 
     def __init__(self, options):
         Bus.__init__(self)
+        #: stores currently held locks [(lockid, domain, selector)]
         self.locks = defaultdict(set)
         #: Next available agent id. Never decreases.
         self.agent_count = 0

@@ -25,10 +25,10 @@ class RabbitBusMaster(BusMaster):
         #: /agent/inject)
         self.clients = {}
         self.exiting = False
-        #: processed[domain] is a set of (lockid, selector) whose processing
+        #: locks[domain] is a set of (lockid, selector) whose processing
         #: has started (might even be finished). Allows several agents that
         #: perform the same stateless computation to run in parallel
-        self.processed = defaultdict(set)
+        self.locks = defaultdict(set)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
         #: maps agentids to their names
         self.agentnames = {}
@@ -226,13 +226,13 @@ class RabbitBusMaster(BusMaster):
 
     def lock(self, agent_id, lockid, desc_domain, selector):
         objpath = self.clients[agent_id]
-        processed = self.processed[desc_domain]
+        locks = self.locks[desc_domain]
         key = (lockid, selector)
         log.debug("LOCK:%s %s(%s) => %r %s:%s ", lockid, objpath, agent_id,
-                  key in processed, desc_domain, selector)
-        if key in processed:
+                  key in locks, desc_domain, selector)
+        if key in locks:
             return False
-        processed.add(key)
+        locks.add(key)
         return True
 
     def push(self, agent_id, serialized_descriptor):
