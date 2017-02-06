@@ -64,7 +64,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
         # Check if we have reached idle state
         nbdistinctagents = len(self.descriptor_handled_count)
         nbhandlings = sum(self.descriptor_handled_count.values())
-        if self.descriptor_count*nbdistinctagents == nbhandlings:
+        if (self.descriptor_count*nbdistinctagents == nbhandlings and
+                not self.exiting):
             log.debug("IDLE: %d agents having distinct (name, config) %d "
                       "descriptors %d handled", nbdistinctagents,
                       self.descriptor_count, nbhandlings)
@@ -145,7 +146,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
         if self.store.add(descriptor):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
-            self.new_descriptor(agent_id, desc_domain, uuid, selector)
+            if not self.exiting:
+                self.new_descriptor(agent_id, desc_domain, uuid, selector)
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
