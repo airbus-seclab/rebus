@@ -566,11 +566,18 @@ class InjectHandler(tornado.web.RequestHandler):
         self.f = self.request.files['file'][0]
         self.filename = self.f['filename']
         value = self.f['body']
+        domain = self.get_argument('domain', 'default')
+        force_inject = self.get_argument('force_inject', False)
+        if force_inject != False:
+            force_inject = True
         agentname = 'web_interface_inject'
         selector = guess_selector(buf=value, label=self.filename)
-        domain = "default"  # TODO allow user to specify domain
         t1 = time.time()
-        filedesc = Descriptor(self.filename, selector, value, domain,
+        if force_inject:
+            create_new = Descriptor.new_with_randomhash
+        else:
+            create_new = Descriptor
+        filedesc = create_new(self.filename, selector, value, domain,
                               agent=agentname, processing_time=t1-t0)
         self.uuid = filedesc.uuid
         self.desc = filedesc

@@ -27,6 +27,10 @@ class Inject(Agent):
         subparser.add_argument("--printable", '-p', action='store_true',
                                help="Mark this value as printable. Use if the "
                                "raw value may be displayed to an analyst.")
+        subparser.add_argument(
+            "--random-hash", action='store_true',
+            help="Force use of a random selector hash. "
+            "Useful to force re-processing of an already-inject Descriptor.")
 
     def run(self):
         dparam = ({} if not self.config["uuid"]
@@ -48,7 +52,12 @@ class Inject(Agent):
             selector = self.config['selector'] if self.config['selector'] \
                 else guess_selector(buf=data, label=label)
             done = time.time()
-            desc = Descriptor(label, selector, data, self.domain,
+            if self.config["random_hash"]:
+                create_new = Descriptor.new_with_randomhash
+            else:
+                create_new = Descriptor
+
+            desc = create_new(label, selector, data, self.domain,
                               agent=self._name_, processing_time=(done-start),
                               **dparam)
             self.push(desc)

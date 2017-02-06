@@ -67,14 +67,20 @@ class InjectHandler(tornado.web.RequestHandler):
     def post(self, selector, *args, **kwargs):
         """
         Handles POST requests. Injects POSTed values to the bus.
-        URL format: /inject/sel/ector?domain=DOMAIN&label=LABEL
+        URL format: /inject/sel/ector?domain=DOMAIN&label=LABEL&force_inject=1
         If selector is /auto, guess the selector type.
         domain is optional - defaults to 'default'
+
+        force_inject is not obbeyed if a postprocessor intercepts the
+        descriptor
         """
         start_time = time.time()
         label = self.get_argument('label', 'defaultlabel')
         domain = self.get_argument('domain', 'default')
         value = self.request.body
+        force_inject = self.get_argument('force_inject', False)
+        if force_inject != False:
+            force_inject = True
         if selector == '/auto':
             selector = rebus.agents.inject.guess_selector(buf=value)
         postprocessor = None
@@ -85,8 +91,12 @@ class InjectHandler(tornado.web.RequestHandler):
             desc = postprocessor(self.application.agent, selector, domain,
                                  label, value, start_time)
         else:
+            if force_inject:
+                create_new = Descriptor.new_with_randomhash
+            else:
+                create_new = Descriptor
             done = time.time()
-            desc = Descriptor(label, selector, value, domain,
+            desc = create_new(label, selector, value, domain,
                               agent=self.application.agent._name_ + '_inject',
                               processing_time=(done-start_time))
         if desc is not None:
