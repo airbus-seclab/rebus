@@ -3,6 +3,7 @@ import logging
 import os
 import uuid as m_uuid
 import string
+from random import SystemRandom
 
 log = logging.getLogger("rebus.descriptor")
 
@@ -78,6 +79,17 @@ class Descriptor(object):
         #: * descriptors that will have several versions
         #: * new versions of descriptors
         self.uuid = uuid
+
+    @classmethod
+    def new_with_randomhash(cls, label, selector, *args, **kwargs):
+        """
+        Helper to create a new Descriptor having a random hash.
+        Useful in case the user wants to inject a previously-seen value, to
+        force its re-processing by all agents.
+        """
+        random_hashstring = "%064x" % SystemRandom().getrandbits(256)
+        selector = selector.split('%')[0] + '%' + random_hashstring
+        return cls(label, selector, *args, **kwargs)
 
     def spawn_descriptor(self, selector, value, agent, processing_time=-1,
                          label=None):
