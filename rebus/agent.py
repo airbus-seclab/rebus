@@ -105,6 +105,7 @@ class Agent(object):
         """
         #: describes the agent & its configuration
         agentstr = self.name + get_output_altering_options(self.config_txt)
+        agentstr += '-reqid-%d-' % request_id
 
         # In case of slots, lock on all the selectors at once, so that if one
         # optional selector is missing at the time of the lock, another lock
