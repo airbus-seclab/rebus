@@ -47,6 +47,8 @@ class RabbitBusMaster(BusMaster):
         #: dict keyed by "uniquely configured agents", i.e.
         #: (agent_name, config_txt) listing agent_ids
         self.uniq_conf_clients = defaultdict(list)
+        #: last published agent id
+        self.last_published_id = 0
 
         # Connects to the rabbitmq server
         server_addr += "/%2F?connection_attempts=200&heartbeat_interval=" +\
@@ -66,13 +68,9 @@ class RabbitBusMaster(BusMaster):
         self.channel = self.connection.channel()
 
         # Create the registration queue and push 10000 UID in it
-        # TODO: publish a new ID when a new client register
         self.channel.queue_declare(queue="registration_queue",
                                    auto_delete=True)
-        for id in range(10000):
-            self.channel.basic_publish(
-                exchange="", routing_key="registration_queue", body=str(id),
-                properties=pika.BasicProperties(delivery_mode=2,))
+        self.publish_ids(10000)
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(
             exchange='rebus_signals', type='fanout', auto_delete=True)
@@ -88,6 +86,14 @@ class RabbitBusMaster(BusMaster):
         self.channel.basic_consume(self.rpc_callback,
                                    queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority': 0})
+
+    def publish_ids(self, amount):
+        for i in range(self.last_published_id, self.last_published_id+amount):
+            self.channel.basic_publish(
+                exchange="", routing_key="registration_queue", body=str(i),
+                properties=pika.BasicProperties(delivery_mode=2,))
+        self.last_published_id += amount
+
 
     def send_signal(self, signal_name, args):
         # Send a signal on the exchange
@@ -179,6 +185,8 @@ class RabbitBusMaster(BusMaster):
         return
 
     def register(self, agent_id, agent_domain, pth, config_txt):
+        # replenish id queue
+        self.publish_ids(1)
         #: indicates whether another instance of the same agent is already
         #: running with the same configuration
         agent_name = agent_id.split('-', 1)[0]
