@@ -40,7 +40,8 @@ class Agent(object):
     def parallelize(max_thread=0):
         """
         Use this decorator on an agent class to authorize concurrent runs if
-        possible
+        possible. Experimental, call to bus method must be performed on bus
+        thread... Tread with caution.
         """
         def deco(agt):
             agt._parallelize_ = {"max_thread": max_thread}
