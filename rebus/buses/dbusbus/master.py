@@ -48,8 +48,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         #: count descriptors marked as processed/processable by each uniquely
         #: configured agent
         self.descriptor_handled_count = {}
-        #: dict keyed by "uniquely configured agents", i.e.
-        #: (agent_name, config_txt) listing agent_ids
+        #: uniq_conf_clients[(agent_name, config_txt)] = [agent_id, ...]
         self.uniq_conf_clients = defaultdict(list)
 
     def update_check_idle(self, agent_name, output_altering_options):

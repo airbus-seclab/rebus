@@ -44,8 +44,7 @@ class RabbitBusMaster(BusMaster):
         #: count descriptors marked as processed/processable by each uniquely
         #: configured agent
         self.descriptor_handled_count = {}
-        #: dict keyed by "uniquely configured agents", i.e.
-        #: (agent_name, config_txt) listing agent_ids
+        #: uniq_conf_clients[(agent_name, config_txt)] = [agent_id, ...]
         self.uniq_conf_clients = defaultdict(list)
         #: last published agent id
         self.last_published_id = 0
