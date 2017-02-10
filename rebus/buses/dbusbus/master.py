@@ -364,7 +364,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
                          "again to stop.")
-                # Ask slave agents to shutdown nicely & save internal state
+                # ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
                 svc.bus_exit(store.STORES_INTSTATE)
@@ -373,13 +373,15 @@ class DBusMaster(dbus.service.Object, BusMaster):
                     svc.mainloop.run()
                 except (KeyboardInterrupt, SystemExit):
                     if len(svc.clients) > 0:
-                        log.info("Not all agents have stopped, exiting")
+                        log.info(
+                            "Not all agents have stopped, exiting nonetheless")
         log.info("Stopping storage...")
         store.store_state()
 
     @staticmethod
     def sigterm_handler(sig, frame):
         # Try to exit cleanly the first time; if that does not work, exit.
+        # raises SystemExit, caught in run()
         sys.exit(0)
 
     @staticmethod
