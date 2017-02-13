@@ -19,15 +19,16 @@ class AgentLogger(logging.LoggerAdapter):
 
 
 class ProcessingError(Exception):
-    def __init__(self, retries=3, wait_time=30):
+    def __init__(self, retries=3, wait_time=30, msg=""):
         self.retries = retries
         self.wait_time = wait_time
+        self.msg = msg
 
     def __str__(self):
         return (
             "Processing error. Retrying at most %d times for this descriptor. "
-            "Waiting %d seconds between attempts." % (self.retries,
-                                                      self.wait_time))
+            "Waiting %d seconds between attempts.%s" %
+            (self.retries, self.wait_time, "\n"+self.msg if self.msg else ""))
 
 
 class Agent(object):
@@ -240,9 +241,9 @@ class Agent(object):
         desc = self.get(desc_domain, selector)
         if desc is None:
             # that would be a bug
-            log.warning("Descriptor %s:%s sent by %s does not exist "
-                        "(user request: %s)", desc_domain, selector, sender_id,
-                        request_id)
+            self.log.warning(
+                "Descriptor %s:%s sent by %s does not exist (user request: "
+                "%s)", desc_domain, selector, sender_id, request_id)
             return False
 
         additional_descs = {k: self.get(desc_domain, s)
@@ -288,10 +289,15 @@ class Agent(object):
             # release locks
             for args in processlist:
                 sender_id, desc_domain, selector, slots, request_id = args
+                self.log.warning(
+                    "PROCESSING_ERROR (bulk) for %s\n%s" % (selector, e))
                 self.unlock(desc_domain, selector, slots, True, e.retries,
                             e.wait_time, request_id)
-        except Exception:
+        except Exception as e:
             for args in processlist:
+                self.log.warning(
+                    "EXCEPTION while bulk processing %s, will not retry.\n%s" %
+                    (selector, e))
                 sender_id, desc_domain, selector, slots, request_id = args
                 self.unlock(desc_domain, selector, slots, True, 0, 0,
                             request_id)
@@ -319,11 +325,15 @@ class Agent(object):
         try:
             self.process(desc, sender_id, **additional_descs)
         except ProcessingError as e:
+            self.log.warning("PROCESSING_ERROR for %s\n%s" % (selector, e))
             self.unlock(desc_domain, selector, slots, True, e.retries,
                         e.wait_time, request_id)
             return
-        except Exception:
+        except Exception as e:
             # mark as failed, do not retry
+            self.log.warning(
+                "EXCEPTION while processing %s, will not retry.\n%s"
+                % (selector, e))
             self.unlock(desc_domain, selector, slots, True, 0, 0, request_id)
             return
         done = time.time()
