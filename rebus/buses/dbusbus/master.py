@@ -60,16 +60,19 @@ class DBusMaster(dbus.service.Object, BusMaster):
         """
         name_config = (agent_name, output_altering_options)
         self.descriptor_handled_count[name_config] += 1
+        self.check_idle()
+
+    def check_idle(self):
+        if self.exiting:
+            return
         # Check if we have reached idle state
         nbdistinctagents = len(self.descriptor_handled_count)
         nbhandlings = sum(self.descriptor_handled_count.values())
-        if (self.descriptor_count*nbdistinctagents == nbhandlings and
-                not self.exiting):
+        if self.descriptor_count*nbdistinctagents == nbhandlings:
             log.debug("IDLE: %d agents having distinct (name, config) %d "
                       "descriptors %d handled", nbdistinctagents,
                       self.descriptor_count, nbhandlings)
             self.on_idle()
-        return
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssos', out_signature='')
@@ -113,6 +116,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         if len(self.uniq_conf_clients[name_config]) == 0:
             del self.descriptor_handled_count[name_config]
         del self.clients[agent_id]
+        self.check_idle()
         if self.exiting:
             if len(self.clients) == 0:
                 log.info("Exiting - no agents are running")
@@ -147,6 +151,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             if not self.exiting:
                 self.new_descriptor(agent_id, desc_domain, uuid, selector)
+                # useful in case all agents are in idle/interactive mode
+                self.check_idle()
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,

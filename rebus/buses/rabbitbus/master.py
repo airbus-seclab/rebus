@@ -173,6 +173,11 @@ class RabbitBusMaster(BusMaster):
         """
         name_config = (agent_name, output_altering_options)
         self.descriptor_handled_count[name_config] += 1
+        self.check_idle()
+
+    def check_idle(self):
+        if self.exiting:
+            return
         # Check if we have reached idle state
         nbdistinctagents = len(self.descriptor_handled_count)
         nbhandlings = sum(self.descriptor_handled_count.values())
@@ -181,7 +186,6 @@ class RabbitBusMaster(BusMaster):
                       "descriptors %d handled", nbdistinctagents,
                       self.descriptor_count, nbhandlings)
             self.on_idle()
-        return
 
     def register(self, agent_id, agent_domain, pth, config_txt):
         # replenish id queue
@@ -223,6 +227,7 @@ class RabbitBusMaster(BusMaster):
         if len(self.uniq_conf_clients[name_config]) == 0:
             del self.descriptor_handled_count[name_config]
         del self.clients[agent_id]
+        self.check_idle()
         if self.exiting:
             if len(self.clients) == 0:
                 log.info("Exiting - no agents are running")
@@ -251,7 +256,10 @@ class RabbitBusMaster(BusMaster):
         if self.store.add(descriptor):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
-            self.new_descriptor(agent_id, desc_domain, uuid, selector)
+            if not self.exiting:
+                self.new_descriptor(agent_id, desc_domain, uuid, selector)
+                # useful in case all agents are in idle/interactive mode
+                self.check_idle()
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
