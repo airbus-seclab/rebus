@@ -219,6 +219,8 @@ class DBus(Bus):
         try:
             self.loop.run()
         except (KeyboardInterrupt, SystemExit):
+            for args in self.agent.held_locks:
+                self.agent.unlock(*args)
             self.loop.quit()
         # Clean up signals - useful for tests, where one process runs several
         # agents successively

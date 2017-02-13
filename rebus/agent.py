@@ -83,6 +83,10 @@ class Agent(object):
         self.log.info('Agent {0.name} registered on bus {1._name_} '
                       'with id {0.id}'.format(self, self.bus))
         self.process_slots = defaultdict(dict)
+        #: List of currently held locks, for descriptors that are being
+        #: processed. Used by Bus when SystemExit or KeyboardInterrupt is
+        #: received. Contains tuples of unlock() arguments
+        self.held_locks = []
         # Updated when starting processing
         self.processing_start_time = 0
         self.init_agent()
@@ -131,6 +135,8 @@ class Agent(object):
         else:
             selectorsstr = selector
 
+        self.held_locks.append((desc_domain, selector, slots, False, 0, 0,
+                                request_id))
         return self.bus.lock(self.id, lockid, desc_domain, selectorsstr)
 
     def unlock(self, desc_domain, selector, slots, processing_failed, retries,
@@ -173,7 +179,7 @@ class Agent(object):
         self.for_idle = []
         self.log.info("END  on_idle bulk processing  |%f|",
                       time.time()-self.processing_start_time)
-
+        self.held_locks = []
         return True
 
     def on_new_descriptor(self, sender_id, desc_domain, uuid, selector,
@@ -215,6 +221,7 @@ class Agent(object):
 
         self.bus.agent_process(self, sender_id, desc_domain, selector, slots,
                                request_id)
+        self.held_locks = []
 
     def _pre_process(self, sender_id, desc_domain, selector, slots,
                      request_id=0):

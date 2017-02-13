@@ -399,6 +399,8 @@ class RabbitBus(Bus):
 
     def run_agents(self):
         self._run_agents()
+        for args in self.agent.held_locks:
+            self.agent.unlock(*args)
         # Unregister the agent before quitting
         log.debug("Unregistering...")
         self.rpc_unregister(self.agent_id)
