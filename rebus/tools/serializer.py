@@ -17,26 +17,31 @@ except ImportError:
     log.warning("Using cPickle/pickler as serializer, it's INSECURE! "
                 "Install larch.pickle to fix.")
 
+
 def loads(string):
     return serializer.loads(string)
+
 
 def dumps(obj, protocol=2):
     l = serializer.dumps(obj, protocol)
     return l
 
+
 def dump(obj, fname, protocol=2):
     l = serializer.dump(obj, fname, protocol)
     return l
 
+
 def load(fname):
     return serializer.load(fname)
 
-class picklev2:
-    @staticmethod 
+
+class picklev2(object):
+    @staticmethod
     def loads(string):
         return serializer.loads(string)
 
-    @staticmethod 
+    @staticmethod
     def dumps(obj):
         return serializer.dumps(obj, protocol=2)
 
@@ -47,12 +52,13 @@ class picklev2:
     @staticmethod
     def dump(obj, fname):
         return serializer.dump(obj, fname)
-    
-class b64serializer:
-    @staticmethod 
+
+
+class b64serializer(object):
+    @staticmethod
     def loads(string):
         return serializer.loads(b64decode(string))
 
-    @staticmethod 
+    @staticmethod
     def dumps(obj, protocol=2):
         return b64encode(serializer.dumps(obj, protocol))
