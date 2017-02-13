@@ -55,9 +55,10 @@ class RabbitBusMaster(BusMaster):
         self.last_published_id = 0
 
         # Connects to the rabbitmq server
-        server_addr += "/%2F?connection_attempts=200&heartbeat_interval=" +\
-            str(heartbeat_interval)
-        self.params = pika.URLParameters(server_addr)
+        self.server_addr = (
+            server_addr + "/%2F?connection_attempts=200&heartbeat_interval=" +
+            str(heartbeat_interval))
+        self.params = pika.URLParameters(self.server_addr)
 
         b = False
         while not b:
@@ -66,7 +67,7 @@ class RabbitBusMaster(BusMaster):
                 b = True
             except pika.exceptions.ConnectionClosed:
                 log.warning("Cannot connect to rabbitmq at: %s. Retrying...",
-                            str(server_addr))
+                            self.server_addr)
                 time.sleep(0.5)
 
         self.channel = self.connection.channel()
@@ -462,8 +463,8 @@ class RabbitBusMaster(BusMaster):
         b = False
         while not b:
             try:
-                log.info("Connecting to rabbitmq server at: " +
-                         str(self.busaddr))
+                log.info("Re-connecting to rabbitmq server at: " +
+                         str(self.server_addr))
                 self.connection = pika.BlockingConnection(self.params)
                 self.channel = self.connection.channel()
 
