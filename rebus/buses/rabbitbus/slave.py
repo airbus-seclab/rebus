@@ -4,13 +4,13 @@ import signal
 import logging
 import thread
 import time
+import uuid as m_uuid
 import pika
 from rebus.agent import Agent
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.descriptor import Descriptor
 import rebus.tools.serializer as serializer
 
-import uuid
 
 log = logging.getLogger("rebus.bus.rabbitbus")
 DEFAULT_BUS = "(local dbus instance)"
@@ -99,7 +99,7 @@ class RabbitBus(Bus):
         # TODO catch any exception derived from pika.exceptions.AMQPError
         # Call the remote function
         body = serializer.dumps({'func_name': func_name, 'args': args})
-        corr_id = str(uuid.uuid4())
+        corr_id = str(m_uuid.uuid4())
         routing_key = 'rebus_master_rpc_highprio' if high_priority \
             else 'rebus_master_rpc_lowprio'
         b = False

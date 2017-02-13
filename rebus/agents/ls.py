@@ -18,8 +18,8 @@ class Ls(Agent):
 
     def run(self):
         done = set()
-        for s in self.config['selectors']:
-            sels = self.find(self.domain, s, self.config['limit'])
+        for regex in self.config['selectors']:
+            sels = self.find(self.domain, regex, self.config['limit'])
             if len(sels) > 0:
                 for s in sels:
                     if s not in done:
@@ -27,4 +27,4 @@ class Ls(Agent):
                         done.add(s)
             else:
                 self.log.warning("selector [%s:%s] not found",
-                                 self.domain, s)
+                                 self.domain, regex)
