@@ -1,10 +1,11 @@
+import logging
+import threading
 from collections import Counter, defaultdict, namedtuple
 from rebus.bus import Bus, DEFAULT_DOMAIN
 from rebus.storage_backends.ramstorage import RAMStorage
-import logging
-import threading
-from rebus.tools.config import get_output_altering_options
 from rebus.storage import StorageRegistry
+from rebus.tools.config import get_output_altering_options
+from rebus.tools.sched import Sched
 
 log = logging.getLogger("rebus.localbus")
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
@@ -34,6 +35,10 @@ class LocalBus(Bus):
         self.agents_full_config_txts = {}
         #: monotonically increasing user request counter
         self.userrequestid = 0
+        #: retry_counters[(agent_name, config_txt, domain, selector)] = \
+        #:     number of remaining retries
+        self.retry_counters = defaultdict(dict)
+        self.sched = Sched(self._sched_inject)
 
     def join(self, agent, agent_domain=DEFAULT_DOMAIN):
         agid = "%s-%i" % (agent.name, self.agent_count)
@@ -53,6 +58,26 @@ class LocalBus(Bus):
             return False
         self.locks[desc_domain].add(key)
         return True
+
+    def unlock(self, agent_id, lockid, desc_domain, selector,
+               processing_failed, retries, wait_time):
+        lkey = (lockid, desc_domain, selector)
+        log.info("UNLOCK:%s %s => %r %s:%s", lockid, agent_id, lkey in
+                 self.locks[desc_domain], desc_domain, selector)
+        if lkey not in self.locks[desc_domain]:
+            return
+        self.locks[desc_domain].remove(lkey)
+        agent_name = self.agents[agent_id].name
+        config_txt = self.agents_output_altering_options[agent_id]
+        rkey = (agent_name, config_txt, desc_domain, selector)
+        if rkey not in self.retry_counters:
+            self.retry_counters[rkey] = retries
+        if self.retry_counters[rkey] > 0:
+            self.retry_counters[rkey] -= 1
+            desc = self.store.get_descriptor(desc_domain, selector)
+            uuid = desc.uuid
+            self.sched.add_action(wait_time, (agent_id, desc_domain, uuid,
+                                              selector, agent_name))
 
     def push(self, agent_id, descriptor):
         desc_domain = descriptor.domain
@@ -109,7 +134,7 @@ class LocalBus(Bus):
 
     def mark_processed(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
-        config_txt = self.agents_full_config_txts[agent_id]
+        config_txt = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processed(desc_domain, selector, agent_name,
@@ -117,7 +142,7 @@ class LocalBus(Bus):
 
     def mark_processable(self, agent_id, desc_domain, selector):
         agent_name = self.agents[agent_id].name
-        config_txt = self.agents_full_config_txts[agent_id]
+        config_txt = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
                   agent_id, config_txt)
         self.store.mark_processable(desc_domain, selector, agent_name,
@@ -173,8 +198,19 @@ class LocalBus(Bus):
                 except Exception as e:
                     log.error("ERROR agent [%s]: %s", agid, e, exc_info=1)
 
-    def busthread_call(self, method, **params):
-        method(**params)
+    def busthread_call(self, method, *params):
+        # Caution - there are several bus threads with this mode - typically 1
+        # per inject thread.
+        method(*params)
+
+    def _sched_inject(self, agent_id, desc_domain, uuid, selector, target):
+        """
+        Called by Sched object, from Timer thread. Emits targeted_descriptor
+        through bus thread.
+        """
+        self.busthread_call(
+            self.agents[agent_id].on_new_descriptor,
+            *(agent_id, desc_domain, uuid, selector, 0))
 
     def run_agents(self):
         for agent in self.agents.values():

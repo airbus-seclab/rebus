@@ -10,6 +10,7 @@ from rebus.tools.config import get_output_altering_options
 import pika
 import rebus.tools.serializer as serializer
 from rebus.busmaster import BusMaster
+from rebus.tools.sched import Sched
 
 log = logging.getLogger("rebus.bus")
 
@@ -46,6 +47,10 @@ class RabbitBusMaster(BusMaster):
         self.descriptor_handled_count = {}
         #: uniq_conf_clients[(agent_name, config_txt)] = [agent_id, ...]
         self.uniq_conf_clients = defaultdict(list)
+        #: retry_counters[(agent_name, config_txt, domain, selector)] = \
+        #:     number of remaining retries
+        self.retry_counters = defaultdict(dict)
+        self.sched = Sched(self._sched_inject)
         #: last published agent id
         self.last_published_id = 0
 
@@ -116,6 +121,7 @@ class RabbitBusMaster(BusMaster):
         f = {'register': self.register,
              'unregister': self.unregister,
              'lock': self.lock,
+             'unlock': self.unlock,
              'push': self.push,
              'get': self.get,
              'get_value': self.get_value,
@@ -246,6 +252,30 @@ class RabbitBusMaster(BusMaster):
             return False
         locks.add(key)
         return True
+
+    def unlock(self, agent_id, lockid, desc_domain, selector,
+               processing_failed, retries, wait_time):
+        objpath = self.clients[agent_id]
+        locks = self.locks[desc_domain]
+        lkey = (lockid, selector)
+        log.debug("UNLOCK:%s %s(%s) => %r %d:%d ", lockid, objpath, agent_id,
+                  processing_failed, retries, wait_time)
+        if lkey not in locks:
+            return
+        locks.remove(lkey)
+        # find agent_name, config_txt
+        for (agent_name, config_txt), ids in self.uniq_conf_clients.items():
+            if agent_id in ids:
+                break
+        rkey = (agent_name, config_txt, desc_domain, selector)
+        if rkey not in self.retry_counters:
+            self.retry_counters[rkey] = retries
+        if self.retry_counters[rkey] > 0:
+            self.retry_counters[rkey] -= 1
+            desc = self.store.get_descriptor(desc_domain, selector)
+            uuid = desc.uuid
+            self.sched.add_action(wait_time, (agent_id, desc_domain, uuid,
+                                              selector, agent_name))
 
     def push(self, agent_id, serialized_descriptor):
         descriptor = Descriptor.unserialize(serializer,
@@ -478,6 +508,8 @@ class RabbitBusMaster(BusMaster):
             if len(svc.clients) > 0:
                 log.info("Trying to stop all agents properly. Press Ctrl-C "
                          "again to stop.")
+                # stop scheduler
+                svc.sched.shutdown()
                 # ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
@@ -518,3 +550,16 @@ class RabbitBusMaster(BusMaster):
         subparser.add_argument(
             "--heartbeat", help="Rabbitmq heartbeat interval, in seconds",
             default=0)
+
+    def busthread_call(self, method, *args):
+        f = lambda: method(*args)
+        self.connection.add_timeout(0, f)
+
+    def _sched_inject(self, agent_id, desc_domain, uuid, selector, target):
+        """
+        Called by Sched object, from Timer thread. Emits targeted_descriptor
+        through bus thread.
+        """
+        self.busthread_call(
+            self.targeted_descriptor,
+            *(agent_id, desc_domain, uuid, selector, [target], False))

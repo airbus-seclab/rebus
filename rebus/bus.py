@@ -47,6 +47,26 @@ class Bus(object):
         """
         raise NotImplementedError
 
+    def unlock(self, agent_id, lockid, desc_domain, selector,
+               processing_failed, attempts=3, wait_time=30):
+        """
+        Releases a previously held lock. Use cases: an agent is shutting down;
+        an agent is unable to process a descriptor, e.g. due to unavailability
+        of external analysis service, or to the descriptor triggering a bug in
+        the analysis tool.
+
+        :param processing_failed: True if the reason for unlocking is a
+            processing failure (vs. agent stopping for another reason)
+        :param attempts: see wait_time
+        :param wait_time: hints that processing should be
+            retried attempts times, with _wait_ seconds between attempts. For
+            each (descriptor, agent, config_txt), only the 1st provided hint
+            will be taken into account - so, each agent can always emit the
+            same hint, does not have to know how many attempts have already
+            been performed
+        """
+        raise NotImplementedError
+
     def push(self, agent_id, descriptor):
         """
         Pushes a descriptor to the bus.

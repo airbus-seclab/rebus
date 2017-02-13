@@ -18,6 +18,18 @@ class AgentLogger(logging.LoggerAdapter):
         return "[%s] %s" % (self.extra["agent_id"], msg), kargs
 
 
+class ProcessingError(Exception):
+    def __init__(self, retries=3, wait_time=30):
+        self.retries = retries
+        self.wait_time = wait_time
+
+    def __str__(self):
+        return (
+            "Processing error. Retrying at most %d times for this descriptor. "
+            "Waiting %d seconds between attempts." % (self.retries,
+                                                      self.wait_time))
+
+
 class Agent(object):
     _name_ = "Agent"
     _desc_ = "N/A"
@@ -100,13 +112,13 @@ class Agent(object):
     def processed_stats(self, desc_domain):
         return self.bus.processed_stats(self.id, desc_domain)
 
-    def lock(self, desc_domain, selector, slots, request_id=0):
+    def lock(self, desc_domain, selector, slots, request_id):
         """
         :param selectorstr: describes the selectors being processed
         """
         #: describes the agent & its configuration
-        agentstr = self.name + get_output_altering_options(self.config_txt)
-        agentstr += '-reqid-%d-' % request_id
+        lockid = self.name + get_output_altering_options(self.config_txt)
+        lockid += '-reqid-%d-' % request_id
 
         # In case of slots, lock on all the selectors at once, so that if one
         # optional selector is missing at the time of the lock, another lock
@@ -119,7 +131,19 @@ class Agent(object):
         else:
             selectorsstr = selector
 
-        return self.bus.lock(self.id, agentstr, desc_domain, selectorsstr)
+        return self.bus.lock(self.id, lockid, desc_domain, selectorsstr)
+
+    def unlock(self, desc_domain, selector, slots, processing_failed, retries,
+               wait_time, request_id):
+        lockid = self.name + get_output_altering_options(self.config_txt)
+        lockid += '-reqid-%d-' % request_id
+        if self._process_slots_:
+            selectorsstr = "!".join(slots.get(s, "?") for s in
+                                    self._process_slots_)
+        else:
+            selectorsstr = selector
+        self.bus.unlock(self.id, lockid, desc_domain, selectorsstr,
+                        processing_failed, retries, wait_time)
 
     def slots_are_processable(self, slots):
         """
@@ -208,6 +232,7 @@ class Agent(object):
             return False
         desc = self.get(desc_domain, selector)
         if desc is None:
+            # that would be a bug
             log.warning("Descriptor %s:%s sent by %s does not exist "
                         "(user request: %s)", desc_domain, selector, sender_id,
                         request_id)
@@ -250,7 +275,19 @@ class Agent(object):
         # process
         self.log.info("START Bulk processing %d descriptors", len(descriptors))
         self.processing_start_time = time.time()
-        self.bulk_process(descriptors, senders, additional_descs)
+        try:
+            self.bulk_process(descriptors, senders, additional_descs)
+        except ProcessingError as e:
+            # release locks
+            for args in processlist:
+                sender_id, desc_domain, selector, slots, request_id = args
+                self.unlock(desc_domain, selector, slots, True, e.retries,
+                            e.wait_time, request_id)
+        except Exception:
+            for args in processlist:
+                sender_id, desc_domain, selector, slots, request_id = args
+                self.unlock(desc_domain, selector, slots, True, 0, 0,
+                            request_id)
         done = time.time()
         self.log.info("END   Bulk processing |%f|",
                       done-self.processing_start_time)
@@ -272,7 +309,16 @@ class Agent(object):
         desc, sender_id, additional_descs = res
         self.log.info("START Processing %r", desc)
         self.processing_start_time = time.time()
-        self.process(desc, sender_id, **additional_descs)
+        try:
+            self.process(desc, sender_id, **additional_descs)
+        except ProcessingError as e:
+            self.unlock(desc_domain, selector, slots, True, e.retries,
+                        e.wait_time, request_id)
+            return
+        except Exception:
+            # mark as failed, do not retry
+            self.unlock(desc_domain, selector, slots, True, 0, 0, request_id)
+            return
         done = time.time()
         self.log.info("END   Processing |%f| %r",
                       done-self.processing_start_time, desc)

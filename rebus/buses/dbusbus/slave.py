@@ -106,6 +106,12 @@ class DBus(Bus):
         return bool(self.iface.lock(str(agent_id), lockid, desc_domain,
                                     selector))
 
+    def unlock(self, agent_id, lockid, desc_domain, selector,
+               processing_failed, retries, wait_time):
+        self.iface.unlock(
+            str(agent_id), lockid, desc_domain, selector, processing_failed,
+            retries, wait_time)
+
     def push(self, agent_id, descriptor):
         if thread.get_ident() == self.main_thread_id:
             self._push(str(agent_id), descriptor)

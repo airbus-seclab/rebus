@@ -96,6 +96,7 @@ class RabbitBus(Bus):
                 time.sleep(0.5)
 
     def send_rpc(self, func_name, args, high_priority=True):
+        # TODO catch any exception derived from pika.exceptions.AMQPError
         # Call the remote function
         body = serializer.dumps({'func_name': func_name, 'args': args})
         corr_id = str(uuid.uuid4())
@@ -150,6 +151,14 @@ class RabbitBus(Bus):
         args = {'agent_id': agent_id, 'lockid': lockid,
                 'desc_domain': desc_domain, 'selector': selector}
         return self.send_rpc("lock", args)
+
+    def rpc_unlock(self, agent_id, lockid, desc_domain, selector,
+                   processing_failed, retries, wait_time):
+        args = {'agent_id': agent_id, 'lockid': lockid,
+                'desc_domain': desc_domain, 'selector': selector,
+                'processing_failed': processing_failed, 'retries': retries,
+                'wait_time': wait_time}
+        return self.send_rpc("unlock", args)
 
     def rpc_push(self, agent_id, descriptor):
         args = {'agent_id': agent_id, 'serialized_descriptor': descriptor}
@@ -294,6 +303,11 @@ class RabbitBus(Bus):
     def lock(self, agent_id, lockid, desc_domain, selector):
         return bool(self.rpc_lock(str(agent_id), lockid, desc_domain,
                                   selector))
+
+    def unlock(self, agent_id, lockid, desc_domain, selector,
+               processing_failed, retries, wait_time):
+        self.rpc_unlock(str(agent_id), lockid, desc_domain,
+                        selector, processing_failed, retries, wait_time)
 
     def push(self, agent_id, descriptor):
         if thread.get_ident() == self.main_thread_id:
