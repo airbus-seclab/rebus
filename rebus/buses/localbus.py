@@ -84,7 +84,7 @@ class LocalBus(Bus):
         selector = descriptor.selector
         if self.store.add(descriptor):
             log.info("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
-            for agid in self.agents.keys():
+            for agid in self.agents:
                 try:
                     log.debug("Calling %s's on_new_descriptor", agid)
                     self.agents[agid].on_new_descriptor(agent_id,
@@ -154,8 +154,7 @@ class LocalBus(Bus):
 
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)
-        return dict(Counter(i.rsplit('-', 1)[0]
-                            for i in self.agent_descs.keys()))
+        return dict(Counter(i.rsplit('-', 1)[0] for i in self.agent_descs))
 
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
@@ -185,7 +184,7 @@ class LocalBus(Bus):
                   desc_domain, selector, targets)
         self.userrequestid += 1
         d = self.store.get_descriptor(desc_domain, selector)
-        for agid in self.agents.keys():
+        for agid in self.agents:
             if self.agents[agid].name in targets:
                 try:
                     log.debug("Calling %s on_new_descriptor for user-requested"
