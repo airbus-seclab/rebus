@@ -18,8 +18,20 @@ DEFAULT_BUS = "(local dbus instance)"
 
 @Bus.register
 class DBus(Bus):
+    """
+    Bus implementation that uses dbus, which usually runs on typical Linux
+    machines.
+
+    Known limitations: limited character range, so a base64 serializer has to
+    be used.
+    DBus catches any exception that happens during processing, so SystemExit
+    and KeyboardInterrupt cannot be properly caught.
+    """
     _name_ = "dbus"
     _desc_ = "Use DBus to exchange messages by connecting to REbus master"
+
+    # TODO catch DBus exceptions, derived from dbus.exceptions.DBusException in
+    # every function
 
     # Bus methods implementations - same order as in bus.py
     def __init__(self, options):
