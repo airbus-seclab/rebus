@@ -290,14 +290,16 @@ class Agent(object):
             for args in processlist:
                 sender_id, desc_domain, selector, slots, request_id = args
                 self.log.warning(
-                    "PROCESSING_ERROR (bulk) for %s\n%s" % (selector, e))
+                    "PROCESSING_ERROR (bulk) for %s" % selector)
+                self.log.exception(e)
                 self.unlock(desc_domain, selector, slots, True, e.retries,
                             e.wait_time, request_id)
         except Exception as e:
             for args in processlist:
                 self.log.warning(
-                    "EXCEPTION while bulk processing %s, will not retry.\n%s" %
-                    (selector, e))
+                    "EXCEPTION while bulk processing %s, will not retry." %
+                    selector)
+                self.log.exception(e)
                 sender_id, desc_domain, selector, slots, request_id = args
                 self.unlock(desc_domain, selector, slots, True, 0, 0,
                             request_id)
@@ -325,15 +327,16 @@ class Agent(object):
         try:
             self.process(desc, sender_id, **additional_descs)
         except ProcessingError as e:
-            self.log.warning("PROCESSING_ERROR for %s\n%s" % (selector, e))
+            self.log.warning("PROCESSING_ERROR for %s" % selector)
+            self.log.exception(e)
             self.unlock(desc_domain, selector, slots, True, e.retries,
                         e.wait_time, request_id)
             return
         except Exception as e:
             # mark as failed, do not retry
             self.log.warning(
-                "EXCEPTION while processing %s, will not retry.\n%s"
-                % (selector, e))
+                "EXCEPTION while processing %s, will not retry." % selector)
+            self.log.exception(e)
             self.unlock(desc_domain, selector, slots, True, 0, 0, request_id)
             return
         done = time.time()
