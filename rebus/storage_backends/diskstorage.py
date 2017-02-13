@@ -427,14 +427,14 @@ class DiskStorage(Storage):
             result.update([name for name, _ in agentlist])
         return result.items(), len(processed)
 
-    def store_agent_state(self, agent_id, state):
-        fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
+    def store_agent_state(self, agent_name, state):
+        fname = os.path.join(self.basepath, 'agent_intstate', agent_name +
                              '.intstate')
         with open(fname, 'wb') as fp:
             fp.write(state)
 
-    def load_agent_state(self, agent_id):
-        fname = os.path.join(self.basepath, 'agent_intstate', agent_id +
+    def load_agent_state(self, agent_name):
+        fname = os.path.join(self.basepath, 'agent_intstate', agent_name +
                              '.intstate')
         if not os.path.isfile(fname):
             return ""

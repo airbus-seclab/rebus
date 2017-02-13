@@ -206,11 +206,11 @@ class RAMStorage(Storage):
                                        name_confs])
             unprocessed_sels = selectors - processed_selectors
             result.extend([(domain, self.dstore[domain][sel].uuid, sel)
-                        for sel in unprocessed_sels])
+                           for sel in unprocessed_sels])
         return result
 
-    def store_agent_state(self, agent_id, state):
-        self.internal_state[agent_id] = state
+    def store_agent_state(self, agent_name, state):
+        self.internal_state[agent_name] = state
 
-    def load_agent_state(self, agent_id):
-        return self.internal_state.get(agent_id, "")
+    def load_agent_state(self, agent_name):
+        return self.internal_state.get(agent_name, "")
