@@ -458,8 +458,8 @@ class RabbitBus(Bus):
     def agent_process(self, agent, *args, **kargs):
         self.agent.call_process(*args, **kargs)
 
-    def sleep(self, time):
-        self.connection.sleep(time)
+    def sleep(self, t):
+        self.connection.sleep(t)
 
     @staticmethod
     def add_arguments(subparser):

@@ -15,7 +15,7 @@ from rebus.tools.sched import Sched
 log = logging.getLogger("rebus.bus")
 
 
-@BusMaster.register
+@BusMaster.cls_register
 class RabbitBusMaster(BusMaster):
     _name_ = "rabbit"
     _desc_ = "Use RabbitMQ to exchange messages"

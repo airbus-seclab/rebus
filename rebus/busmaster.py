@@ -10,7 +10,7 @@ class BusMaster(object):
     _desc_ = "N/A"
 
     @staticmethod
-    def register(f):
+    def cls_register(f):
         return BusMasterRegistry.register_ref(f, key="_name_")
 
     @classmethod
@@ -22,7 +22,7 @@ class BusMaster(object):
         """
         pass
 
-    def run(self, storage, options=None):
+    def run(self, store, master_options):
         """
         Start running the bus.
 
