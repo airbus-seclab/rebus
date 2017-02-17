@@ -67,7 +67,7 @@ Quick installation & test:
 
 .. sourcecode:: bash
 
-  $ hg clone https://bitbucket.org/iwseclabs/rebus
+  $ git clone https://github.com/airbus-seclab/rebus
   $ cd rebus
   $ python2 ./setup.py install
 
@@ -95,7 +95,7 @@ Archlinux, the following commands may be used for installation:
 
   $ virtualenv2 --system ~/rebus-virtualenv
   $ . ~/rebus-virtualenv/bin/activate
-  $ hg clone https://bitbucket.org/iwseclabs/rebus
+  $ git clone https://github.com/airbus-seclab/rebus
   $ cd rebus
   $ python ./setup.py develop
   # the use of develop instead of install removes the need to re-run
