@@ -156,7 +156,7 @@ class Descriptor(object):
                    'linkrole': link1role,
                    'linktype': linktype,
                    'otherlabel': otherdesc.label},
-            domain="default",
+            domain=self.domain,
             agent=agentname,
             precursors=[self.selector, otherdesc.selector],
             uuid=self.uuid)
@@ -171,7 +171,7 @@ class Descriptor(object):
                    'linkrole': link2role,
                    'linktype': linktype,
                    'otherlabel': self.label},
-            domain="default",
+            domain=otherdesc.domain,
             agent=agentname,
             precursors=[self.selector, otherdesc.selector],
             uuid=otherdesc.uuid)
