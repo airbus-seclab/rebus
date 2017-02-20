@@ -5,7 +5,7 @@ from glob import glob
 
 setup(
     name = 'rebus',
-    version = '0.3',
+    version = '0.4',
     packages=[ 'rebus', 'rebus/buses', 'rebus/buses/dbusbus', 'rebus/buses/rabbitbus', 'rebus/agents', 'rebus/tools', 'rebus/storage_backends'],
     package_data={'rebus/agents': ['static/*.js',
         'static/*.css',
