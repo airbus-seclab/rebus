@@ -1,3 +1,16 @@
+2016-02-20: v0.4:
+* Agents now release descriptor locks when a processing failure is encountered,
+  thanks to the new unlock() Bus API. Analysis will be retried later if agents
+  raise ProcessingError(retries, wait_time, msg). This improves reliability.
+* Allow registering new selector-guessing functions.
+* Facilitate injection of Descriptor with random hashes to facilitate
+  re-analysis
+* Unarchive agent: a list of passwords to be tried can be supplied
+* New "write" agent that writes values of Descriptors to the disk.
+* Various bug fixes
+* No backwards incompatible changes.
+
+---
 2016-03-09: v0.3:
 * Support for running external processes in separate namespaces using firejail.
 * Bug fixes in rabbitbus: clean-up resources at agent exit. When a lot of
