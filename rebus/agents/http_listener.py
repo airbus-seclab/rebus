@@ -88,8 +88,18 @@ class InjectHandler(tornado.web.RequestHandler):
             if selector.startswith(prefix):
                 postprocessor = function
         if postprocessor is not None:
-            desc = postprocessor(self.application.agent, selector, domain,
-                                 label, value, start_time)
+            def postprocess_and_inject(agent, selector, domain, label, value,
+                                       start_time):
+                desc = postprocessor(agent, selector, domain, label, value,
+                                     start_time)
+                if desc is not None:
+                    self.application.agent.inject(desc)
+
+            self.application.agent.bus.busthread_call(
+                postprocess_and_inject,
+                *(self.application.agent, selector, domain, label, value,
+                  start_time))
+            self.finish()
         else:
             if force_inject:
                 create_new = Descriptor.new_with_randomhash
@@ -99,6 +109,6 @@ class InjectHandler(tornado.web.RequestHandler):
             desc = create_new(label, selector, value, domain,
                               agent=self.application.agent._name_ + '_inject',
                               processing_time=(done-start_time))
-        if desc is not None:
-            self.application.agent.inject(desc)
-        self.finish()
+            if desc is not None:
+                self.application.agent.inject(desc)
+            self.finish()
