@@ -166,7 +166,9 @@ class RabbitBus(Bus):
         return self.send_rpc("get", args)
 
     def rpc_get_value(self, agent_id, desc_domain, selector):
-        args = {'agent_id': agent_id, 'desc_domain': desc_domain,
+        # often called from Descriptor, which does not have a reference to the
+        # agent, and cannot put the correct agent_id => override agent_id
+        args = {'agent_id': self.agent.id, 'desc_domain': desc_domain,
                 'selector': selector}
         return self.send_rpc("get_value", args)
 
