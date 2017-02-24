@@ -64,6 +64,7 @@ class Application(tornado.web.Application):
 
 
 class InjectHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
     def post(self, selector, *args, **kwargs):
         """
         Handles POST requests. Injects POSTed values to the bus.
@@ -88,27 +89,43 @@ class InjectHandler(tornado.web.RequestHandler):
             if selector.startswith(prefix):
                 postprocessor = function
         if postprocessor is not None:
-            def postprocess_and_inject(agent, selector, domain, label, value,
-                                       start_time):
-                desc = postprocessor(agent, selector, domain, label, value,
-                                     start_time)
-                if desc is not None:
-                    self.application.agent.inject(desc)
-
-            self.application.agent.bus.busthread_call(
-                postprocess_and_inject,
-                *(self.application.agent, selector, domain, label, value,
-                  start_time))
-            self.finish()
+            def process_inject(agent, selector, domain, label, value,
+                               start_time):
+                failed = False
+                try:
+                    desc = postprocessor(agent, selector, domain, label, value,
+                                         start_time)
+                    if desc is not None:
+                        agent.push(desc)
+                except Exception as e:
+                    failed = True
+                agent.ioloop.add_callback(self.report_result, failed)
         else:
             if force_inject:
                 create_new = Descriptor.new_with_randomhash
             else:
                 create_new = Descriptor
-            done = time.time()
-            desc = create_new(label, selector, value, domain,
-                              agent=self.application.agent._name_ + '_inject',
-                              processing_time=(done-start_time))
-            if desc is not None:
-                self.application.agent.inject(desc)
-            self.finish()
+
+            def process_inject(agent, selector, domain, label, value,
+                               start_time):
+                failed = False
+                try:
+                    done = time.time()
+                    desc = create_new(
+                        label, selector, value, domain,
+                        agent=self.application.agent._name_ + '_inject',
+                        processing_time=(done-start_time))
+                    agent.push(desc)
+                except Exception as e:
+                    failed = True
+                agent.ioloop.add_callback(self.report_result, failed)
+
+        self.application.agent.bus.busthread_call(
+            process_inject,
+            *(self.application.agent, selector, domain, label, value,
+              start_time))
+
+    def report_result(self, failed):
+        if failed:
+            self.set_status(500)
+        self.finish()
