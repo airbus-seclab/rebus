@@ -330,7 +330,7 @@ class DiskStorage(Storage):
         selector storage
         """
         fullpath, fname = self.pathFromSelector(domain, selector).split('%')
-        if os.path.dirname(fullpath) + '/' not in self.existing_paths:
+        if os.path.dirname(fullpath + '/') + '/' not in self.existing_paths:
             os.makedirs(fullpath)
             self.existing_paths.add(fullpath)
         return fullpath + '%' + fname
