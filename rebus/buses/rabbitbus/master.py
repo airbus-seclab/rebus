@@ -72,25 +72,26 @@ class RabbitBusMaster(BusMaster):
 
         self.channel = self.connection.channel()
 
-        # Create the registration queue and push 10000 UID in it
-        self.channel.queue_declare(queue="registration_queue",
-                                   auto_delete=True)
-        self.publish_ids(10000)
+        # Create the registration queue
+        self.channel.queue_declare(queue="registration_queue")
+        self.channel.queue_purge(queue="registration_queue")
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(
-            exchange='rebus_signals', type='fanout', auto_delete=True)
+            exchange='rebus_signals', type='fanout')
 
         # Create the rpc queue
-        self.channel.queue_declare(queue='rebus_master_rpc_highprio',
-                                   auto_delete=True)
+        self.channel.queue_declare(queue='rebus_master_rpc_highprio')
+        self.channel.queue_purge(queue='rebus_master_rpc_highprio')
         self.channel.basic_consume(self.rpc_callback,
                                    queue='rebus_master_rpc_highprio',
                                    arguments={'x-priority': 1})
-        self.channel.queue_declare(queue='rebus_master_rpc_lowprio',
-                                   auto_delete=True)
+        self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
+        self.channel.queue_purge(queue='rebus_master_rpc_lowprio')
         self.channel.basic_consume(self.rpc_callback,
                                    queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority': 0})
+        # bus is now ready to serve requests, publish registration IDs
+        self.publish_ids(10000)
 
     def publish_ids(self, amount):
         for i in range(self.last_published_id, self.last_published_id+amount):
@@ -468,18 +469,15 @@ class RabbitBusMaster(BusMaster):
                 self.connection = pika.BlockingConnection(self.params)
                 self.channel = self.connection.channel()
 
-                self.channel.queue_declare(queue="registration_queue",
-                                           auto_delete=True)
+                self.channel.queue_declare(queue="registration_queue")
                 self.signal_exchange = self.channel.exchange_declare(
                     exchange='rebus_signals', type='fanout')
-                self.channel.queue_declare(queue='rebus_master_rpc_highprio',
-                                           auto_delete=True)
+                self.channel.queue_declare(queue='rebus_master_rpc_highprio')
                 self.channel.basic_consume(
                     self.rpc_callback,
                     queue='rebus_master_rpc_highprio',
                     arguments={'x-priority': 1})
-                self.channel.queue_declare(queue='rebus_master_rpc_lowprio',
-                                           auto_delete=True)
+                self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
                 self.channel.basic_consume(
                     self.rpc_callback,
                     queue='rebus_master_rpc_lowprio',

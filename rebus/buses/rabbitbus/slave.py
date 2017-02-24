@@ -71,10 +71,6 @@ class RabbitBus(Bus):
                          str(self.busaddr))
                 self.connection = pika.BlockingConnection(params)
                 self.channel = self.connection.channel()
-                self.channel.queue_declare(queue="rebus_master_rpc_highprio",
-                                           auto_delete=True)
-                self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
-                                           auto_delete=True)
 
                 self.queue_ret = self.channel.queue_declare(self.return_queue)
                 self.return_queue = self.queue_ret.method.queue
@@ -253,13 +249,8 @@ class RabbitBus(Bus):
         # Prefetch only 1 message from the queues at a time
         self.channel.basic_qos(prefetch_count=1)
 
-        # Declare the registration queue and the rpc queue
-        self.channel.queue_declare(queue="registration_queue",
-                                   auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc_highprio",
-                                   auto_delete=True)
-        self.channel.queue_declare(queue="rebus_master_rpc_lowprio",
-                                   auto_delete=True)
+        # Declare the registration queue to start trying to register
+        self.channel.queue_declare(queue="registration_queue")
 
         # Fetch an ID from the ID queue
         method = False
@@ -282,7 +273,7 @@ class RabbitBus(Bus):
 
         # Declare the signal exchange and bind the signal queue on it
         self.signal_exchange = self.channel.exchange_declare(
-            exchange='rebus_signals', type='fanout', auto_delete=True)
+            exchange='rebus_signals', type='fanout')
 
         signal_queue_name = "signal_" + str(self.agent_id)
         self.ret_signal_queue = self.channel.queue_declare(
