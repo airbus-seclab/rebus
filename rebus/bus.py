@@ -71,6 +71,8 @@ class Bus(object):
         """
         Pushes a descriptor to the bus.
 
+        Returns True if the descriptor was not already present on the bus.
+
         :param descriptor: Descriptor object to be pushed to the bus
         :param agent_id: current agent id
         """

@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import os
 import sys
 import time
 import signal
@@ -22,8 +23,7 @@ class RabbitBusMaster(BusMaster):
 
     def __init__(self, store, server_addr, heartbeat_interval=0):
         self.store = store
-        #: maps agentid (ex. inject-:1.234) to object path (ex:
-        #: /agent/inject)
+        #: maps agent_id (ex. inject-:1.234) to object path (ex: /agent/inject)
         self.clients = {}
         self.exiting = False
         #: locks[domain] is a set of (lockid, selector) whose processing
@@ -31,12 +31,12 @@ class RabbitBusMaster(BusMaster):
         #: perform the same stateless computation to run in parallel
         self.locks = defaultdict(set)
         signal.signal(signal.SIGTERM, self.sigterm_handler)
-        #: maps agentids to their names
+        #: maps agent_id to agent name
         self.agentnames = {}
-        #: maps agentids to their serialized configuration - output altering
+        #: maps agent_id to agent's serialized configuration - output altering
         #: options only
         self.agents_output_altering_options = {}
-        #: maps agentids to their serialized configuration
+        #: maps agent_id to agent's serialized configuration
         self.agents_full_config_txts = {}
         #: monotonically increasing user request counter
         self.userrequestid = 0
@@ -53,6 +53,9 @@ class RabbitBusMaster(BusMaster):
         self.sched = Sched(self._sched_inject)
         #: last published agent id
         self.last_published_id = 0
+        #: bus session id, to make sure agents were not registered to another
+        #: bus master (ex. which has exited)
+        self.session_id = os.urandom(5).encode('hex')
 
         # Connects to the rabbitmq server
         self.server_addr = (
@@ -95,11 +98,22 @@ class RabbitBusMaster(BusMaster):
 
     def publish_ids(self, amount):
         for i in range(self.last_published_id, self.last_published_id+amount):
+            new_id = "%s-%d" % (self.session_id, i)
             self.channel.basic_publish(
-                exchange="", routing_key="registration_queue", body=str(i),
+                exchange="", routing_key="registration_queue", body=new_id,
                 properties=pika.BasicProperties(delivery_mode=2,))
         self.last_published_id += amount
 
+    def _check_agent_id(self, agent_id):
+        """
+        Checks agent_id prefix
+        """
+        if self.session_id not in agent_id:
+            log.warning(
+                "Received method call from agent %s which is is registered "
+                "to another Bus Master session.", agent_id)
+            return False
+        return True
 
     def send_signal(self, signal_name, args):
         # Send a signal on the exchange
@@ -196,6 +210,8 @@ class RabbitBusMaster(BusMaster):
             self.on_idle()
 
     def register(self, agent_id, agent_domain, pth, config_txt):
+        if not self._check_agent_id(agent_id):
+            return
         # replenish id queue
         self.publish_ids(1)
         #: indicates whether another instance of the same agent is already
@@ -228,6 +244,8 @@ class RabbitBusMaster(BusMaster):
 
     def unregister(self, agent_id):
         log.info("Agent %s has unregistered", agent_id)
+        if not self._check_agent_id(agent_id):
+            return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
         name_config = (agent_name, options)
@@ -245,6 +263,8 @@ class RabbitBusMaster(BusMaster):
                          len(self.clients), self.clients.keys()[0])
 
     def lock(self, agent_id, lockid, desc_domain, selector):
+        if not self._check_agent_id(agent_id):
+            return False
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         key = (lockid, selector)
@@ -257,6 +277,8 @@ class RabbitBusMaster(BusMaster):
 
     def unlock(self, agent_id, lockid, desc_domain, selector,
                processing_failed, retries, wait_time):
+        if not self._check_agent_id(agent_id):
+            return False
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         lkey = (lockid, selector)
@@ -280,6 +302,8 @@ class RabbitBusMaster(BusMaster):
                                               selector, agent_name))
 
     def push(self, agent_id, serialized_descriptor):
+        if not self._check_agent_id(agent_id):
+            return False
         descriptor = Descriptor.unserialize(serializer,
                                             str(serialized_descriptor))
         desc_domain = str(descriptor.domain)
@@ -300,6 +324,8 @@ class RabbitBusMaster(BusMaster):
 
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
+        if not self._check_agent_id(agent_id):
+            return None
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
         if desc is None:
             return ""
@@ -307,6 +333,8 @@ class RabbitBusMaster(BusMaster):
 
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
+        if not self._check_agent_id(agent_id):
+            return None
         value = self.store.get_value(str(desc_domain), str(selector))
         if value is None:
             return ""
@@ -314,11 +342,15 @@ class RabbitBusMaster(BusMaster):
 
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
+        if not self._check_agent_id(agent_id):
+            return {}
         return self.store.list_uuids(str(desc_domain))
 
     def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
         log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
                   selector_regex, limit, offset)
+        if not self._check_agent_id(agent_id):
+            return []
         return self.store.find(
             str(desc_domain), str(selector_regex), int(limit), int(offset))
 
@@ -326,12 +358,16 @@ class RabbitBusMaster(BusMaster):
                          offset=0):
         log.debug("FINDBYSELECTOR: %s %s %s (max %d skip %d)", agent_id,
                   desc_domain, selector_prefix, limit, offset)
+        if not self._check_agent_id(agent_id):
+            return []
         descs = self.store.find_by_selector(
             str(desc_domain), str(selector_prefix), int(limit), int(offset))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
+        if not self._check_agent_id(agent_id):
+            return []
         descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
         return [desc.serialize_meta(serializer) for desc in descs]
 
@@ -339,12 +375,16 @@ class RabbitBusMaster(BusMaster):
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
+        if not self._check_agent_id(agent_id):
+            return []
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
         return [desc.serialize_meta(serializer) for desc in descs]
 
     def mark_processed(self, agent_id, desc_domain, selector):
+        if not self._check_agent_id(agent_id):
+            return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
@@ -355,6 +395,8 @@ class RabbitBusMaster(BusMaster):
             self.update_check_idle(agent_name, options)
 
     def mark_processable(self, agent_id, desc_domain, selector):
+        if not self._check_agent_id(agent_id):
+            return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
@@ -366,10 +408,14 @@ class RabbitBusMaster(BusMaster):
 
     def get_processable(self, agent_id, desc_domain, selector):
         log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
+        if not self._check_agent_id(agent_id):
+            return []
         return self.store.get_processable(str(desc_domain), str(selector))
 
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)
+        if not self._check_agent_id(agent_id):
+            return {}
         #: maps agent name to number of instances of this agent
         counts = dict(Counter(objpath.rsplit('/', 1)[1] for objpath in
                               self.clients.values()))
@@ -377,21 +423,29 @@ class RabbitBusMaster(BusMaster):
 
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        if not self._check_agent_id(agent_id):
+            return []
         return self.store.processed_stats(str(desc_domain))
 
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
+        if not self._check_agent_id(agent_id):
+            return []
         return list(self.store.get_children(str(desc_domain), str(selector),
                                             serializer=serializer,
                                             recurse=bool(recurse)))
 
     def store_internal_state(self, agent_id, state):
+        if not self._check_agent_id(agent_id):
+            return
         agent_name = self.agentnames[str(agent_id)]
         log.debug("STORE_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
             self.store.store_agent_state(agent_name, str(state))
 
     def load_internal_state(self, agent_id):
+        if not self._check_agent_id(agent_id):
+            return ""
         agent_name = self.agentnames[str(agent_id)]
         log.debug("LOAD_INTSTATE: %s", agent_name)
         if self.store.STORES_INTSTATE:
@@ -401,6 +455,8 @@ class RabbitBusMaster(BusMaster):
     def request_processing(self, agent_id, desc_domain, selector, targets):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
+        if not self._check_agent_id(agent_id):
+            return
 
         d = self.store.get_descriptor(str(desc_domain), str(selector))
         self.userrequestid += 1
