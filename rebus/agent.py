@@ -448,7 +448,7 @@ class Agent(object):
         (e.g. RabbitMQ based bus)
         :param t: sleep duration (s)
         """
-        self.bus.sleep(time)
+        self.bus.sleep(t)
 
     def process(self, descriptor, sender_id, **kwargs):
         pass
