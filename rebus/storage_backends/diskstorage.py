@@ -333,7 +333,11 @@ class DiskStorage(Storage):
         # make sure fullpath ends with one "/"
         fullpath = os.path.dirname(fullpath + '/') + '/'
         if fullpath not in self.existing_paths:
-            os.makedirs(fullpath)
+            try:
+                os.makedirs(fullpath)
+            except OSError as e:
+                if e.args[0] != 17:  # File exists
+                    raise
             self.existing_paths.add(fullpath)
         return fullpath + '%' + fname
 
