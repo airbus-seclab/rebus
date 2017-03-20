@@ -19,6 +19,8 @@ class LinkFinder(Agent):
             "selector-prefix")
 
     def selector_filter(self, selector):
+        if selector.startswith('/link'):
+            return False
         if selector.startswith(self.prefix):
             return True
 
@@ -54,9 +56,10 @@ class LinkFinder(Agent):
 
     def _calc_val(self, desc):
         try:
-            if len(desc.value) < 200:
-                return desc.value
+            val = str(desc.value)
+            if len(val) < 200:
+                return val
             else:
-                return hashlib.sha256(desc.value).digest()
+                return hashlib.sha256(val).digest()
         except TypeError:
-            return hashlib.sha256(str(desc.value)).digest()
+            return hashlib.sha256(str(val)).digest()
