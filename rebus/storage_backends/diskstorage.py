@@ -228,7 +228,13 @@ class DiskStorage(Storage):
         result = []
         for selector in self.uuids[domain][uuid]:
             desc = self.get_descriptor(domain, selector)
-            result.append(desc)
+            if desc is None:
+                # that would be a bug
+                log.warning(
+                    "Descriptor %s:%s could not be retrieved in "
+                    "find_by_uuid (%s)", domain, selector, uuid)
+            else:
+                result.append(desc)
         return result
 
     def find_by_value(self, domain, selector_prefix, value_regex):
