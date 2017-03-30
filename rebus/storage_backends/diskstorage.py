@@ -480,7 +480,14 @@ class DiskStorage(Storage):
                 for sel, name_confs in self.processed[domain].iteritems():
                     if agent_nameconf not in name_confs:
                         continue
-                    selectors.remove(sel)
+                    try:
+                        selectors.remove(sel)
+                    except KeyError:
+                        # happens when files are deleted from diskstorage, then
+                        # bus is restarted
+                        log.warning(
+                            "Selector %s is mentioned in 'processed', but has "
+                            "not been registered", sel)
             # selectors now contains a list of selectors that have not been
             # processed by this agent_nameconf
 
