@@ -89,14 +89,14 @@ class DiskStorage(Storage):
 
         # Enumerate existing files & dirs
         with self.processedlock:
-            self.discover('/')
+            self._discover('/')
 
         # start _processed flushing thread
         self.checkpointThread = CheckpointThread(self)
         self.checkpointThread.daemon = True
         self.checkpointThread.start()
 
-    def discover(self, relpath):
+    def _discover(self, relpath):
         """
         Recursively add existing files to storage.
 
@@ -115,7 +115,7 @@ class DiskStorage(Storage):
             name = path + elem
             relname = relpath + elem
             if os.path.isdir(name):
-                self.discover(relname + '/')
+                self._discover(relname + '/')
             elif os.path.isfile(name):
                 basename = name.rsplit('.', 1)[0]
                 if name.endswith('.value'):
@@ -153,7 +153,7 @@ class DiskStorage(Storage):
                                 ' %s for descriptor %s' %
                                 (fname_hash, desc.domain, fname_selector))
 
-                        self.register_meta(desc)
+                        self._register_meta(desc)
                 elif name.endswith('.cfg') and relpath == '/':
                     # Bus configuration
                     # TODO periodically save this file. Use two file, overwrite
@@ -174,7 +174,7 @@ class DiskStorage(Storage):
                     'Invalid file type - %s is neither a regular file nor a '
                     'directory' % name)
 
-    def register_meta(self, desc):
+    def _register_meta(self, desc):
         """
         :param desc: Descriptor instance
         self.processedlock must be acquired prior to calling this function
@@ -295,7 +295,7 @@ class DiskStorage(Storage):
         if not selector:
             return None
 
-        fullpath = self.pathFromSelector(domain, selector) + ".meta"
+        fullpath = self._pathFromSelector(domain, selector) + ".meta"
         if not os.path.isfile(fullpath):
             return None
         return Descriptor.unserialize(store_serializer,
@@ -309,7 +309,7 @@ class DiskStorage(Storage):
         if not selector:
             return None
 
-        fullpath = self.pathFromSelector(domain, selector) + ".value"
+        fullpath = self._pathFromSelector(domain, selector) + ".value"
         if not os.path.isfile(fullpath):
             return None
         try:
@@ -333,13 +333,13 @@ class DiskStorage(Storage):
                 result |= self.get_children(child, domain, recurse)
         return result
 
-    def mkdirs(self, domain, selector):
+    def _mkdirs(self, domain, selector):
         """
         :param selector:  /sel/ector/%1234
         Create necessary directories, returns full path + file name for
         selector storage
         """
-        fullpath, fname = self.pathFromSelector(domain, selector).split('%')
+        fullpath, fname = self._pathFromSelector(domain, selector).split('%')
         # make sure fullpath ends with one "/"
         fullpath = os.path.dirname(fullpath + '/') + '/'
         if fullpath not in self.existing_paths:
@@ -351,7 +351,7 @@ class DiskStorage(Storage):
             self.existing_paths.add(fullpath)
         return fullpath + '%' + fname
 
-    def pathFromSelector(self, domain, selector):
+    def _pathFromSelector(self, domain, selector):
         """
         Returns full path, from domain and selector
         Checks selector & domain sanity (character whitelist)
@@ -372,12 +372,12 @@ class DiskStorage(Storage):
         """
         selector = descriptor.selector
         domain = descriptor.domain
-        fname = self.mkdirs(domain, selector)
+        fname = self._mkdirs(domain, selector)
         if os.path.isfile(fname + '.meta'):
             # File already exists
             return False
 
-        self.register_meta(descriptor)
+        self._register_meta(descriptor)
 
         serialized_meta = descriptor.serialize_meta(store_serializer)
         serialized_value = descriptor.serialize_value(store_serializer)
