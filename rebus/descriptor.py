@@ -1,11 +1,13 @@
 import hashlib
 import logging
 import os
+import re
 import uuid as m_uuid
 import string
 from random import SystemRandom
 
 log = logging.getLogger("rebus.descriptor")
+SHA256_RE = re.compile('[a-fA-F0-9]{64}')
 
 
 class Descriptor(object):
@@ -42,9 +44,13 @@ class Descriptor(object):
 
         self.bus = bus
 
-        p = selector.rfind("%")
+        p = selector.find("%")
         if p >= 0:
-            self.hash = selector[(p + 1):]
+            h = selector[(p+1):]
+            if SHA256_RE.match(h):
+                self.hash = h
+            else:
+                selector = selector[:p]
         else:
             if self.agent and self.precursors:
                 if type(value) is unicode:
