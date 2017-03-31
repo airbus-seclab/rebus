@@ -219,7 +219,8 @@ class DiskStorage(Storage):
                     offset -= 1
                     continue
                 desc = self.get_descriptor(domain, selector)
-                result.append(desc)
+                if desc:
+                    result.append(desc)
                 if limit != 0 and len(result) >= limit:
                     return result
         return result
@@ -254,7 +255,8 @@ class DiskStorage(Storage):
                         selector = path[len(self.basepath)+len(domain)+1:] +\
                             name.split('.')[0]
                         desc = self.get_descriptor(domain, selector)
-                        result.append(desc)
+                        if desc:
+                            result.append(desc)
         return result
 
     def list_uuids(self, domain):
@@ -324,7 +326,9 @@ class DiskStorage(Storage):
             if selector not in self.processed[domain].keys():
                 return result
         for child in self.edges[domain][selector]:
-            result.add(self.get_descriptor(domain, child))
+            desc = self.get_descriptor(domain, child)
+            if desc:
+                result.add(desc)
             if recurse:
                 result |= self.get_children(child, domain, recurse)
         return result
