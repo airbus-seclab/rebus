@@ -110,8 +110,8 @@ class RabbitBusMaster(BusMaster):
         """
         if self.session_id not in agent_id:
             log.warning(
-                "Received method call from agent %s which is is registered "
-                "to another Bus Master session.", agent_id)
+                "Received method call from agent %s which is not registered "
+                "to this Bus Master session (stale agent?).", agent_id)
             return False
         return True
 

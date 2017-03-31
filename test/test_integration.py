@@ -261,7 +261,7 @@ def test_inject(agent_set, agent_test, agent_inject):
                                                      injected_value[0:4])
     # Check UUID exists & can be found
     assert descriptors_byvalue[0].value == descriptor.value
-    uuids = bus_instance.list_uuids("testid", DEFAULT_DOMAIN)
+    uuids = bus_instance.list_uuids(agent_test.id, DEFAULT_DOMAIN)
     assert descriptor.uuid in uuids
 
     descriptors_uuid = bus_instance.find_by_uuid(agent_test.id, DEFAULT_DOMAIN,
