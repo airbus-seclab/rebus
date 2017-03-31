@@ -340,8 +340,6 @@ class DiskStorage(Storage):
         selector storage
         """
         fullpath, fname = self._pathFromSelector(domain, selector).split('%')
-        # make sure fullpath ends with one "/"
-        fullpath = os.path.dirname(fullpath + '/') + '/'
         if fullpath not in self.existing_paths:
             try:
                 os.makedirs(fullpath)
@@ -363,6 +361,9 @@ class DiskStorage(Storage):
             raise Exception("Provided domain (hex: %s) contains forbidden "
                             "characters" % domain.encode('hex'))
 
+        if '/%' not in selector:
+            # no trailing '/' before the hash - add it
+            selector = selector.replace('%', '/%')
         path = os.path.join(self.basepath, domain, selector[1:])
         return path
 
