@@ -1,6 +1,4 @@
-=====
-REbus
-=====
+# REbus
 
 REbus facilitates the coupling of existing tools that perform specific tasks,
 where one's output will be used as the input of others.
@@ -15,18 +13,16 @@ A few task examples:
 * fetch network service banners
 * fingerprint an SSL service to detect weak ciphersuites or configuration
 
-Very quick start
-================
+## Very quick start
 
 Run the REbus docker image
 
-.. sourcecode:: bash
+```bash
+$ docker run -ti iwseclabs/rebus
+```
 
-  $ docker run -ti iwseclabs/rebus
 
-
-Quick start
-===========
+## Quick start
 
 Dependencies:
 
@@ -46,72 +42,70 @@ Optional dependencies:
 
 To install these dependencies on Arch Linux:
 
-.. sourcecode:: bash
-
-  $ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject2 dbus-glib python2-tornado python2-magic
+```bash
+$ pacman -S mercurial python2 python2-setuptools python2-dbus python2-gobject2 dbus-glib python2-tornado python2-magic
+```
 
 
 To install these dependencies on Debian Jessie:
 
-.. sourcecode:: bash
-
-  $ apt-get install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-magic python-tornado
+```bash
+$ apt-get install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-magic python-tornado
+```
 
 To install these dependencies on Ubuntu 15.04 (vivid) :
 
-.. sourcecode:: bash
-
-  $ apt-get install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-tornado python-magic
+```bash
+$ apt-get install mercurial python-setuptools python-dbus python-gobject dbus-x11 python-tornado python-magic
+```
 
 Quick installation & test:
 
-.. sourcecode:: bash
+```bash
+$ git clone https://github.com/airbus-seclab/rebus
+$ cd rebus
+$ python2 ./setup.py install
 
-  $ git clone https://github.com/airbus-seclab/rebus
-  $ cd rebus
-  $ python2 ./setup.py install
+# list available agents
+$ rebus_agent --list-agents
 
-  # list available agents
-  $ rebus_agent --list-agents
+# If DBus is not already running on your machine, or on a headless machine.
+# Then run all commands in separate screen tabs.
+$ dbus-launch screen
+# run the bus master in terminal 1
+$ rebus_master dbus
 
-  # If DBus is not already running on your machine, or on a headless machine.
-  # Then run all commands in separate screen tabs.
-  $ dbus-launch screen
-  # run the bus master in terminal 1
-  $ rebus_master dbus
+# run a few agents, run each command in separate terminals
+$ rebus_agent --bus dbus web_interface
+$ rebus_agent --bus dbus unarchive
 
-  # run a few agents, run each command in separate terminals
-  $ rebus_agent --bus dbus web_interface
-  $ rebus_agent --bus dbus unarchive
-
-  # open a web browser on http://localhost:8080/
-  $ firefox http://localhost:8080/
+# open a web browser on http://localhost:8080/
+$ firefox http://localhost:8080/
+```
 
 The use of virtualenv is recommended to maintain an isolated Python
 environment, where any package required by agents can be installed. On
 Archlinux, the following commands may be used for installation:
 
-.. sourcecode:: bash
+```bash
+$ virtualenv2 --system ~/rebus-virtualenv
+$ . ~/rebus-virtualenv/bin/activate
+$ git clone https://github.com/airbus-seclab/rebus
+$ cd rebus
+$ python ./setup.py develop
+# the use of develop instead of install removes the need to re-run
+# "setup.py install" every time a change is made
+```
 
-  $ virtualenv2 --system ~/rebus-virtualenv
-  $ . ~/rebus-virtualenv/bin/activate
-  $ git clone https://github.com/airbus-seclab/rebus
-  $ cd rebus
-  $ python ./setup.py develop
-  # the use of develop instead of install removes the need to re-run
-  # "setup.py install" every time a change is made
 
-
-Components overview
-===================
+## Components overview
 
 * Descriptors_ are REbus messages, conveyed to and from agents
 * Agents wrap external tools, process and generate descriptors
 * the `Communication Bus`_ lets agents communicate
 * the Storage_ circulates and stores descriptors
 
-Descriptors
------------
+### Descriptors
 Descriptors store agents' outputs and inputs as Python objects.
 
 Descriptors have several properties:
@@ -134,8 +128,7 @@ Descriptors may perform several actions:
 * create link (linktype) descriptor
 * serialization
 
-Communication Bus
------------------
+### Communication Bus
 The Bus API performs the following duties:
 
 * allows agents to push Descriptors_
@@ -157,8 +150,7 @@ When using any of the last two buses, agents are not stopped as soon as
 processing is finished, which enables user to interact with the bus (ex. use
 the web interface, inject descriptors interactively)
 
-LocalBus
-''''''''
+#### LocalBus
 This bus implementation runs Agents as several threads in a single process.
 
 The bus exits once every agent has finished carrying out its duties (ex.
@@ -171,8 +163,7 @@ thread-safe (ex. due to the use of non-thread-safe features of Python objects,
 non-thread-safe C bindings...), you might want to refrain from using several
 "inject" agents.
 
-DBusBus
-'''''''
+#### DBusBus
 This bus implementation uses DBus as a communication mechanism between the *bus
 master* and the agents, to send messages bus and perform remote procedure
 calls.
@@ -187,8 +178,7 @@ This bus allows using the web interface.
 
 This implementation does not support messages over ~134MB.
 
-RabbitBus
-'''''''''
+#### RabbitBus
 This bus implementation uses RabbitMQ as a communication mechanism between the *bus master* and the agents.
 
 This bus implementation runs Agents as separate processes.
@@ -208,8 +198,7 @@ implementation is deemed reliable.
 
 
 
-Storage
--------
+### Storage
 The storage API provides the following services to agents:
 
 * find descriptor by selector regex
@@ -222,8 +211,7 @@ Two storage backends have currently been implemented:
 * RAMStorage: stored data is forgotten when the bus exits
 * Diskstorage: stores data as files. The bus may be stopped and resumed later
 
-Agents
-------
+### Agents
 Agents process Descriptors_, and usually act as an interface between the
 `Communication Bus`_ and external tools.
 
@@ -234,8 +222,7 @@ Some agents are short-lived as they perfom only one task, then exit. The
 Most agents process Descriptors_ they are interested in. These agents override
 the **process()** and/or **bulk_process()** methods.
 
-Operation Modes
-'''''''''''''''
+#### Operation Modes
 Agents that use Descriptors_ as input override the **process()** and/or
 **bulk_process()** methods. These methods are called by the `Communication
 Bus`_ according to the Operation Mode this agent is in.
@@ -244,21 +231,18 @@ By default, agents support all operation modes. The list of supported operation
 modes as well as the default operation mode can be overridden by defining the
 *_operationmodes_* attribute in an Agent.
 
-Automatic operation mode
-````````````````````````
+##### Automatic operation mode
 Agents that run in automatic mode process every descriptor they are interested
 in as soon as they are received, provided the agent is not busy processing
 another Descriptor at that time.
 
-Interactive operation mode
-``````````````````````````
+##### Interactive operation mode
 Agents that run in interactive mode indicate to the `Communication Bus`_ that
 they are able to process `Descriptors`_ they are interested in. The actual
 processing is performed whenever the `Communication Bus`_ requests it, usually
 when the user has requested it.
 
-Idle operation mode
-```````````````````
+##### Idle operation mode
 Agents that run in idle operation mode indicate to the `Communication Bus`_
 that they are able to process `Descriptors`_ they are interested in. These
 descriptors get processed when the `Communication Bus`_ indicates that all
@@ -269,8 +253,7 @@ To receive all such descriptors at once, agents may override the bulk_process
 method.
 
 
-Provided agents
----------------
+### Provided agents
 
 A few agents are provided with REbus. Their purpose is to assist using the bus,
 not to perform any data analysis.
@@ -285,15 +268,14 @@ not to perform any data analysis.
 * **dotrenderer** rendering dot to svg
 * **web_interface** web interface
 
-Rebus Infrastructure launcher (bin/rebus_infra)
------------------------------------------------
+### Rebus Infrastructure launcher (bin/rebus_infra)
 
 rebus_infra stands for REbus infractructure. This script deploys a REbus bus
 and its agents based on a configuration file.
 
-.. sourcecode:: bash
-
-   $ rebus_infra configuration_file.yaml
+```bash
+$ rebus_infra configuration_file.yaml
+```
 
 This file must contain at least a 'master' and an 'agents' section at the
 root of the document.
@@ -323,80 +305,78 @@ Those two sections contain the following attributes:
 
 Here is an example of a configuration file for 'rebus_infra'
 
-.. sourcecode:: yaml
+```yaml
+# =================== Bus Master =============================
 
-   # =================== Bus Master =============================
+master:
+  bus: dbus
+  logfile: /tmp/rebus_master.log
+  verbose_level: 0
 
-   master:
-     bus: dbus
-     logfile: /tmp/rebus_master.log
-     verbose_level: 0
+# ===================  Agents ===============================
 
-   # ===================  Agents ===============================
-
-   agents:
-     #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
-     modules:
-     #rebus_demo.agents
-     stages:
-       - agents:
-           - inject:
-               params: /bin/bash /bin/ls
-               verbose_level: 3
-           - inject: /bin/cp
-       - agents:
-           - ls:
-               params: "/binary/elf"
-               verbose_level: 3
-
-.. sourcecode:: bash
-
-   $ rebus_infra -f /etc/rebus/rebus-infra-config-example.yaml
-  INFO:rebus:Starting stage 0
-  INFO:rebus.bus.dbus:Agent inject registered with id inject-:1.149 on domain default
-  INFO:rebus.agent:[inject-:1.149] Agent inject registered on bus dbus with id inject-:1.149
-  INFO:rebus.agent:[inject-:1.149] Restore state: ''
-  DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c(bash)=[2307233]['\x7fELF\x02\x01\x01\x...], not already present: True
-  DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c(ls)=[358061]['\x7fELF\x02\x01\x01\x...], not already present: True
-  INFO:rebus:Starting stage 0
-  INFO:rebus.bus.dbus:Agent ls registered with id ls-:1.150 on domain default
-  INFO:rebus.agent:[ls-:1.150] Agent ls registered on bus dbus with id ls-:1.150
-  INFO:rebus.agent:[ls-:1.150] Restore state: ''
-  /binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c
-  /binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c
-  /binary/elf/%258f4cde050970ecbc039c0f250ac30d97d8b966dab029bfd135090b0101ac16
+agents:
+  #busaddr: unix:abstract=/tmp/dbus-muyzQoNsLE
+  modules:
+  #rebus_demo.agents
+  stages:
+    - agents:
+        - inject:
+            params: /bin/bash /bin/ls
+            verbose_level: 3
+        - inject: /bin/cp
+    - agents:
+        - ls:
+            params: "/binary/elf"
+            verbose_level: 3
+```
 
 
-Building the documentation
-==========================
+```bash
+ $ rebus_infra -f /etc/rebus/rebus-infra-config-example.yaml
+INFO:rebus:Starting stage 0
+INFO:rebus.bus.dbus:Agent inject registered with id inject-:1.149 on domain default
+INFO:rebus.agent:[inject-:1.149] Agent inject registered on bus dbus with id inject-:1.149
+INFO:rebus.agent:[inject-:1.149] Restore state: ''
+DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c(bash)=[2307233]['\x7fELF\x02\x01\x01\x...], not already present: True
+DEBUG:rebus.agent:[inject-:1.149] pushed default:/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c(ls)=[358061]['\x7fELF\x02\x01\x01\x...], not already present: True
+INFO:rebus:Starting stage 0
+INFO:rebus.bus.dbus:Agent ls registered with id ls-:1.150 on domain default
+INFO:rebus.agent:[ls-:1.150] Agent ls registered on bus dbus with id ls-:1.150
+INFO:rebus.agent:[ls-:1.150] Restore state: ''
+/binary/elf/%13eab6034d09927e519835e2cfad225f43c204c60f522f492e2b796a0877011c
+/binary/elf/%da92956d6f6e4068af9cc82a1d52d897201dd2a89e3786cbe6173190ad9e604c
+/binary/elf/%258f4cde050970ecbc039c0f250ac30d97d8b966dab029bfd135090b0101ac16
+```
+
+
+## Building the documentation
 
 This documentation is generated automatically, based only (for now) on source
 code comments.
 
-.. sourcecode:: bash
-
-  $ cd rebus/doc
+```bash
+$ cd rebus/doc
+```
 
 Make sure sphinx-apidoc2 and sphinx-build2 are installed on your system.
 Override the SPHINXBUILD and SPHINXAPIDOC if the executables are named
 differently.
 
-.. sourcecode:: bash
-
-  $ make generate
+```bash
+$ make generate
+```
 
 This will overwrite .rst files in source/.
 
-.. sourcecode:: bash
+```bash
+$ make singlehtml
+```
 
-  $ make singlehtml
-
-REbus resources
-===============
+## REbus resources
 REbus has been presented at SSTIC 2015. Slides and video (in french) can be
 found at https://www.sstic.org/2015/presentation/rebus/
 
-Licence
-=======
+## Licence
 
 REbus is released under a BSD 2-clause licence.
