@@ -296,7 +296,7 @@ class DiskStorage(Storage):
             return None
 
         fullpath = self._pathFromSelector(domain, selector) + ".meta"
-        if not os.path.isfile(fullpath):
+        if not fullpath or not os.path.isfile(fullpath):
             return None
         return Descriptor.unserialize(store_serializer,
                                       open(fullpath, "rb").read())
@@ -310,14 +310,14 @@ class DiskStorage(Storage):
             return None
 
         fullpath = self._pathFromSelector(domain, selector) + ".value"
-        if not os.path.isfile(fullpath):
+        if not fullpath or not os.path.isfile(fullpath):
             return None
         try:
             value = Descriptor.unserialize_value(store_serializer,
                                                  open(fullpath, "rb").read())
         except:
             log.error("Could not unserialize value from file %s", fullpath)
-            raise
+            return
         return value
 
     def get_children(self, domain, selector, recurse=True):
@@ -338,28 +338,36 @@ class DiskStorage(Storage):
         :param selector:  /sel/ector/%1234
         Create necessary directories, returns full path + file name for
         selector storage
+        Returns None if parameters were invalid.
         """
-        fullpath, fname = self._pathFromSelector(domain, selector).split('%')
-        if fullpath not in self.existing_paths:
+        fullpath = self._pathFromSelector(domain, selector)
+        if not fullpath:
+            return
+        path, fname = fullpath.split('%')
+        if path not in self.existing_paths:
             try:
-                os.makedirs(fullpath)
+                os.makedirs(path)
             except OSError as e:
                 if e.args[0] != 17:  # File exists
-                    raise
-            self.existing_paths.add(fullpath)
-        return fullpath + '%' + fname
+                    log.error("Error while creating directory", exc_info=1)
+                    return None
+            self.existing_paths.add(path)
+        return path + '%' + fname
 
     def _pathFromSelector(self, domain, selector):
         """
         Returns full path, from domain and selector
         Checks selector & domain sanity (character whitelist)
+        Returns None if parameters were invalid.
         """
         if not self.selector_regex.match(selector):
-            raise Exception("Provided selector (hex: %s) contains forbidden "
-                            "characters" % selector.encode('hex'))
+            log.error("Provided selector (hex: %s) contains forbidden "
+                      "characters", selector.encode('hex'))
+            return
         if not self.domain_regex.match(domain):
-            raise Exception("Provided domain (hex: %s) contains forbidden "
-                            "characters" % domain.encode('hex'))
+            log.error("Provided domain (hex: %s) contains forbidden "
+                      "characters", domain.encode('hex'))
+            return
 
         if '/%' not in selector:
             # no trailing '/' before the hash - add it
@@ -374,6 +382,9 @@ class DiskStorage(Storage):
         selector = descriptor.selector
         domain = descriptor.domain
         fname = self._mkdirs(domain, selector)
+        if not fname:
+            # error occurred while making directories
+            return False
         if os.path.isfile(fname + '.meta'):
             # File already exists
             return False
