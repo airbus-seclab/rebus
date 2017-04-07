@@ -30,7 +30,7 @@ class RabbitBusMaster(BusMaster):
         #: has started (might even be finished). Allows several agents that
         #: perform the same stateless computation to run in parallel
         self.locks = defaultdict(set)
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGTERM, self._sigterm_handler)
         #: maps agent_id to agent name
         self.agentnames = {}
         #: maps agent_id to agent's serialized configuration - output altering
@@ -85,18 +85,18 @@ class RabbitBusMaster(BusMaster):
         # Create the rpc queue
         self.channel.queue_declare(queue='rebus_master_rpc_highprio')
         self.channel.queue_purge(queue='rebus_master_rpc_highprio')
-        self.channel.basic_consume(self.rpc_callback,
+        self.channel.basic_consume(self._rpc_callback,
                                    queue='rebus_master_rpc_highprio',
                                    arguments={'x-priority': 1})
         self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
         self.channel.queue_purge(queue='rebus_master_rpc_lowprio')
-        self.channel.basic_consume(self.rpc_callback,
+        self.channel.basic_consume(self._rpc_callback,
                                    queue='rebus_master_rpc_lowprio',
                                    arguments={'x-priority': 0})
         # bus is now ready to serve requests, publish registration IDs
-        self.publish_ids(10000)
+        self._publish_ids(10000)
 
-    def publish_ids(self, amount):
+    def _publish_ids(self, amount):
         for i in range(self.last_published_id, self.last_published_id+amount):
             new_id = "%s-%d" % (self.session_id, i)
             self.channel.basic_publish(
@@ -115,7 +115,7 @@ class RabbitBusMaster(BusMaster):
             return False
         return True
 
-    def send_signal(self, signal_name, args):
+    def _send_signal(self, signal_name, args):
         # Send a signal on the exchange
         body = {'signal_name': signal_name, 'args': args}
         body = serializer.dumps(body)
@@ -127,13 +127,13 @@ class RabbitBusMaster(BusMaster):
                     properties=pika.BasicProperties(delivery_mode=2,))
                 b = True
             except pika.exceptions.ConnectionClosed:
-                log.info("Disconnected (in send_signal). "
+                log.info("Disconnected (in _send_signal). "
                          "Trying to reconnect...")
-                self.reconnect()
+                self._reconnect()
                 time.sleep(0.5)
 
     # TODO Check is the key is valid
-    def call_rpc_func(self, name, args):
+    def _call_rpc_func(self, name, args):
         f = {'register': self.register,
              'unregister': self.unregister,
              'lock': self.lock,
@@ -158,7 +158,7 @@ class RabbitBusMaster(BusMaster):
              }
         return f[name](**args)
 
-    def rpc_callback(self, ch, method, properties, body):
+    def _rpc_callback(self, ch, method, properties, body):
         # Parse the rpc request
         body = serializer.loads(body)
 
@@ -166,7 +166,7 @@ class RabbitBusMaster(BusMaster):
         args = body['args']
 
         # Call the function
-        ret = self.call_rpc_func(func_name, args)
+        ret = self._call_rpc_func(func_name, args)
         ret = serializer.dumps(ret)
 
         # Push the result of the function on the return queue
@@ -181,12 +181,13 @@ class RabbitBusMaster(BusMaster):
                         correlation_id=properties.correlation_id))
                 b = True
             except pika.exceptions.ConnectionClosed:
-                log.info("Disconnected (in rpc_callback). Trying to reconnect")
-                self.reconnect()
+                log.info(
+                    "Disconnected (in _rpc_callback). Trying to reconnect")
+                self._reconnect()
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    def update_check_idle(self, agent_name, output_altering_options):
+    def _update_check_idle(self, agent_name, output_altering_options):
         """
         Increases the count of handled descriptors and checks
         if all descriptors have been handled (processed/marked
@@ -195,9 +196,9 @@ class RabbitBusMaster(BusMaster):
         """
         name_config = (agent_name, output_altering_options)
         self.descriptor_handled_count[name_config] += 1
-        self.check_idle()
+        self._check_idle()
 
-    def check_idle(self):
+    def _check_idle(self):
         if self.exiting:
             return
         # Check if we have reached idle state
@@ -207,13 +208,13 @@ class RabbitBusMaster(BusMaster):
             log.debug("IDLE: %d agents having distinct (name, config) %d "
                       "descriptors %d handled", nbdistinctagents,
                       self.descriptor_count, nbhandlings)
-            self.on_idle()
+            self._on_idle()
 
     def register(self, agent_id, agent_domain, pth, config_txt):
         if not self._check_agent_id(agent_id):
             return
         # replenish id queue
-        self.publish_ids(1)
+        self._publish_ids(1)
         #: indicates whether another instance of the same agent is already
         #: running with the same configuration
         agent_name = agent_id.split('-', 1)[0]
@@ -239,8 +240,8 @@ class RabbitBusMaster(BusMaster):
             self.descriptor_handled_count[name_config] = \
                 self.descriptor_count - len(unprocessed)
             for dom, uuid, sel in unprocessed:
-                self.targeted_descriptor("storage", dom, uuid, sel,
-                                         [agent_name], False)
+                self._targeted_descriptor("storage", dom, uuid, sel,
+                                          [agent_name], False)
 
     def unregister(self, agent_id):
         log.info("Agent %s has unregistered", agent_id)
@@ -253,7 +254,7 @@ class RabbitBusMaster(BusMaster):
         if len(self.uniq_conf_clients[name_config]) == 0:
             del self.descriptor_handled_count[name_config]
         del self.clients[agent_id]
-        self.check_idle()
+        self._check_idle()
         if self.exiting:
             if len(self.clients) == 0:
                 log.info("Exiting - no agents are running")
@@ -313,9 +314,9 @@ class RabbitBusMaster(BusMaster):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             if not self.exiting:
-                self.new_descriptor(agent_id, desc_domain, uuid, selector)
+                self._new_descriptor(agent_id, desc_domain, uuid, selector)
                 # useful in case all agents are in idle/interactive mode
-                self.check_idle()
+                self._check_idle()
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
@@ -392,7 +393,7 @@ class RabbitBusMaster(BusMaster):
         isnew = self.store.mark_processed(str(desc_domain), str(selector),
                                           agent_name, str(options))
         if isnew:
-            self.update_check_idle(agent_name, options)
+            self._update_check_idle(agent_name, options)
 
     def mark_processable(self, agent_id, desc_domain, selector):
         if not self._check_agent_id(agent_id):
@@ -404,7 +405,7 @@ class RabbitBusMaster(BusMaster):
         isnew = self.store.mark_processable(str(desc_domain), str(selector),
                                             agent_name, str(options))
         if isnew:
-            self.update_check_idle(agent_name, options)
+            self._update_check_idle(agent_name, options)
 
     def get_processable(self, agent_id, desc_domain, selector):
         log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
@@ -461,16 +462,16 @@ class RabbitBusMaster(BusMaster):
         d = self.store.get_descriptor(str(desc_domain), str(selector))
         self.userrequestid += 1
 
-        self.targeted_descriptor(agent_id, desc_domain, d.uuid, selector,
-                                 targets, self.userrequestid)
+        self._targeted_descriptor(agent_id, desc_domain, d.uuid, selector,
+                                  targets, self.userrequestid)
 
-    def new_descriptor(self, sender_id, desc_domain, uuid, selector):
+    def _new_descriptor(self, sender_id, desc_domain, uuid, selector):
         args = locals()
         args.pop('self', None)
-        self.send_signal("new_descriptor", args)
+        self._send_signal("new_descriptor", args)
 
-    def targeted_descriptor(self, sender_id, desc_domain, uuid, selector,
-                            targets, user_request):
+    def _targeted_descriptor(self, sender_id, desc_domain, uuid, selector,
+                             targets, user_request):
         """
         Signal sent when a descriptor is sent to some target agents (not
         broadcast).
@@ -492,9 +493,9 @@ class RabbitBusMaster(BusMaster):
         """
         args = locals()
         args.pop('self', None)
-        self.send_signal("targeted_descriptor", args)
+        self._send_signal("targeted_descriptor", args)
 
-    def bus_exit(self, awaiting_internal_state):
+    def _bus_exit(self, awaiting_internal_state):
         """
         Signal sent when the bus is exiting.
         :param awaiting_internal_state: indicates whether agents must send
@@ -502,21 +503,21 @@ class RabbitBusMaster(BusMaster):
         """
         args = locals()
         args.pop('self', None)
-        self.send_signal("bus_exit", args)
+        self._send_signal("bus_exit", args)
 
         self.exiting = True
         return
 
-    def on_idle(self):
+    def _on_idle(self):
         """
         Signal sent when the bus is idle, i.e. all descriptors have been
         marked as processed or processable by agents.
         """
         args = locals()
         args.pop('self', None)
-        self.send_signal("on_idle", args)
+        self._send_signal("on_idle", args)
 
-    def reconnect(self):
+    def _reconnect(self):
         b = False
         while not b:
             try:
@@ -530,12 +531,12 @@ class RabbitBusMaster(BusMaster):
                     exchange='rebus_signals', type='fanout')
                 self.channel.queue_declare(queue='rebus_master_rpc_highprio')
                 self.channel.basic_consume(
-                    self.rpc_callback,
+                    self._rpc_callback,
                     queue='rebus_master_rpc_highprio',
                     arguments={'x-priority': 1})
                 self.channel.queue_declare(queue='rebus_master_rpc_lowprio')
                 self.channel.basic_consume(
-                    self.rpc_callback,
+                    self._rpc_callback,
                     queue='rebus_master_rpc_lowprio',
                     arguments={'x-priority': 0})
                 b = True
@@ -545,7 +546,6 @@ class RabbitBusMaster(BusMaster):
 
     @classmethod
     def run(cls, store, master_options):
-
         server_addr = master_options.rabbitaddr
         heartbeat_interval = master_options.heartbeat
         svc = cls(store, server_addr, heartbeat_interval)
@@ -556,7 +556,7 @@ class RabbitBusMaster(BusMaster):
                     svc.channel.start_consuming()
                 except pika.exceptions.ConnectionClosed:
                     log.info("Disconnected (in run). Trying to reconnect")
-                    cls.reconnect()
+                    cls._reconnect()
         except (KeyboardInterrupt, SystemExit):
             log.info("Received SIGINT or Ctrl-C, exiting")
             svc.channel.queue_delete(queue='registration_queue')
@@ -568,7 +568,7 @@ class RabbitBusMaster(BusMaster):
                 # ask slave agents to shutdown nicely & save internal state
                 log.info("Expecting %u more agents to exit (ex. %s)",
                          len(svc.clients), svc.clients.keys()[0])
-                svc.bus_exit(store.STORES_INTSTATE)
+                svc._bus_exit(store.STORES_INTSTATE)
                 store.store_state()
                 try:
                     while True:
@@ -578,7 +578,7 @@ class RabbitBusMaster(BusMaster):
                                 break
                         except pika.exceptions.ConnectionClosed:
                             log.info("Disconnected. Trying to reconnect")
-                            cls.reconnect()
+                            cls._reconnect()
                 except (KeyboardInterrupt, SystemExit):
                     if len(svc.clients) > 0:
                         log.info(
@@ -592,7 +592,7 @@ class RabbitBusMaster(BusMaster):
         store.store_state()
 
     @staticmethod
-    def sigterm_handler(sig, frame):
+    def _sigterm_handler(sig, frame):
         # Try to exit cleanly the first time; if that does not work, exit.
         # raises SystemExit, caught in run()
         sys.exit(0)
@@ -606,7 +606,7 @@ class RabbitBusMaster(BusMaster):
             "--heartbeat", help="Rabbitmq heartbeat interval, in seconds",
             default=0)
 
-    def busthread_call(self, method, *args):
+    def _busthread_call(self, method, *args):
         f = lambda: method(*args)
         self.connection.add_timeout(0, f)
 
@@ -615,6 +615,6 @@ class RabbitBusMaster(BusMaster):
         Called by Sched object, from Timer thread. Emits targeted_descriptor
         through bus thread.
         """
-        self.busthread_call(
-            self.targeted_descriptor,
+        self._busthread_call(
+            self._targeted_descriptor,
             *(agent_id, desc_domain, uuid, selector, [target], False))

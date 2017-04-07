@@ -34,7 +34,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         #: has started (might even be finished). Allows several agents that
         #: perform the same stateless computation to run in parallel
         self.locks = defaultdict(set)
-        signal.signal(signal.SIGTERM, self.sigterm_handler)
+        signal.signal(signal.SIGTERM, self._sigterm_handler)
         #: maps agentids to their names
         self.agentnames = {}
         #: maps agentids to their serialized configuration - output altering
@@ -56,7 +56,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         self.retry_counters = defaultdict(dict)
         self.sched = Sched(self._sched_inject)
 
-    def update_check_idle(self, agent_name, output_altering_options):
+    def _update_check_idle(self, agent_name, output_altering_options):
         """
         Increases the count of handled descriptors and checks
         if all descriptors have been handled (processed/marked
@@ -65,9 +65,9 @@ class DBusMaster(dbus.service.Object, BusMaster):
         """
         name_config = (agent_name, output_altering_options)
         self.descriptor_handled_count[name_config] += 1
-        self.check_idle()
+        self._check_idle()
 
-    def check_idle(self):
+    def _check_idle(self):
         if self.exiting:
             return
         # Check if we have reached idle state
@@ -121,7 +121,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         if len(self.uniq_conf_clients[name_config]) == 0:
             del self.descriptor_handled_count[name_config]
         del self.clients[agent_id]
-        self.check_idle()
+        self._check_idle()
         if self.exiting:
             if len(self.clients) == 0:
                 log.info("Exiting - no agents are running")
@@ -183,7 +183,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
             if not self.exiting:
                 self.new_descriptor(agent_id, desc_domain, uuid, selector)
                 # useful in case all agents are in idle/interactive mode
-                self.check_idle()
+                self._check_idle()
             return True
         else:
             log.debug("PUSH: %s already seen => %s:%s", agent_id, desc_domain,
@@ -261,7 +261,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         isnew = self.store.mark_processed(str(desc_domain), str(selector),
                                           agent_name, str(options))
         if isnew:
-            self.update_check_idle(agent_name, options)
+            self._update_check_idle(agent_name, options)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
@@ -273,7 +273,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         isnew = self.store.mark_processable(str(desc_domain), str(selector),
                                             agent_name, str(options))
         if isnew:
-            self.update_check_idle(agent_name, options)
+            self._update_check_idle(agent_name, options)
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='aas')
@@ -418,7 +418,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         store.store_state()
 
     @staticmethod
-    def sigterm_handler(sig, frame):
+    def _sigterm_handler(sig, frame):
         # Try to exit cleanly the first time; if that does not work, exit.
         # raises SystemExit, caught in run()
         sys.exit(0)
@@ -429,7 +429,7 @@ class DBusMaster(dbus.service.Object, BusMaster):
         # configuration file or environment variable
         pass
 
-    def busthread_call(self, method, *args):
+    def _busthread_call(self, method, *args):
         gobject.idle_add(method, *args)
 
     def _sched_inject(self, agent_id, desc_domain, uuid, selector, target):
@@ -437,6 +437,6 @@ class DBusMaster(dbus.service.Object, BusMaster):
         Called by Sched object, from Timer thread. Emits targeted_descriptor
         through bus thread.
         """
-        self.busthread_call(
+        self._busthread_call(
             self.targeted_descriptor,
             *(agent_id, desc_domain, uuid, selector, [target], False))
