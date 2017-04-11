@@ -13,6 +13,7 @@ from rebus.tools.config import get_output_altering_options
 from rebus.tools.serializer import b64serializer as serializer
 from rebus.busmaster import BusMaster
 from rebus.tools.sched import Sched
+from rebus.tools import format_check
 
 
 log = logging.getLogger("rebus.bus")
@@ -84,6 +85,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
     def register(self, agent_id, agent_domain, pth, config_txt):
         #: indicates whether another instance of the same agent is already
         #: running with the same configuration
+        if not format_check.is_valid_domain(agent_domain):
+            return
         agent_name = agent_id.split('-', 1)[0]
         self.agentnames[agent_id] = agent_name
         output_altering_options = get_output_altering_options(str(config_txt))
@@ -133,6 +136,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='ssss', out_signature='b')
     def lock(self, agent_id, lockid, desc_domain, selector):
+        if not format_check.is_valid_domain(desc_domain):
+            return False
+        if not format_check.is_valid_fullselector(selector):
+            return False
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         key = (lockid, selector)
@@ -147,6 +154,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='ssssbuu', out_signature='')
     def unlock(self, agent_id, lockid, desc_domain, selector,
                processing_failed, retries, wait_time):
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
+            return
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         lkey = (lockid, selector)
@@ -194,6 +205,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='sss', out_signature='s')
     def get(self, agent_id, desc_domain, selector):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
+        if not format_check.is_valid_domain(desc_domain):
+            return None
+        if not format_check.is_valid_selector(selector):
+            return None
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
         if desc is None:
             return ""
@@ -203,6 +218,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='sss', out_signature='s')
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
+        if not format_check.is_valid_domain(desc_domain):
+            return None
+        if not format_check.is_valid_selector(selector):
+            return None
         value = self.store.get_value(str(desc_domain), str(selector))
         if value is None:
             return ""
@@ -212,6 +231,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='ss', out_signature='a{ss}')
     def list_uuids(self, agent_id, desc_domain):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
+        if not format_check.is_valid_domain(desc_domain):
+            return {}
         return self.store.list_uuids(str(desc_domain))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
@@ -219,6 +240,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
     def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
         log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
                   selector_regex, limit, offset)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         selectors = self.store.find(
             str(desc_domain), str(selector_regex), str(limit), int(offset))
         return [str(s) for s in selectors]
@@ -229,6 +252,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          offset=0):
         log.debug("FINDBYVALUE: %s %s %s (max %d skip %d)", agent_id,
                   desc_domain, selector_prefix, limit, offset)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         descs = self.store.find_by_selector(
             str(desc_domain), str(selector_prefix), int(limit), int(offset))
         return [desc.serialize_meta(serializer) for desc in descs]
@@ -237,6 +262,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='sss', out_signature='as')
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
         return [desc.serialize_meta(serializer) for desc in descs]
 
@@ -246,6 +273,8 @@ class DBusMaster(dbus.service.Object, BusMaster):
                       value_regex):
         log.debug("FINDBYVALUE: %s %s %s %s", agent_id, desc_domain,
                   selector_prefix, value_regex)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
@@ -254,6 +283,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
     def mark_processed(self, agent_id, desc_domain, selector):
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
+            return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSED: %s:%s %s %s", desc_domain, selector,
@@ -266,6 +299,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='')
     def mark_processable(self, agent_id, desc_domain, selector):
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
+            return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
         log.debug("MARK_PROCESSABLE: %s:%s %s %s", desc_domain, selector,
@@ -278,6 +315,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sss', out_signature='aas')
     def get_processable(self, agent_id, desc_domain, selector):
+        if not format_check.is_valid_domain(desc_domain):
+            return []
+        if not format_check.is_valid_fullselector(selector):
+            return []
         log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
         return self.store.get_processable(str(desc_domain), str(selector))
 
@@ -294,12 +335,18 @@ class DBusMaster(dbus.service.Object, BusMaster):
                          in_signature='ss', out_signature='a(su)u')
     def processed_stats(self, agent_id, desc_domain):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         return self.store.processed_stats(str(desc_domain))
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
                          in_signature='sssb', out_signature='as')
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
+        if not format_check.is_valid_domain(desc_domain):
+            return []
+        if not format_check.is_valid_fullselector(selector):
+            return []
         descs = self.store.get_children(str(desc_domain), str(selector),
                                         recurse=bool(recurse))
         return [desc.serialize_meta(serializer) for desc in descs]
@@ -326,6 +373,10 @@ class DBusMaster(dbus.service.Object, BusMaster):
     def request_processing(self, agent_id, desc_domain, selector, targets):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
+            return
 
         d = self.store.get_descriptor(str(desc_domain), str(selector))
         self.userrequestid += 1

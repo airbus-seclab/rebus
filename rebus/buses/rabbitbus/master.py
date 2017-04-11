@@ -12,6 +12,7 @@ import pika
 import rebus.tools.serializer as serializer
 from rebus.busmaster import BusMaster
 from rebus.tools.sched import Sched
+from rebus.tools import format_check
 
 log = logging.getLogger("rebus.bus")
 
@@ -213,6 +214,8 @@ class RabbitBusMaster(BusMaster):
     def register(self, agent_id, agent_domain, pth, config_txt):
         if not self._check_agent_id(agent_id):
             return
+        if not format_check.is_valid_domain(agent_domain):
+            return
         # replenish id queue
         self._publish_ids(1)
         #: indicates whether another instance of the same agent is already
@@ -266,6 +269,10 @@ class RabbitBusMaster(BusMaster):
     def lock(self, agent_id, lockid, desc_domain, selector):
         if not self._check_agent_id(agent_id):
             return False
+        if not format_check.is_valid_domain(desc_domain):
+            return False
+        if not format_check.is_valid_fullselector(selector):
+            return False
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         key = (lockid, selector)
@@ -279,7 +286,11 @@ class RabbitBusMaster(BusMaster):
     def unlock(self, agent_id, lockid, desc_domain, selector,
                processing_failed, retries, wait_time):
         if not self._check_agent_id(agent_id):
-            return False
+            return
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
+            return
         objpath = self.clients[agent_id]
         locks = self.locks[desc_domain]
         lkey = (lockid, selector)
@@ -327,6 +338,10 @@ class RabbitBusMaster(BusMaster):
         log.debug("GET: %s %s:%s", agent_id, desc_domain, selector)
         if not self._check_agent_id(agent_id):
             return None
+        if not format_check.is_valid_domain(desc_domain):
+            return None
+        if not format_check.is_valid_selector(selector):
+            return None
         desc = self.store.get_descriptor(str(desc_domain), str(selector))
         if desc is None:
             return ""
@@ -335,6 +350,10 @@ class RabbitBusMaster(BusMaster):
     def get_value(self, agent_id, desc_domain, selector):
         log.debug("GETVALUE: %s %s:%s", agent_id, desc_domain, selector)
         if not self._check_agent_id(agent_id):
+            return None
+        if not format_check.is_valid_domain(desc_domain):
+            return None
+        if not format_check.is_valid_selector(selector):
             return None
         value = self.store.get_value(str(desc_domain), str(selector))
         if value is None:
@@ -345,12 +364,16 @@ class RabbitBusMaster(BusMaster):
         log.debug("LISTUUIDS: %s %s", agent_id, desc_domain)
         if not self._check_agent_id(agent_id):
             return {}
+        if not format_check.is_valid_domain(desc_domain):
+            return {}
         return self.store.list_uuids(str(desc_domain))
 
     def find(self, agent_id, desc_domain, selector_regex, limit=0, offset=0):
         log.debug("FIND: %s %s:%s (max %d skip %d)", agent_id, desc_domain,
                   selector_regex, limit, offset)
         if not self._check_agent_id(agent_id):
+            return []
+        if not format_check.is_valid_domain(desc_domain):
             return []
         return self.store.find(
             str(desc_domain), str(selector_regex), int(limit), int(offset))
@@ -361,6 +384,8 @@ class RabbitBusMaster(BusMaster):
                   desc_domain, selector_prefix, limit, offset)
         if not self._check_agent_id(agent_id):
             return []
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         descs = self.store.find_by_selector(
             str(desc_domain), str(selector_prefix), int(limit), int(offset))
         return [desc.serialize_meta(serializer) for desc in descs]
@@ -368,6 +393,8 @@ class RabbitBusMaster(BusMaster):
     def find_by_uuid(self, agent_id, desc_domain, uuid):
         log.debug("FINDBYUUID: %s %s:%s", agent_id, desc_domain, uuid)
         if not self._check_agent_id(agent_id):
+            return []
+        if not format_check.is_valid_domain(desc_domain):
             return []
         descs = self.store.find_by_uuid(str(desc_domain), str(uuid))
         return [desc.serialize_meta(serializer) for desc in descs]
@@ -378,6 +405,8 @@ class RabbitBusMaster(BusMaster):
                   selector_prefix, value_regex)
         if not self._check_agent_id(agent_id):
             return []
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         descs = self.store.find_by_value(str(desc_domain),
                                          str(selector_prefix),
                                          str(value_regex))
@@ -385,6 +414,10 @@ class RabbitBusMaster(BusMaster):
 
     def mark_processed(self, agent_id, desc_domain, selector):
         if not self._check_agent_id(agent_id):
+            return
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
             return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
@@ -397,6 +430,10 @@ class RabbitBusMaster(BusMaster):
 
     def mark_processable(self, agent_id, desc_domain, selector):
         if not self._check_agent_id(agent_id):
+            return
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
             return
         agent_name = self.agentnames[agent_id]
         options = self.agents_output_altering_options[agent_id]
@@ -411,11 +448,17 @@ class RabbitBusMaster(BusMaster):
         log.debug("GET_PROCESSABLE: %s:%s %s", desc_domain, selector, agent_id)
         if not self._check_agent_id(agent_id):
             return []
+        if not format_check.is_valid_domain(desc_domain):
+            return []
+        if not format_check.is_valid_fullselector(selector):
+            return []
         return self.store.get_processable(str(desc_domain), str(selector))
 
     def list_agents(self, agent_id):
         log.debug("LIST_AGENTS: %s", agent_id)
         if not self._check_agent_id(agent_id):
+            return {}
+        if not format_check.is_valid_domain(desc_domain):
             return {}
         #: maps agent name to number of instances of this agent
         counts = dict(Counter(objpath.rsplit('/', 1)[1] for objpath in
@@ -426,11 +469,17 @@ class RabbitBusMaster(BusMaster):
         log.debug("PROCESSED_STATS: %s %s", agent_id, desc_domain)
         if not self._check_agent_id(agent_id):
             return []
+        if not format_check.is_valid_domain(desc_domain):
+            return []
         return self.store.processed_stats(str(desc_domain))
 
     def get_children(self, agent_id, desc_domain, selector, recurse):
         log.debug("GET_CHILDREN: %s %s:%s", agent_id, desc_domain, selector)
         if not self._check_agent_id(agent_id):
+            return []
+        if not format_check.is_valid_domain(desc_domain):
+            return []
+        if not format_check.is_valid_fullselector(selector):
             return []
         return list(self.store.get_children(str(desc_domain), str(selector),
                                             serializer=serializer,
@@ -457,6 +506,10 @@ class RabbitBusMaster(BusMaster):
         log.debug("REQUEST_PROCESSING: %s %s:%s targets %s", agent_id,
                   desc_domain, selector, [str(t) for t in targets])
         if not self._check_agent_id(agent_id):
+            return
+        if not format_check.is_valid_domain(desc_domain):
+            return
+        if not format_check.is_valid_fullselector(selector):
             return
 
         d = self.store.get_descriptor(str(desc_domain), str(selector))

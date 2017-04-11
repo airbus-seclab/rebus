@@ -7,6 +7,7 @@ from collections import defaultdict
 from collections import OrderedDict
 from collections import Counter
 from rebus.storage import Storage
+from rebus.tools import format_check
 from rebus.descriptor import Descriptor
 from rebus.tools.serializer import picklev2 as store_serializer
 log = logging.getLogger("rebus.storage.diskstorage")
@@ -316,7 +317,7 @@ class DiskStorage(Storage):
             value = Descriptor.unserialize_value(store_serializer,
                                                  open(fullpath, "rb").read())
         except:
-            log.error("Could not unserialize value from file %s", fullpath)
+            log.warning("Could not unserialize value from file %s", fullpath)
             return
         return value
 
@@ -360,11 +361,11 @@ class DiskStorage(Storage):
         Checks selector & domain sanity (character whitelist)
         Returns None if parameters were invalid.
         """
-        if not self.selector_regex.match(selector):
+        if not format_check.is_valid_fullselector(selector):
             log.error("Provided selector (hex: %s) contains forbidden "
                       "characters", selector.encode('hex'))
             return
-        if not self.domain_regex.match(domain):
+        if not format_check.is_valid_domain(domain):
             log.error("Provided domain (hex: %s) contains forbidden "
                       "characters", domain.encode('hex'))
             return

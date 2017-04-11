@@ -1,19 +1,15 @@
 import hashlib
 import logging
 import os
-import re
 import uuid as m_uuid
-import string
 from random import SystemRandom
+from rebus.tools import format_check
 
 log = logging.getLogger("rebus.descriptor")
-SHA256_RE = re.compile('[a-fA-F0-9]{64}')
 
 
 class Descriptor(object):
 
-    allowed_selector_chars = string.letters + string.digits + '~%/_-'
-    allowed_domain_chars = string.letters + string.digits + '-'
     NAMESPACE_REBUS = m_uuid.uuid5(m_uuid.NAMESPACE_DNS, "rebus.airbus.com")
 
     def __init__(self, label, selector, value=None, domain="default",
@@ -34,6 +30,8 @@ class Descriptor(object):
         :param uuid: descriptor's uuid
         :param bus: descriptor's bus. None iif the value must be fetched from
             the bus
+
+        May raise a ValueError if provided selector or descriptor are invalid
         """
 
         #: contains a list of parent descriptors' selectors. Typically contains
@@ -44,13 +42,14 @@ class Descriptor(object):
 
         self.bus = bus
 
+        if not format_check.is_valid_domain(domain):
+            raise ValueError("invalid domain format (%s)" % domain)
+        if not format_check.is_valid_selector(selector):
+            raise ValueError("invalid selector format (%s)" % selector)
         p = selector.find("%")
         if p >= 0:
             h = selector[(p+1):]
-            if SHA256_RE.match(h):
-                self.hash = h
-            else:
-                selector = selector[:p]
+            self.hash = h
         else:
             if self.agent and self.precursors:
                 if type(value) is unicode:
@@ -60,20 +59,13 @@ class Descriptor(object):
                 v = str(self.agent) + str(self.precursors) + selector + \
                     strvalue
             else:
-                if value is None:
-                    # v should only be None when Descriptor is instanciated
-                    # from metadata only (implicit reference to stored value)
-                    raise Exception('Hash value missing')
-                v = value
+                v = str(value)
             self.hash = hashlib.sha256(v).hexdigest()
             selector = os.path.join(selector, "%" + self.hash)
-        self.selector = ''.join([c for c in selector if c in
-                                 Descriptor.allowed_selector_chars])
         self.selector = selector
         if self.bus is None:
             self.value = value
-        self.domain = ''.join([c for c in domain if c in
-                               Descriptor.allowed_domain_chars])
+        self.domain = domain
         self.version = version
         #: if -1, will be set by agent when push() is called
         self.processing_time = processing_time
@@ -213,7 +205,13 @@ class Descriptor(object):
 
     @classmethod
     def unserialize(cls, serializer, s, bus=None):
-        unserialized = serializer.loads(s)
+        try:
+            unserialized = serializer.loads(s)
+        except ValueError:
+            log.warning(
+                "Invalid selector or domain encountered while "
+                "unserializing a descriptor", exc_info=1)
+            return None
         if unserialized:
             return cls(bus=bus, **unserialized)
         else:
