@@ -143,7 +143,8 @@ def _default_guess(fname=None, buf=None, label=None, magic_txt=""):
         return "/document/msoffice/xlsx"
     if 'Microsoft PowerPoint 2007+' in magic_txt:
         return "/document/msoffice/pptx"
-    if 'Composite Document File V2 Document' in magic_txt:
+    if ('Composite Document File V2 Document' in magic_txt or
+            'Microsoft OOXML' in magic_txt):
         if 'MSI Installer' in magic_txt:
             return "/binary/msi"
         if 'Microsoft Excel' in magic_txt:
