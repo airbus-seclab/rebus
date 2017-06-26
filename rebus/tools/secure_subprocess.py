@@ -21,7 +21,7 @@ else:
     secure.append(firejail)
     # TODO add private-etc
     secure.extend(
-        ["--noprofile", "--quiet", "--nosound", "--private-dev",
+        ["--noprofile", "--force", "--quiet", "--nosound", "--private-dev",
          "--env=TMPDIR="+os.environ['HOME'], "--private", "--seccomp", ])
 
 
