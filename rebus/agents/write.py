@@ -31,7 +31,8 @@ class Return(Agent):
             target = os.path.join(target, descriptor.uuid)
         if not os.path.exists(target):
             os.makedirs(target)
-        target = os.path.join(target, descriptor.label)
+        filename = descriptor.label.replace('/', '--')
+        target = os.path.join(target, filename)
         nb = ""
         i = 0
         while os.path.exists(target + nb):
