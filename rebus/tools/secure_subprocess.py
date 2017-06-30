@@ -12,17 +12,32 @@ log = logging.getLogger("rebus.secure_subprocess")
 
 firejail = distutils.spawn.find_executable("firejail")
 secure = []
+
+
 if firejail is None:
     ch = logging.StreamHandler()
     log = logging.getLogger("rebus.secure_subprocess.initialization")
     log.addHandler(ch)
     log.warning("firejail binary not found, using INSECURE non sandboxed mode!")
 else:
-    secure.append(firejail)
-    # TODO add private-etc
-    secure.extend(
-        ["--noprofile", "--quiet", "--nosound", "--private-dev",
-         "--env=TMPDIR="+os.environ['HOME'], "--private", "--seccomp", ])
+    try:
+        # check whether we are running inside an unprivileged sandbox
+        # usually unprivileged docker container -> should not run firejail,
+        # which will swallow the exit code, and not add any restrictions
+        cmdstr = '%s --force exit 0' % firejail
+        subprocess.check_output(cmdstr.split(' '))
+    except subprocess.CalledProcessError as e:
+        ch = logging.StreamHandler()
+        log = logging.getLogger("rebus.secure_subprocess.initialization")
+        log.addHandler(ch)
+        log.warning("already running in an unprivileged sandbox environment: "
+                    "disabling firejail")
+    else:
+        secure.append(firejail)
+        # TODO add private-etc
+        secure.extend(
+            ["--noprofile", "--quiet", "--nosound", "--private-dev",
+             "--env=TMPDIR="+os.environ['HOME'], "--private", "--seccomp", ])
 
 
 def make_firejail_cmdline(flags, cmd):
