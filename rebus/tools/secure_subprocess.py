@@ -68,7 +68,6 @@ def make_firejail_cmdline(flags, cmd):
 
     full_cmd = secres + ["--"] + cmd
 
-    print full_cmd
     return full_cmd
 
 
