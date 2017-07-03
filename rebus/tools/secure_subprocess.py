@@ -37,7 +37,7 @@ else:
         # TODO add private-etc
         secure.extend(
             ["--noprofile", "--quiet", "--nosound", "--private-dev",
-             "--env=TMPDIR="+os.environ['HOME'], "--private", "--seccomp", ])
+             "--private", "--seccomp"])
 
 
 def make_firejail_cmdline(flags, cmd):
@@ -68,6 +68,7 @@ def make_firejail_cmdline(flags, cmd):
 
     full_cmd = secres + ["--"] + cmd
 
+    print full_cmd
     return full_cmd
 
 
