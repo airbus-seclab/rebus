@@ -6,6 +6,7 @@ from rebus.storage_backends.ramstorage import RAMStorage
 from rebus.storage import StorageRegistry
 from rebus.tools.config import get_output_altering_options
 from rebus.tools.sched import Sched
+from rebus.tools import format_check
 
 log = logging.getLogger("rebus.localbus")
 agent_desc = namedtuple("agent_desc", ("agent_id", "domain"))
@@ -82,6 +83,12 @@ class LocalBus(Bus):
     def push(self, agent_id, descriptor):
         desc_domain = descriptor.domain
         selector = descriptor.selector
+        # ensure processing terminates
+        if not format_check.processing_depth(self.store, descriptor):
+            log.warning("Refusing descriptor %s:%s: loop or >2 ancestors "
+                        "having the same descriptor", desc_domain, selector)
+            return False
+
         if self.store.add(descriptor):
             log.info("PUSH: %s => %s:%s", agent_id, desc_domain, selector)
             for agid in self.agents:

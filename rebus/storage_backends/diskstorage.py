@@ -377,9 +377,6 @@ class DiskStorage(Storage):
         return path
 
     def add(self, descriptor):
-        """
-        serialized_descriptor is not used by this backend.
-        """
         selector = descriptor.selector
         domain = descriptor.domain
         fname = self._mkdirs(domain, selector)

@@ -40,3 +40,28 @@ def is_valid_fullselector(fullselector):
     Checks selector string
     """
     return _ALLOWED_FULLSELECTOR_REGEX.match(fullselector)
+
+
+def processing_depth(store, descriptor):
+    """
+    * Avoid loops (d1.precursors=[d2.selector] AND d2.precursors=[d1.selector])
+    * Forbid having >3 precursors at different depths (ex. a precursor (parent),
+        and a precursor of that precursor (~grandparent)) having the same
+        selector (excluding hash) - used to ensure analyses terminate
+    """
+    selector_prefix = descriptor.selector.split('%')[0]
+    levelset = set()
+    to_review = [(0, sel) for sel in descriptor.precursors]
+    while to_review:
+        l, s = to_review.pop()
+        if l > 1000:
+            # avoid loops
+            return False
+        prefix = s.split('%')[0]
+        if prefix == selector_prefix:
+            levelset.add(l)
+        d = store.get_descriptor(descriptor.domain, s)
+        to_review.extend([(l+1, sel) for sel in d.precursors])
+        if len(levelset) > 2:
+            return False
+    return True

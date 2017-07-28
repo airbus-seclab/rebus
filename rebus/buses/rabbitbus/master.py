@@ -321,6 +321,12 @@ class RabbitBusMaster(BusMaster):
         desc_domain = str(descriptor.domain)
         uuid = str(descriptor.uuid)
         selector = str(descriptor.selector)
+        # ensure processing terminates
+        if not format_check.processing_depth(self.store, descriptor):
+            log.warning("Refusing descriptor %s:%s: loop or >2 ancestors "
+                        "having the same descriptor", desc_domain, selector)
+            return False
+
         if self.store.add(descriptor):
             self.descriptor_count += 1
             log.debug("PUSH: %s => %s:%s", agent_id, desc_domain, selector)

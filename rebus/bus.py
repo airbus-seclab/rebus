@@ -71,7 +71,10 @@ class Bus(object):
         """
         Pushes a descriptor to the bus.
 
-        Returns True if the descriptor was not already present on the bus.
+        Returns False if:
+        * this descriptor has already been injected;
+        * a loop, or is a child of a descriptor having >2 ancestors at
+          different depths that have the same selector (excluding hash)
 
         :param descriptor: Descriptor object to be pushed to the bus
         :param agent_id: current agent id
