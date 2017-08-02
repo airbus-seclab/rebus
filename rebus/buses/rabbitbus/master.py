@@ -464,8 +464,6 @@ class RabbitBusMaster(BusMaster):
         log.debug("LIST_AGENTS: %s", agent_id)
         if not self._check_agent_id(agent_id):
             return {}
-        if not format_check.is_valid_domain(desc_domain):
-            return {}
         #: maps agent name to number of instances of this agent
         counts = dict(Counter(objpath.rsplit('/', 1)[1] for objpath in
                               self.clients.values()))
