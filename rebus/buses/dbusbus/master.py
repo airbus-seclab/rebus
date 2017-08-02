@@ -190,8 +190,9 @@ class DBusMaster(dbus.service.Object, BusMaster):
         selector = str(descriptor.selector)
         # ensure processing terminates
         if not format_check.processing_depth(self.store, descriptor):
-            log.warning("Refusing descriptor %s:%s: loop or >2 ancestors "
-                        "having the same descriptor", desc_domain, selector)
+            log.warning("Refusing descriptor %s:%s received from %s: loop or "
+                        ">2 ancestors having the same descriptor", agent_id,
+                        desc_domain, selector)
             return False
 
         if self.store.add(descriptor):

@@ -61,6 +61,9 @@ def processing_depth(store, descriptor):
         if prefix == selector_prefix:
             levelset.add(l)
         d = store.get_descriptor(descriptor.domain, s)
+        if not d:
+            # precursor does not exist: refuse this.
+            return False
         to_review.extend([(l+1, sel) for sel in d.precursors])
         if len(levelset) > 2:
             return False
