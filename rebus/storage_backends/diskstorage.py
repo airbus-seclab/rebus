@@ -1,31 +1,14 @@
 import logging
 import os
 import re
-import threading
-import time
 from collections import defaultdict
 from collections import OrderedDict
 from collections import Counter
-from rebus.storage import Storage
+from rebus.storage import Storage, MetadataDB
 from rebus.tools import format_check
 from rebus.descriptor import Descriptor
 from rebus.tools.serializer import picklev2 as store_serializer
 log = logging.getLogger("rebus.storage.diskstorage")
-
-
-class CheckpointThread(threading.Thread):
-    """
-    Calls store_state periodically to avoid losing it completely in case
-    diskstorage gets killed ungracefully.
-    """
-    def __init__(self, storage):
-        threading.Thread.__init__(self)
-        self.storage = storage
-
-    def run(self):
-        while True:
-            time.sleep(5)
-            self.storage.store_state()
 
 
 @Storage.register
@@ -36,8 +19,6 @@ class DiskStorage(Storage):
 
     _name_ = "diskstorage"
     STORES_INTSTATE = True
-    selector_regex = re.compile('^[a-zA-Z0-9~%/_-]*$')
-    domain_regex = re.compile('^[a-zA-Z0-9-]*$')
 
     def __init__(self, options):
         self.basepath = options.path.rstrip('/')
@@ -60,20 +41,6 @@ class DiskStorage(Storage):
         #: descriptors that were spawned from selectorA.
         self.edges = defaultdict(lambda: defaultdict(set))
 
-        #: self.processed['domain']['/selector/%hash'] is a set of (agent name,
-        #: configuration text) that have finished processing, or declined to
-        #: process this descriptor. Allows stopping and resuming the bus when
-        #: not all descriptors have been processed.
-        #: Order is kept for find requests & co-maintainability of
-        #: {RAM,Disk}storage implementations.
-        #: access to self.processed must be protected using self.processedlock
-        self.processed = defaultdict(OrderedDict)
-
-        self.unsavedprocessed = False
-
-        #: protects access to self.processed
-        self.processedlock = threading.RLock()
-
         #: self.processable['domain']['/selector/%hash'] is a set of (agent
         #: name, configuration text) that are running in interactive mode, and
         #: are able to process this descriptor.
@@ -88,20 +55,20 @@ class DiskStorage(Storage):
         #: this UUID
         self.labels = defaultdict(lambda: defaultdict(str))
 
-        # Enumerate existing files & dirs
-        with self.processedlock:
-            self._discover('/')
+        # A sqlite3 database records which (agent name, configuration text)
+        # have finished processing each (domain, /selector/%hash). This allows
+        # stopping and resuming the bus when some of the descriptors have not
+        # been processed by all agents.
+        # TODO maybe also store processable?
+        self.db = MetadataDB(
+            os.path.join(self.basepath, 'diskstorage.sqlite3'))
 
-        # start _processed flushing thread
-        self.checkpointThread = CheckpointThread(self)
-        self.checkpointThread.daemon = True
-        self.checkpointThread.start()
+        # Enumerate existing files & dirs
+        self._discover('/')
 
     def _discover(self, relpath):
         """
         Recursively add existing files to storage.
-
-        self.processedlock must be acquired prior to calling this function
 
         :param relpath: starts and ends with a '/', relative to self.basepath
         """
@@ -155,17 +122,21 @@ class DiskStorage(Storage):
                                 (fname_hash, desc.domain, fname_selector))
 
                         self._register_meta(desc)
-                elif name.endswith('.cfg') and relpath == '/':
-                    # Bus configuration
-                    # TODO periodically save this file. Use two file, overwrite
-                    # oldest.
-                    if elem == '_processed.cfg':
-                        with open(name, 'rb') as fp:
-                            # copy processed info to self.processed
-                            p = store_serializer.load(fp)
-                            for dom in p.keys():
-                                for sel, val in p[dom].items():
-                                    self.processed[dom][sel] = val
+                elif relpath == '/' and elem == 'diskstorage.sqlite3':
+                    continue
+                elif relpath == '/' and elem == '_processed.cfg':
+                    # Former _processed.cfg storage file
+                    log.info(
+                        "Importing data to sqlite3 database from "
+                        "_processed.cfg. You should delete this file after it "
+                        "has been imported.")
+                    with open(name, 'rb') as fp:
+                        p = store_serializer.load(fp)
+                        for dom in p.keys():
+                            for sel, valset in p[dom].items():
+                                for agent_name, config_txt in valset:
+                                    self.db.add_processed(
+                                        dom, sel, agent_name, config_txt)
                 else:
                     raise Exception(
                         'Invalid file name - %s has an invalid extension '
@@ -178,19 +149,15 @@ class DiskStorage(Storage):
     def _register_meta(self, desc):
         """
         :param desc: Descriptor instance
-        self.processedlock must be acquired prior to calling this function
         """
 
         domain = desc.domain
         selector = desc.selector
+        self.db.add_selector(domain, selector)
         self.version_cache[domain][selector.split('%')[0]][desc.version]\
             = selector
         for precursor in desc.precursors:
             self.edges[domain][precursor].add(selector)
-        if selector not in self.processed[domain]:
-            # If it has not been restored from processed.cfg
-            self.processed[domain][selector] = set()
-            self.unsavedprocessed = True
         self.uuids[domain][desc.uuid].add(selector)
         if not self.labels[domain][desc.uuid] or not desc.precursors:
             # Heuristic for choosing uuid label : prefer label of a descriptor
@@ -198,33 +165,10 @@ class DiskStorage(Storage):
             self.labels[domain][desc.uuid] = desc.label
 
     def find(self, domain, selector_regex, limit=0, offset=0):
-        regex = re.compile(selector_regex)
-        sel_list = reversed(self.processed[domain].keys())
-        result = []
-
-        for k in sel_list:
-            if regex.match(k):
-                if offset > 0:
-                    offset -= 1
-                    continue
-                result.append(k)
-                if limit != 0 and len(result) >= limit:
-                    return result
-        return result
+        return self.db.find(domain, selector_regex, limit, offset)
 
     def find_by_selector(self, domain, selector_prefix, limit=0, offset=0):
-        result = []
-        for selector in self.processed[domain].keys():
-            if selector.startswith(selector_prefix):
-                if offset > 0:
-                    offset -= 1
-                    continue
-                desc = self.get_descriptor(domain, selector)
-                if desc:
-                    result.append(desc)
-                if limit != 0 and len(result) >= limit:
-                    return result
-        return result
+        return self.db.find_by_selector(domain, selector_prefix, limit, offset)
 
     def find_by_uuid(self, domain, uuid):
         result = []
@@ -323,9 +267,10 @@ class DiskStorage(Storage):
 
     def get_children(self, domain, selector, recurse=True):
         result = set()
-        with self.processedlock:
-            if selector not in self.processed[domain].keys():
-                return result
+        if domain not in self.edges:
+            return result
+        if selector not in self.edges[domain]:
+            return result
         for child in self.edges[domain][selector]:
             desc = self.get_descriptor(domain, child)
             if desc:
@@ -400,22 +345,14 @@ class DiskStorage(Storage):
         with open(fname + '.value', 'wb') as fp:
             fp.write(serialized_value)
 
-        with self.processedlock:
-            self.processed[domain][selector] = set()
-            self.unsavedprocessed = True
         return True
 
     def mark_processed(self, domain, selector, agent_name, config_txt):
-        result = False
-        key = (agent_name, config_txt)
-        # Add to processed if not already there
-        with self.processedlock:
-            if key not in self.processed[domain][selector]:
-                result = True
-                self.processed[domain][selector].add(key)
-                self.unsavedprocessed = True
+        result = self.db.add_processed(domain, selector, agent_name,
+                                       config_txt)
         # Remove from processable
         if selector in self.processable[domain]:
+            key = (agent_name, config_txt)
             if key in self.processable[domain][selector]:
                 result = False
                 self.processable[domain][selector].discard(key)
@@ -424,19 +361,17 @@ class DiskStorage(Storage):
     def mark_processable(self, domain, selector, agent_name, config_txt):
         result = False
         key = (agent_name, config_txt)
-        with self.processedlock:
-            if key not in self.processable[domain][selector]:
-                self.processable[domain][selector].add((agent_name,
-                                                        config_txt))
-                if key not in self.processed[domain][selector]:
-                    # avoid case where two instances of an agent run in
-                    # different modes
-                    result = True
+        if key not in self.processable[domain][selector]:
+            self.processable[domain][selector].add((agent_name, config_txt))
+            if not self.db.is_processed(
+                    domain, selector, agent_name, config_txt):
+                # avoid case where two instances of an agent run in
+                # different modes
+                result = True
         return result
 
     def get_processed(self, domain, selector):
-        with self.processedlock:
-            return self.processed[domain][selector]
+        return self.db.list_processed(domain, selector)
 
     def get_processable(self, domain, selector):
         return self.processable[domain][selector]
@@ -446,12 +381,7 @@ class DiskStorage(Storage):
         Returns a list of couples, (agent names, number of processed selectors)
         and the total amount of selectors in this domain.
         """
-        result = Counter()
-        with self.processedlock:
-            processed = self.processed[domain]
-        for agentlist in processed.values():
-            result.update([name for name, _ in agentlist])
-        return result.items(), len(processed)
+        return self.db.processed_stats(domain)
 
     def store_agent_state(self, agent_name, state):
         fname = os.path.join(self.basepath, 'agent_intstate', agent_name +
@@ -467,48 +397,19 @@ class DiskStorage(Storage):
         with open(fname, 'rb') as fp:
             return fp.read()
 
-    def store_state(self):
-        if self.unsavedprocessed:
-            with self.processedlock:
-                with open(self.basepath + '/_processed.cfg', 'wb') as fp:
-                    store_serializer.dump(self.processed, fp)
-                self.unsavedprocessed = False
-
     def list_unprocessed_by_agent(self, agent_name, config_txt):
-        result = []
-        agent_nameconf = (agent_name, config_txt)
-        for domain in self.version_cache.keys():
-
-            # list all selectors
-            selectors = set()
-
-            # build temporary selector to uuids lookup table
-            # 1 selectors might belong in several uuids (or might in the
-            # future), add them all
-            sel_to_uuid = defaultdict(list)
-            for uuid, selset in self.uuids[domain].iteritems():
-                selectors.update(selset)
-                for sss in selset:
-                    sel_to_uuid[sss].append(uuid)
-            with self.processedlock:
-                for sel, name_confs in self.processed[domain].iteritems():
-                    if agent_nameconf not in name_confs:
-                        continue
-                    try:
-                        selectors.remove(sel)
-                    except KeyError:
-                        # happens when files are deleted from diskstorage, then
-                        # bus is restarted
-                        log.warning(
-                            "Selector %s is mentioned in 'processed', but has "
-                            "not been registered", sel)
-            # selectors now contains a list of selectors that have not been
-            # processed by this agent_nameconf
-
-            for sel in selectors:
-                for uuid in sel_to_uuid[sel]:
-                    result.append((domain, uuid, sel))
-        return result
+        dom_sel = self.db.list_unprocessed_by_agent(agent_name, config_txt)
+        res = []
+        for domain, selector in dom_sel:
+            desc = self.get_descriptor(domain, selector)
+            if not desc:
+                # file has been deleted?
+                log.warning("Could not get data for %s:%s, files may have "
+                            "been deleted.", domain, selector)
+                continue
+            uuid = desc.uuid
+            res.append((domain, uuid, selector))
+        return res
 
     @staticmethod
     def add_arguments(subparser):

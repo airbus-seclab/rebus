@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 from rebus.tools.registry import Registry
+import threading
+import re
+import sqlite3
 
 
 class StorageRegistry(Registry):
@@ -34,7 +37,7 @@ class Storage(object):
         :param offset: int, number of selectors to skip.
 
         Only selectors of *limit* most recently added descriptors will be
-        returned, from most recent to oldest.
+        returned, sorted from most recent to oldest.
         """
         raise NotImplementedError
 
@@ -144,8 +147,8 @@ class Storage(object):
         Mark given selector as having been processed by given agent whose
         configuration is serialized in config_txt.
 
-        Returns a boolean indicating whether this selector had not already been
-        marked as processed or processable by this (agent, config_txt)
+        Returns True if this selector had not already been marked processed or
+        processable by this (agent, config_txt)
 
         :param domain: string, domain on which operations are performed
         :param selector: string
@@ -160,8 +163,8 @@ class Storage(object):
         Mark given selector as processable by given agent running in
         interactive mode whose configuration is serialized in config_txt.
 
-        Returns a boolean indicating whether this selector had not already been
-        marked as processed by this (agent, config_txt).
+        Returns True if this selector had not already been marked processed or
+        processable by this (agent, config_txt).
 
         :param domain: string, domain on which operations are performed
         :param selector: string
@@ -239,3 +242,121 @@ class Storage(object):
         Allow storage backend to receive optional arguments
         """
         pass
+
+
+class MetadataDB(object):
+    def __init__(self, db_path):
+        self._dblock = threading.RLock()
+        self._db = sqlite3.connect(db_path)
+        self._cursor = self._db.cursor()
+        self._cursor.execute(
+            'CREATE TABLE IF NOT EXISTS processed(domain TEXT, selector TEXT, '
+            'agent_name TEXT, config_txt TEXT)')
+        self._cursor.execute(
+            'CREATE UNIQUE INDEX IF NOT EXISTS no_processed_dups ON '
+            'processed(domain, selector, agent_name, config_txt)')
+        self._cursor.execute(
+            'CREATE TABLE IF NOT EXISTS selectors(domain TEXT, selector TEXT)')
+        self._cursor.execute(
+            'CREATE UNIQUE INDEX IF NOT EXISTS no_selector_dups ON '
+            'selectors(domain, selector)')
+        self._db.commit()
+
+        def regex_function(pattern, string):
+            return re.match(pattern, string) is None
+
+        self._db.create_function('REGEXP', 2, regex_function)
+
+    def add_selector(self, domain, selector):
+        with self._dblock:
+            self._cursor.execute(
+                'INSERT OR IGNORE INTO selectors(domain, selector) '
+                'VALUES (?, ?)',
+                (domain, selector))
+            self._db.commit()
+
+    def add_processed(self, domain, selector, agent_name, config_txt):
+        """
+        Returns True if this (domain, selector) had not already been marked as
+        processed by this (agent_name, config_txt)
+        """
+        with self._dblock:
+            try:
+                self._cursor.execute(
+                    'INSERT OR ABORT INTO processed(domain, selector, '
+                    'agent_name, config_txt) VALUES (?, ?, ?, ?)',
+                    (domain, selector, agent_name, config_txt))
+                self._db.commit()
+                return True
+            except sqlite3.IntegrityError:
+                return False
+
+    def is_processed(self, domain, selector, agent_name, config_txt):
+        with self._dblock:
+            res = self._cursor.execute(
+                'SELECT COUNT(1) FROM PROCESSED WHERE domain=? AND selector=? '
+                'AND agent_name=? AND config_txt=?',
+                (domain, selector, agent_name, config_txt)
+            ).fetchone()[0]
+            return res == 1
+
+    def list_processed(self, domain, selector):
+        with self._dblock:
+            res = self._cursor.execute(
+                'SELECT agent_name, config_txt FROM processed WHERE '
+                'domain=? AND selector=?', (domain, selector)).fetchall()
+            return {(str(agent_name), str(config_txt)) for
+                    (agent_name, config_txt) in res}
+
+    def processed_stats(self, domain):
+        # FIXME take domain into account
+        with self._dblock:
+            by_agent = self._cursor.execute(
+                'SELECT agent_name, COUNT(DISTINCT selector) FROM processed '
+                'WHERE domain=? GROUP BY agent_name',
+                (domain,)).fetchall()
+            total = self._cursor.execute(
+                'SELECT COUNT(DISTINCT selector) FROM processed '
+                'WHERE domain=?',
+                (domain,)).fetchone()[0]
+        return ([(str(agent_name), count) for agent_name, count in by_agent],
+                total)
+
+    def list_unprocessed_by_agent(self, agent_name, config_txt):
+        with self._dblock:
+            unprocessed = self._cursor.execute(
+                'SELECT domain, selector FROM selectors '
+                'GROUP BY domain, selector EXCEPT '
+                'SELECT domain, selector FROM processed '
+                'WHERE agent_name=? AND config_txt=? '
+                'GROUP BY domain, selector',
+                (agent_name, config_txt)).fetchall()
+        return [(str(domain), str(selector)) for domain, selector in
+                unprocessed]
+
+    def find(self, domain, selector_regex, limit, offset):
+        if limit == 0:
+            # no limit
+            limit = -1
+        with self._dblock:
+            res = self._cursor.execute(
+                'SELECT selector FROM processed '
+                'WHERE selector REGEXP ? AND DOMAIN=? '
+                'ORDER BY _rowid_ DESC '
+                'LIMIT ? OFFSET ?',
+                (domain, selector_regex, limit, offset)
+            ).fetchall()
+        return [str(selector) for selector in res]
+
+    def find_by_selector(self, domain, selector_prefix, limit, offset):
+        with self._dblock:
+            selector_prefix.replace('%', '_')  # matches 1 character
+            selector_prefix += '%'
+            res = self._cursor.execute(
+                'SELECT selector FROM processed '
+                'WHERE selector LIKE ? AND DOMAIN=? '
+                'ORDER BY _rowid_ DESC '
+                'LIMIT ? OFFSET ?',
+                (domain, selector_prefix, limit, offset)
+            ).fetchall()
+        return [str(selector) for selector in res]
