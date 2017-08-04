@@ -205,13 +205,15 @@ class RabbitBusMaster(BusMaster):
         # Check if we have reached idle state
         nbdistinctagents = len(self.descriptor_handled_count)
         nbhandlings = sum(self.descriptor_handled_count.values())
+
         if self.descriptor_count*nbdistinctagents == nbhandlings:
             log.debug("IDLE: %d agents having distinct (name, config) %d "
                       "descriptors %d handled", nbdistinctagents,
                       self.descriptor_count, nbhandlings)
             self._on_idle()
 
-    def register(self, agent_id, agent_domain, pth, config_txt):
+    def register(self, agent_id, agent_domain, pth, config_txt,
+                 processes_descriptors):
         if not self._check_agent_id(agent_id):
             return
         if not format_check.is_valid_domain(agent_domain):
@@ -234,7 +236,9 @@ class RabbitBusMaster(BusMaster):
         log.info("New client %s (%s) in domain %s with config %s", pth,
                  agent_id, agent_domain, config_txt)
         # Send not-yet processed descriptors to the agent...
-        if not already_running:
+        if not processes_descriptors:
+            self.descriptor_handled_count[name_config] = 0
+        elif not already_running:
             # ...unless another instance of the same agent has already been
             # started, and should be processing those descriptors
             unprocessed = \

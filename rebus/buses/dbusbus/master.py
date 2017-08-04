@@ -81,8 +81,9 @@ class DBusMaster(dbus.service.Object, BusMaster):
             self.on_idle()
 
     @dbus.service.method(dbus_interface='com.airbus.rebus.bus',
-                         in_signature='ssos', out_signature='')
-    def register(self, agent_id, agent_domain, pth, config_txt):
+                         in_signature='ssosb', out_signature='')
+    def register(self, agent_id, agent_domain, pth, config_txt,
+                 processes_descriptors):
         #: indicates whether another instance of the same agent is already
         #: running with the same configuration
         if not format_check.is_valid_domain(agent_domain):
@@ -100,9 +101,11 @@ class DBusMaster(dbus.service.Object, BusMaster):
         self.agents_full_config_txts[agent_id] = str(config_txt)
         log.info("New client %s (%s) in domain %s with config %s", pth,
                  agent_id, agent_domain, config_txt)
-        # Send not-yet processed descriptors to the agent...
-        if not already_running:
-            # ...unless another instance of the same agent has already been
+        if not processes_descriptors:
+            self.descriptor_handled_count[name_config] = 0
+        elif not already_running:
+            # Send not-yet processed descriptors to the agent,
+            # unless another instance of the same agent has already been
             # started, and should be processing those descriptors
             unprocessed = \
                 self.store.list_unprocessed_by_agent(agent_name,

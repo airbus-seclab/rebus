@@ -90,7 +90,8 @@ class DBus(Bus):
         while not registerSucceed:
             try:
                 self.iface.register(self.agent_id, agent_domain, self.objpath,
-                                    self.agent.config_txt)
+                                    self.agent.config_txt,
+                                    self.agent.__class__.run == Agent.run)
                 registerSucceed = True
             except dbus.exceptions.DBusException as e:
                 log.warning("Cannot register because of " + str(e) +

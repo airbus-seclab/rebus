@@ -134,9 +134,11 @@ class RabbitBus(Bus):
                 time.sleep(0.001)
         return response
 
-    def rpc_register(self, agent_id, agent_domain, pth, config_txt):
+    def rpc_register(self, agent_id, agent_domain, pth, config_txt,
+                     processes_descriptors):
         args = {'agent_id': agent_id, 'agent_domain': agent_domain,
-                'pth': pth, 'config_txt': config_txt}
+                'pth': pth, 'config_txt': config_txt,
+                'processes_descriptors': processes_descriptors}
         return self.send_rpc("register", args)
 
     def rpc_unregister(self, agent_id):
@@ -286,7 +288,8 @@ class RabbitBus(Bus):
 
         # Register into the bus
         self.rpc_register(self.agent_id, agent_domain, self.objpath,
-                          self.agent.config_txt)
+                          self.agent.config_txt,
+                          self.agent.__class__.run == Agent.run)
 
         log.info("Agent %s registered with id %s on domain %s",
                  self.agent.name, self.agent_id, agent_domain)
