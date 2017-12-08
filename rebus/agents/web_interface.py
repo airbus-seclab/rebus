@@ -568,7 +568,7 @@ class InjectHandler(tornado.web.RequestHandler):
         value = self.f['body']
         domain = self.get_argument('domain', 'default')
         force_inject = self.get_argument('force_inject', False)
-        if force_inject != False:
+        if force_inject is not False:
             force_inject = True
         agentname = 'web_interface_inject'
         selector = guess_selector(buf=value, label=self.filename)
@@ -595,9 +595,7 @@ class InjectHandler(tornado.web.RequestHandler):
         self.finish(dict(uuid=self.uuid, filename=self.filename))
 
     def process_inject_results(self, result):
-        self.application.ioloop.add_callback(
-            self.application.dstore.new_descriptor,
-            self.desc, "storage-0")
+        pass
 
 
 class ProcessingListHandler(tornado.web.RequestHandler):
