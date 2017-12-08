@@ -81,7 +81,7 @@ class RabbitBusMaster(BusMaster):
         self.channel.queue_purge(queue="registration_queue")
         # Create the exchange for signals publish(master)/subscribe(slave)
         self.signal_exchange = self.channel.exchange_declare(
-            exchange='rebus_signals', type='fanout')
+            exchange='rebus_signals', exchange_type='fanout')
 
         # Create the rpc queue
         self.channel.queue_declare(queue='rebus_master_rpc_highprio')
@@ -590,7 +590,7 @@ class RabbitBusMaster(BusMaster):
 
                 self.channel.queue_declare(queue="registration_queue")
                 self.signal_exchange = self.channel.exchange_declare(
-                    exchange='rebus_signals', type='fanout')
+                    exchange='rebus_signals', exchange_type='fanout')
                 self.channel.queue_declare(queue='rebus_master_rpc_highprio')
                 self.channel.basic_consume(
                     self._rpc_callback,
