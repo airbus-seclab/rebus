@@ -1,6 +1,8 @@
 import heapq
 import threading
 import time
+import logging
+log = logging.getLogger("rebus.tools.sched")
 
 # python2-provided sched is not adequate:
 # * not thread-safe, must use a lock (not true for python>=3.3)
@@ -25,6 +27,7 @@ class Sched(object):
         self._heap = []
 
     def add_action(self, time_offset, args):
+        log.debug("add_action %d %s" % (time_offset, args))
         with self._lock:
             run_time = time.time()+time_offset
             if self._timer and run_time < self._heap[0][0]:
@@ -60,7 +63,8 @@ class Sched(object):
         """
         with self._lock:
             self._timer = None
-            _, args = heapq.heappop(self._heap)
+            run_time, args = heapq.heappop(self._heap)
+            log.debug("trigger %d %s" % (run_time, args))
             self._injector(*args)
             if len(self._heap) > 0:
                 self._ensure_timer_started()
