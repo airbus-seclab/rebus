@@ -128,6 +128,7 @@ var updater = {
             updater.filenametext = descriptor.label;
             $('#display-filename').html(descriptor.label);
             $('#display-uuid').html('<a href="/analysis/default/' + updater.uuid + '">' + updater.uuid + '</a>');
+            $('#display-domain').html(descriptor.domain);
             $('#filename-uuid').fadeIn();
             $('#helptext').hide();
         }
