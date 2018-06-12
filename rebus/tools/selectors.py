@@ -164,7 +164,7 @@ def _default_guess(fname=None, buf=None, label=None, magic_txt=""):
                 return "/document/msoffice/doc"
             if label.endswith('.docx'):
                 return "/document/msoffice/docx"
-        return "/document/doc"
+        return "/document/msoffice/doc"
 
     # ASCII text
     if 'ASCII text' in magic_txt:
